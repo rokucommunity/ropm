@@ -31,3 +31,33 @@ Assume you want to use a ropm module called `PrettyList`. `PrettyList` includes 
 
 ## How to create a ropm package
 The ropm 
+
+## Specifying which files to copy to roku_modules
+By default, ropm will copy every file from your package, with a few exceptions: 
+
+These files will always be excluded (not copied):
+ - `package.json`
+ - README
+ - CHANGES / CHANGELOG / HISTORY
+ - LICENSE | LICENCE
+ - NOTICE
+
+As a general rule, we recommend excluding extraneous files when you create your package. However, if you want to manually specify the files to be included, you can set the `ropm.files` property in your package.json. This use case is favorable when installing a package from a git repository or a folder from the local file system.
+
+Here's an example (**NOTE:** comments are included here for explanation but are invalid within an `package.json`)
+
+```javascript
+{
+    "ropm": {
+        "files": [
+            //include every file
+            "**/*",
+            //then exclude the instructions/ folder
+            "!instructions"
+        ]
+    }
+}
+```
+
+
+

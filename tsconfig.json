@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": false,
+        "target": "ES2017",
+        "module": "commonjs",
+        "sourceMap": true,
+        "rootDir": "src",
+        "outDir": "dist",
+        "declaration": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "forceConsistentCasingInFileNames": true,
+        "preserveConstEnums": true,
+        "downlevelIteration": true,
+        "noUnusedLocals": true,
+        "allowSyntheticDefaultImports": true,
+        "lib": [
+            "es2017",
+            "es2019.array"
+        ]
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules/**/*"
+    ],
+    "ts-node": {
+        "transpileOnly": true
+    }
+}
