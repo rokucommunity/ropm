@@ -6,7 +6,8 @@
     "build": "tsc",
     "lint": "eslint \"src/**\"",
     "test": "nyc mocha",
-    "test:nocover": "mocha"
+    "test:nocover": "mocha",
+    "publish-coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "main": "dist/cli.js",
   "bin": {
