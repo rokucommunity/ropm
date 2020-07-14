@@ -54,7 +54,7 @@ describe('InstallCommand', () => {
     });
 
     describe('install', () => {
-        it.only('works with local packages', async function test() {
+        it('works with local packages', async function test() {
             this.timeout(20000);//eslint-disable-line
             //main project
             writeProject(projectName, {
