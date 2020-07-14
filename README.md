@@ -1,6 +1,10 @@
 # ropm
 A package manager for the Roku platform.
 
+[![build](https://img.shields.io/github/workflow/status/rokucommunity/ropm/build.svg?logo=github)](https://github.com/rokucommunity/ropm/actions?query=workflow%3Abuild)
+[![Coverage Status](https://coveralls.io/repos/github/rokucommunity/ropm/badge.svg?branch=master)](https://coveralls.io/github/rokucommunity/ropm?branch=master)
+[![NPM Version](https://badge.fury.io/js/ropm.svg?style=flat)](https://npmjs.org/package/ropm)
+
 ## Installation
 1. Install Node.JS from [here](https://nodejs.org/en/download/)
 2. install the `ropm` node module
