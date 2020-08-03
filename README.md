@@ -30,9 +30,10 @@ The `roku_modules` folder should not be commited to your project repository. Ins
 ## The algorithm
 1. on install, `ropm` copies all of the files from the package into `roku_modules/<package_name>`. 
 2. Then `ropm` rewrites function names, function calls, callfunc statements, and component names to have a prefix. (this prevents naming collisions)
-3. When you're ready to bundle your project, you can do one of the following:  
-    a. run `ropm packge` to generate a full package of your project  
-    b. run `ropm copy <target_folder>` to apply the `ropm` file copy logic overtop of your project folder, at any point duing your custom build process.
+3. When you're ready to bundle your project, run one of the following:
+  - `ropm copy <target_folder>` to apply the `ropm` file copy logic overtop of the target folder.
+  - use [roku-deploy]() to package your project and add `roku_modules/*/**/*` to the files array.
+
 
 ## rootDir
 By default, ropm will assume the root of your module is where all of your files reside, and will copy every file from your package, with a few exceptions: 
@@ -73,5 +74,33 @@ The ropm package system piggybacks on the [npm](https://www.npmjs.com/) package 
     "keywords": ["ropm"]
     ...
 }
+```
+
+## CLI commands
+### install
+Install a Roku package locally in both `node_modules` and `roku_modules`. This also updates the local `package.json` `dependencies` section. 
+
+Examples:
+```bash
+ropm install roku-promise
+```
+
+```bash
+ropm install module1 module2 module3
+```
+
+### copy
+Copy the files from ropm overtop of a target folder. Ideally this would be run after copying your project to a staging folder. For example:
+```bash
+#copy all of your project files to a staging folder
+cp -r ./src ./staging
+#now copy all of the roku module files into the staging folder
+ropm copy ./staging
+#create a zip of the staging folder
+zip -r your-app.zip ./staging
+```
+
+
+
 
 
