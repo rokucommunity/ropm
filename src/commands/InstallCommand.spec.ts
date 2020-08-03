@@ -1,13 +1,19 @@
+/* eslint-disable func-names */
+/* eslint-disable @typescript-eslint/no-invalid-this */
 import * as fsExtra from 'fs-extra';
 import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
+import { RopmPackageJson } from '../util';
 
 const tempDir = path.join(process.cwd(), '.tmp');
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
 
-describe('InstallCommand', () => {
+describe('InstallCommand', function () {
+    //tell mocha these tests take a long time
+    this.timeout(20000);
+
     let args: InstallCommandArgs;
     let command: InstallCommand;
 
@@ -18,10 +24,12 @@ describe('InstallCommand', () => {
         };
         command = new InstallCommand(args);
         //make the test project
+        fsExtra.ensureDirSync(tempDir);
+        fsExtra.emptyDirSync(tempDir);
         fsExtra.ensureDirSync(projectDir);
     });
 
-    function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: any) {
+    function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: RopmPackageJson) {
         for (let relativePath in files) {
             let filePath = path.join(tempDir, projectName, relativePath);
             fsExtra.ensureDirSync(
@@ -45,17 +53,17 @@ describe('InstallCommand', () => {
     }
 
     afterEach(() => {
-        fsExtra.ensureDirSync(projectDir);
-        fsExtra.emptyDirSync(projectDir);
+        fsExtra.ensureDirSync(tempDir);
+        fsExtra.emptyDirSync(tempDir);
     });
     after(() => {
-        fsExtra.emptyDirSync(projectDir);
-        fsExtra.rmdirSync(projectDir);
+        fsExtra.emptyDirSync(tempDir);
+        fsExtra.rmdirSync(tempDir);
     });
 
     describe('install', () => {
-        it('works with local packages', async function test() {
-            this.timeout(20000);//eslint-disable-line
+        it('works with local packages', async () => {
+
             //main project
             writeProject(projectName, {
                 'source/main.brs': ''
@@ -78,8 +86,59 @@ describe('InstallCommand', () => {
     });
 
     describe('copyModuleToRokuModules', () => {
-        it('uses package.json ropm.files array when specified', async () => {
+        it('uses package.json ropm.rootDir when specified', async () => {
 
+            writeProject('logger', {
+                'src/source/logger.brs': ''
+            }, {
+                ropm: {
+                    rootDir: 'src'
+                }
+            });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            await command.run();
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'roku_modules', 'logger', 'source', 'logger.brs')
+            )).to.be.true;
+        });
+
+        it('honors package.json `files` property', async () => {
+
+            writeProject('logger', {
+                'source/logger.brs': '',
+                'source/temp.brs': ''
+            }, {
+                files: [
+                    'source/logger.brs'
+                ]
+            });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            await command.run();
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'roku_modules', 'logger', 'source', 'logger.brs')
+            )).to.be.true;
+
+            //temp.brs should not have been copied
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'roku_modules', 'logger', 'source', 'temp.brs')
+            )).to.be.false;
         });
     });
 

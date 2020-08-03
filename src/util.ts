@@ -61,7 +61,7 @@ export class Util {
         let text = await fsExtra.readFile(
             path.join(modulePath, 'package.json')
         );
-        let packageJson = JSON.parse(text.toString());
+        let packageJson = JSON.parse(text.toString()) as RopmPackageJson;
         return packageJson;
     }
 
@@ -81,3 +81,14 @@ export class Util {
     }
 }
 export const util = new Util();
+
+export interface RopmPackageJson {
+    dependencies?: { [key: string]: string };
+    files?: string[];
+    ropm?: {
+        /**
+         * The path to the rootDir where all of the files for the roku module reside.
+         */
+        rootDir?: string;
+    };
+}

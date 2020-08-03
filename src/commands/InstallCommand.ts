@@ -2,7 +2,8 @@ import { util } from '../util';
 import * as fsExtra from 'fs-extra';
 import * as path from 'path';
 import * as childProcess from 'child_process';
-
+import * as packlist from 'npm-packlist';
+import { standardizePath } from 'roku-deploy';
 export class InstallCommand {
     constructor(
         public args: InstallCommandArgs
@@ -60,6 +61,9 @@ export class InstallCommand {
     private async copyAllModulesToRokuModules() {
         let modulePaths = this.getProdDependencies();
 
+        //remove the current module from the list (it should always be the first entry)
+        modulePaths.splice(0, 1);
+
         //copy all of them at once, wait for them all to complete
         return Promise.all(
             modulePaths.map((modulePath) => this.copyModuleToRokuModules(modulePath))
@@ -75,26 +79,47 @@ export class InstallCommand {
         if (!moduleName) {
             return;
         }
+
         let packageJson = await util.getPackageJson(modulePath);
-        let files: string[];
-        if (packageJson.ropm?.files) {
-            files = [
-                packageJson.ropm.files,
-                ...InstallCommand.fileIgnorePatterns
-            ];
-        } else {
-            files = [
-                '**/*',
-                ...InstallCommand.fileIgnorePatterns
-            ];
-        }
+
         console.log(`Copying ${moduleName}`);
-        let filePaths = await util.globAll(files, {
-            cwd: modulePath,
+
+        //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
+        let allFiles = await packlist({
+            path: modulePath
+        });
+
+        //make each packlist path absolute
+        allFiles = allFiles.map((x) => {
+            //force file paths to the same format
+            return standardizePath(
+                //make every path absolute
+                path.resolve(modulePath, x)
+            );
+        });
+
+        //use the rootDir from packageJson, or default to the current module path
+        const rootDir = packageJson.ropm?.rootDir ? path.resolve(modulePath, packageJson.ropm.rootDir) : modulePath;
+
+        //get the list of all file paths within the rootDir
+        let rootDirFiles = await util.globAll([
+            '**/*',
+            ...InstallCommand.fileIgnorePatterns
+        ], {
+            cwd: rootDir,
             dot: true,
             //skip matching folders (we'll handle file copying ourselves)
             nodir: true
         });
+
+        //only keep files that are both in the packlist AND the rootDir list
+        const filePaths = rootDirFiles.filter((relativePath) => {
+            const absolutePath = standardizePath(
+                path.join(rootDir, relativePath)
+            );
+            return allFiles.includes(absolutePath);
+        });
+
         //copy all the files from this package
         await Promise.all(
             filePaths.map(async (filePathRelative) => {
@@ -105,7 +130,7 @@ export class InstallCommand {
                 );
                 //copy the file
                 await fsExtra.copy(
-                    path.join(modulePath, filePathRelative),
+                    path.join(rootDir, filePathRelative),
                     targetPath,
                     {
                         //dereference symlinks
