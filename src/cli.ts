@@ -1,6 +1,5 @@
 import * as yargs from 'yargs';
 import { InstallCommand } from './commands/InstallCommand';
-import { CopyCommand } from './commands/CopyCommand';
 
 // eslint-disable-next-line
 yargs
@@ -10,12 +9,4 @@ yargs
         let install = new InstallCommand(args);
         install.run();//eslint-disable-line
     })
-
-    .command('copy [targetDir]', 'Copy the roku_modules files overtop of a target directory', (builder) => {
-        return builder;
-    }, (args: any) => {
-        let command = new CopyCommand(args);
-        command.run();
-    })
-
     .argv;
