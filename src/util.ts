@@ -22,12 +22,15 @@ export class Util {
 
     /**
      * Spawn an npm command and return a promise.
-     * This is necessary because spawn requires the file extension (.cmd) on windows
+     * This is necessary because spawn requires the file extension (.cmd) on windows.
+     * @param args - the list of args to pass to npm. Any undefined args will be removed from the list, so feel free to use ternary outside to simplify things
      */
-    spawnNpmAsync(args: string[], options?: childProcess.SpawnOptions) {
+    spawnNpmAsync(args: Array<string | undefined>, options?: childProcess.SpawnOptions) {
+        //filter out undefined args
+        args = args.filter(arg => arg !== undefined);
         return this.spawnAsync(
             process.platform.startsWith('win') ? 'npm.cmd' : 'npm',
-            args,
+            args as string[],
             options
         );
     }
@@ -80,9 +83,10 @@ export class Util {
      * Get the package.json as an object
      */
     async getPackageJson(modulePath: string) {
-        let text = await fsExtra.readFile(
-            path.join(modulePath, 'package.json')
-        );
+        const packageJsonPath = path.join(modulePath, 'package.json');
+
+        let text = await fsExtra.readFile(packageJsonPath);
+
         let packageJson = JSON.parse(text.toString()) as RopmPackageJson;
         return packageJson;
     }

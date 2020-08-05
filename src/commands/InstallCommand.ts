@@ -4,6 +4,8 @@ import * as childProcess from 'child_process';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import * as del from 'del';
+import * as fsExtra from 'fs-extra';
+import { InitCommand } from './InitCommand';
 
 export class InstallCommand {
     constructor(
@@ -24,7 +26,11 @@ export class InstallCommand {
     }
 
     private get cwd() {
-        return this.args.cwd ?? process.cwd();
+        if (this.args?.cwd) {
+            return path.resolve(process.cwd(), this.args?.cwd);
+        } else {
+            return process.cwd();
+        }
     }
 
     /**
@@ -86,6 +92,12 @@ export class InstallCommand {
      * finds the package.json file for the current host
      */
     private async loadHostPackageJson() {
+        //if the host doesn't currently have a package.json
+        if (await fsExtra.pathExists(path.resolve(this.cwd, 'package.json')) === false) {
+            console.log('Creating package.json');
+            //init package.json for the host
+            await new InitCommand({ cwd: this.cwd, force: true }).run();
+        }
         this.hostPackageJson = await util.getPackageJson(this.cwd);
     }
 
