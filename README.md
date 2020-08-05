@@ -24,15 +24,33 @@ The Roku project structure is fairly strict. There are a few hard rules:
 
 This provides unique challenges for a Roku package manager, because file paths alone are not enough to prevent name collisions. `ropm` solves the naming collision problem by rewriting the names of all functions and components in an ropm module.
 
+ropm will create a `roku_modules/<ropm module name>` folder into each corresponding folder of your project. For example, if a ropm module named `FancyWidget` has the following folders:
+ - source/
+ - components/
+ - images/
+ - fonts/
+
+then `ropm install` will create the following folders in your project
+ - source/roku_modules/FancyWidget
+ - components/roku_modules/FancyWidget
+ - images/roku_modules/FancyWidget
+ - fonts/roku_modules/FancyWidget
+
 ## Don't commit roku_modules
-The `roku_modules` folder should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. 
+The `roku_modules` folders that ropm creates should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. Here's how to ignore roku_modules in your `.gitignore file:
+
+**.gitignore**
+```gitignore
+roku_modules
+```
+
+## Do not change the code within roku_modules
+The files and folders within the `roku_modules` folders should not be altered at all, as these changes could be erased by future `ropm install` commands. If there are issues with a ropm module you are using, consider reaching out to the module publisher to have them fix and release a new version.
 
 ## The algorithm
-1. on install, `ropm` copies all of the files from the package into `roku_modules/<package_name>`. 
-2. Then `ropm` rewrites function names, function calls, callfunc statements, and component names to have a prefix. (this prevents naming collisions)
-3. When you're ready to bundle your project, run one of the following:
-  - `ropm copy <target_folder>` to apply the `ropm` file copy logic overtop of the target folder.
-  - use [roku-deploy]() to package your project and add `roku_modules/*/**/*` to the files array.
+When running `ropm install`, `ropm` does the following operations for each package:
+1. For each folder in the ropm package's `rootDir` folder, delete `${rootDir}/<folder_name>/roku_modules/<package_name>` and then copy all of the files from that corresponding folder.
+2. Rewrites function names, function calls, callfunc statements, and component names to have a prefix. (this prevents naming collisions)
 
 
 ## rootDir
@@ -65,16 +83,21 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 ```
 
 ## How to create a ropm package
-The ropm package system piggybacks on the [npm](https://www.npmjs.com/) package system from Node.js. Simply follow [these instructions](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages) from npm on how to create a package. Then, for discoverability, make sure to add `"ropm"` to the `keywords` portion of the package.json so that your roku packages are more easily discoverable. A `ropm` module search interface is coming in the future to help with discoverability, and adding the tag will be necessary.
+The `ropm` package system leverages the [npm](https://www.npmjs.com/) package system from Node.js. Simply follow [these instructions](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages) from npm on how to create a package. Then, be sure to add `"ropm"` to the `keywords` portion of the package.json so that your roku packages are more easily discoverable during searches. A `ropm` search interface is coming in the future to help with discoverability, and adding the tag will be required in order to appear in that interface.
+
+Here's a simple package.json showing how to add the `ropm` keyword:
 ```javascript
 {
     "name": "pretty-list",
     "version": "0.0.1",
     "description": "",
     "keywords": ["ropm"]
-    ...
+    //...additional package.json properties
 }
 ```
+
+## Semantic versioning
+It is highly recommended that ropm module authors strictly adhere to the rules of [Semantic Versioning](https://semver.org/). This will provide the most stability and consistency for consumers of your package, as well as provide the highest performance and smallest possible package size. Whenever ropm encounters a project that directly or indirectly requires multiple versions of a ropm module, ropm will attempt to minimize the number of versions of that package. For example, if a project has dependencies that require both version 1.1.0 and 1.4.0 of `promise`, ropm will opt to install 1.4.0 for both projects, since semantic versioning states that the only difference between 1.1.0 and 1.4.0 are new features and bugfixes and will not contain breaking changes.
 
 ## CLI commands
 ### install
@@ -89,16 +112,6 @@ ropm install roku-promise
 ropm install module1 module2 module3
 ```
 
-### copy
-Copy the files from ropm overtop of a target folder. Ideally this would be run after copying your project to a staging folder. For example:
-```bash
-#copy all of your project files to a staging folder
-cp -r ./src ./staging
-#now copy all of the roku module files into the staging folder
-ropm copy ./staging
-#create a zip of the staging folder
-zip -r your-app.zip ./staging
-```
 
 
 

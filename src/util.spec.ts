@@ -30,4 +30,32 @@ describe('Util', () => {
             expect(util.getModuleName({} as any)).to.be.undefined;
         });
     });
+
+    describe('getRopmNameFromModuleName', () => {
+        it('does nothing with already-valid names', () => {
+            expect(util.getRopmNameFromModuleName('module')).to.equal('module');
+            expect(util.getRopmNameFromModuleName('module_1')).to.equal('module_1');
+            expect(util.getRopmNameFromModuleName('some_module')).to.equal('some_module');
+        });
+
+        it('replaces invalid characters', () => {
+            expect(util.getRopmNameFromModuleName('@company')).to.equal('company');
+            expect(util.getRopmNameFromModuleName('.:module')).to.equal('module');
+            expect(util.getRopmNameFromModuleName('mod-ule')).to.equal('module');
+            expect(util.getRopmNameFromModuleName(' module ')).to.equal('module');
+            expect(util.getRopmNameFromModuleName('\tmodule ')).to.equal('module');
+        });
+
+        it('handles scoped packages properly', () => {
+            expect(util.getRopmNameFromModuleName('@company/module')).to.equal('company_module');
+        });
+
+        it('prefixes number-first names with underscore', () => {
+            expect(util.getRopmNameFromModuleName('123module')).to.equal('_123module');
+        });
+
+        it('converts nonstandard alpha characters into standard onces', () => {
+            expect(util.getRopmNameFromModuleName('ỆᶍǍᶆṔƚÉáéíóúýčďěňřšťžů')).to.equal('exampleaeiouycdenrstzu');
+        });
+    });
 });

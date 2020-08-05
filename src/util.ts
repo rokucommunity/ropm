@@ -2,6 +2,7 @@ import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import * as globAll from 'glob-all';
+import * as latinize from 'latinize';
 import { IOptions } from 'glob';
 
 export class Util {
@@ -32,8 +33,7 @@ export class Util {
     }
 
     /**
-     * Given a full path to a node module, compute the roku-safe module name that will be used
-     * to name the folder
+     * Given a full path to a node module, calculate the module's name.
      */
     getModuleName(modulePath: string) {
         if (typeof modulePath !== 'string') {
@@ -52,6 +52,28 @@ export class Util {
         } else {
             return moduleName;
         }
+    }
+
+    /**
+     * Given the name of a node module (`module`, `some-module`, `some_module`, `@namespace/some-module`, etc...),
+     * return the ropm-safe version of that module.
+     * This will remove dashes, @ symbols, and many other invalid characters, convert slashes into underscores.
+     * If a name starts with a number, prefix with underscore
+     */
+    getRopmNameFromModuleName(moduleName: string) {
+        //replace slashes with underscores
+        moduleName = moduleName.replace(/\\|\//g, '_');
+        //replace non-normal word characters with their standard latin equivalent
+        moduleName = latinize(moduleName);
+        //replace every invalid character
+        moduleName = moduleName.replace(/[^a-zA-Z_0-9]/g, '');
+        //prefix underscore to packages starting with a number
+        moduleName = moduleName.replace(/^([0-9])/, (i, match) => {
+            return '_' + match;
+        });
+        //force characters to lower case
+        moduleName = moduleName.toLowerCase();
+        return moduleName;
     }
 
     /**
@@ -79,6 +101,31 @@ export class Util {
             });
         });
     }
+
+    /**
+     * Copy a set of files
+     */
+    public async copyFiles(files: Array<{ src: string; dest: string }>) {
+        await Promise.all(files.map(async file => {
+            //try each copy several times, just in case there was an issue
+            for (let i = 0; i <= 4; i++) {
+                try {
+                    //make sure the target directory exists, or create it if not
+                    await fsExtra.ensureDir(
+                        path.dirname(file.dest)
+                    );
+                    //copy the file
+                    await fsExtra.copyFile(file.src, file.dest);
+                } catch (e) {
+                    //if we hit our max, throw the underlying error
+                    if (i === 4) {
+                        throw e;
+                    }
+                }
+            }
+        }));
+    }
+
 }
 export const util = new Util();
 

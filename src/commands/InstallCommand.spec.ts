@@ -29,28 +29,6 @@ describe('InstallCommand', function () {
         fsExtra.ensureDirSync(projectDir);
     });
 
-    function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: RopmPackageJson) {
-        for (let relativePath in files) {
-            let filePath = path.join(tempDir, projectName, relativePath);
-            fsExtra.ensureDirSync(
-                path.dirname(filePath)
-            );
-            fsExtra.writeFileSync(filePath, files[relativePath]);
-        }
-        const packageJson = {
-            name: projectName,
-            version: '1.0.0',
-            description: '',
-            ...(additionalPackageJson ?? {})
-        };
-        //write the package.json
-        fsExtra.writeFileSync(
-            path.join(
-                tempDir, projectName, 'package.json'
-            ),
-            JSON.stringify(packageJson)
-        );
-    }
 
     afterEach(() => {
         fsExtra.ensureDirSync(tempDir);
@@ -80,13 +58,11 @@ describe('InstallCommand', function () {
 
             await command.run();
             expect(fsExtra.pathExistsSync(
-                path.join(projectDir, 'roku_modules', 'logger', 'source', 'logger.brs')
+                path.join(projectDir, 'source', 'roku_modules', 'logger', 'logger.brs')
             )).to.be.true;
         });
-    });
 
-    describe('copyModuleToRokuModules', () => {
-        it('uses package.json ropm.rootDir when specified', async () => {
+        it('uses dependency package.json ropm.rootDir when specified', async () => {
 
             writeProject('logger', {
                 'src/source/logger.brs': ''
@@ -106,11 +82,11 @@ describe('InstallCommand', function () {
 
             await command.run();
             expect(fsExtra.pathExistsSync(
-                path.join(projectDir, 'roku_modules', 'logger', 'source', 'logger.brs')
+                path.join(projectDir, 'source', 'roku_modules', 'logger', 'logger.brs')
             )).to.be.true;
         });
 
-        it('honors package.json `files` property', async () => {
+        it('honors dependency package.json `files` property', async () => {
 
             writeProject('logger', {
                 'source/logger.brs': '',
@@ -132,14 +108,65 @@ describe('InstallCommand', function () {
             await command.run();
 
             expect(fsExtra.pathExistsSync(
-                path.join(projectDir, 'roku_modules', 'logger', 'source', 'logger.brs')
+                path.join(projectDir, 'source', 'roku_modules', 'logger', 'logger.brs')
             )).to.be.true;
 
             //temp.brs should not have been copied
             expect(fsExtra.pathExistsSync(
-                path.join(projectDir, 'roku_modules', 'logger', 'source', 'temp.brs')
+                path.join(projectDir, 'source', 'roku_modules', 'logger', 'temp.brs')
             )).to.be.false;
+        });
+
+        it('honors host package.json `ropm.rootDir` property', async () => {
+
+            writeProject('logger', {
+                'source/logger.brs': '',
+                'source/temp.brs': ''
+            });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                },
+                ropm: {
+                    rootDir: 'src'
+                }
+            });
+
+            await command.run();
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'logger.brs')
+            )).to.be.true;
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'temp.brs')
+            )).to.be.true;
         });
     });
 
 });
+
+export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: RopmPackageJson) {
+    for (let relativePath in files) {
+        let filePath = path.join(tempDir, projectName, relativePath);
+        fsExtra.ensureDirSync(
+            path.dirname(filePath)
+        );
+        fsExtra.writeFileSync(filePath, files[relativePath]);
+    }
+    const packageJson = {
+        name: projectName,
+        version: '1.0.0',
+        description: '',
+        ...(additionalPackageJson ?? {})
+    };
+    //write the package.json
+    fsExtra.writeFileSync(
+        path.join(
+            tempDir, projectName, 'package.json'
+        ),
+        JSON.stringify(packageJson)
+    );
+}
