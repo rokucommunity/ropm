@@ -4,3 +4,4 @@ dist
 dist
 .nyc_output
 coverage
+*.tgz
