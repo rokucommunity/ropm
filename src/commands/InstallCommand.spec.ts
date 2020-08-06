@@ -221,7 +221,7 @@ describe('InstallCommand', function () {
             )).to.be.false;
         });
 
-        it.only('ignores top-level package files', async () => {
+        it('ignores top-level package files', async () => {
             writeProject('logger', {
                 'source/logger.brs': '',
                 //these files are at the top-level of the project and should be ignored
