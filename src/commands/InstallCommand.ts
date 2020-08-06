@@ -128,15 +128,14 @@ export class InstallCommand {
         //compute the ropm name for this module. This name has all invalid chars removed, and can be used as a brightscript variable/namespace
         const ropmModuleName = util.getRopmNameFromModuleName(npmModuleName);
 
-
-        console.log(`Copying ${npmModuleName} as (${ropmModuleName})`);
-
         let modulePackageJson = await util.getPackageJson(modulePath);
 
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
-        if (!modulePackageJson.keywords?.includes('ropm')) {
+        if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
+            console.warn(`ropm: skipping prod dependency '${npmModuleName}' because it does not have the "ropm" keyword`);
             return;
         }
+        console.log(`ropm: copying '${npmModuleName}' as '${ropmModuleName}'`);
 
         //use the rootDir from packageJson, or default to the current module path
         const moduleRootDir = modulePackageJson.ropm?.rootDir ? path.resolve(modulePath, modulePackageJson.ropm.rootDir) : modulePath;
@@ -163,12 +162,20 @@ export class InstallCommand {
         //standardize each path
         rootDirFiles = rootDirFiles.map((f) => rokuDeploy.util.standardizePath(f));
 
-        //only keep files that are both in the packlist AND the rootDir list
-        const files = rootDirFiles.filter((rootDirFile) => {
-            return allFiles.includes(
-                rootDirFile
-            );
-        });
+        const files = rootDirFiles
+
+            //only keep files that are both in the packlist AND the rootDir list
+            .filter((rootDirFile) => {
+                return allFiles.includes(
+                    rootDirFile
+                );
+            })
+
+            .filter((rootDirFile) => {
+                //filter top-level files (all files should be contained within a subfolder)
+                const fileIsLocatedInAFolder = !!/\\|\//.exec(rootDirFile);
+                return fileIsLocatedInAFolder;
+            });
 
         //create a map of every source file and where it should be copied to
         const fileMappings = files.map(filePath => {

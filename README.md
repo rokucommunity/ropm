@@ -88,6 +88,7 @@ The `ropm` package system leverages the [npm](https://www.npmjs.com/) package sy
 Steps:
 1. Create a new package.json in your project (you can run `ropm init` to have it help build one)
 2. Add `"ropm"` to the `keywords` portion of the package.json. Without this tag, ropm will completely ignore your package when copying files. 
+3. Ensure that all files are contained within a folder (preferably `source/`, `/components`, `images/` or `fonts/`). Files at the root of your project will be ignored
 
 Here's a simple package.json showing how to add the `ropm` keyword:
 ```javascript

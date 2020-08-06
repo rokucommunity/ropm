@@ -200,6 +200,27 @@ describe('InstallCommand', function () {
             expect(ex.message).to.include('Failed to compute prod dependencies');
         });
 
+        it('ignores prod dependencies that are missing the "ropm" keyword', async () => {
+            writeProject('logger', {
+                'source/logger.brs': ''
+            }, {
+                keywords: ['not-ropm']
+            });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            await command.run();
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'source', 'roku_modules', 'logger')
+            )).to.be.false;
+        });
+
         it.only('ignores top-level package files', async () => {
             writeProject('logger', {
                 'source/logger.brs': '',
@@ -224,11 +245,11 @@ describe('InstallCommand', function () {
 
             expect(fsExtra.pathExistsSync(
                 path.join(projectDir, 'readme.md')
-            )).to.be.false;
+            ), 'readme.md should not exist').to.be.false;
 
             expect(fsExtra.pathExistsSync(
                 path.join(projectDir, 'LICENSE')
-            )).to.be.false;
+            ), 'LICENSE should not exist').to.be.false;
         });
 
     });
@@ -247,6 +268,9 @@ export function writeProject(projectName: string, files: { [key: string]: string
         name: projectName,
         version: '1.0.0',
         description: '',
+        keywords: [
+            'ropm'
+        ],
         ...(additionalPackageJson ?? {})
     };
     //write the package.json
