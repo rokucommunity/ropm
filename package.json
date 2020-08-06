@@ -11,6 +11,7 @@
     "publish-coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "main": "dist/cli.js",
+  "typings": "dist/index.d.ts",
   "bin": {
     "ropm": "dist/cli.js"
   },
