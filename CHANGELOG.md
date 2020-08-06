@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.1.1] - 2020-08-06
+### Fixed
+ - missing shebang at top of cli script causing problems running ropm from the terminal
+ - fix running `ropm install` without any arguments
+### Changed
+ - remove unnecessary files from published `ropm` npm package
+
+
+
 ## [0.1.0] - 2020-08-05
 ### Added
  - cli command 'init'
@@ -20,3 +29,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 [0.1.0]:   https://github.com/rokucommunity/brighterscript/compare/v0.0.1...v0.1.0
+[0.1.1]:   https://github.com/rokucommunity/brighterscript/compare/v0.1.0...v0.1.1
