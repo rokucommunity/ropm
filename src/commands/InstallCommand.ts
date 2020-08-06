@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as childProcess from 'child_process';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
-import * as del from 'del';
 import * as fsExtra from 'fs-extra';
 import { InitCommand } from './InitCommand';
 import { CleanCommand } from './CleanCommand';
@@ -134,6 +133,11 @@ export class InstallCommand {
 
         let modulePackageJson = await util.getPackageJson(modulePath);
 
+        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
+        if (!modulePackageJson.keywords?.includes('ropm')) {
+            return;
+        }
+
         //use the rootDir from packageJson, or default to the current module path
         const moduleRootDir = modulePackageJson.ropm?.rootDir ? path.resolve(modulePath, modulePackageJson.ropm.rootDir) : modulePath;
 
@@ -188,10 +192,10 @@ export class InstallCommand {
      */
     getProdDependencies() {
         try {
-        let stdout = childProcess.execSync('npm ls --parseable --prod', {
-            cwd: this.cwd
-        }).toString();
-        return stdout.trim().split(/\r?\n/);
+            let stdout = childProcess.execSync('npm ls --parseable --prod', {
+                cwd: this.cwd
+            }).toString();
+            return stdout.trim().split(/\r?\n/);
         } catch (e) {
             throw new Error('Failed to compute prod dependencies: ' + e.message);
         }

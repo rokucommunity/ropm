@@ -83,7 +83,11 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 ```
 
 ## How to create a ropm package
-The `ropm` package system leverages the [npm](https://www.npmjs.com/) package system from Node.js. Simply follow [these instructions](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages) from npm on how to create a package. Then, be sure to add `"ropm"` to the `keywords` portion of the package.json so that your roku packages are more easily discoverable during searches. A `ropm` search interface is coming in the future to help with discoverability, and adding the tag will be required in order to appear in that interface.
+The `ropm` package system leverages the [npm](https://www.npmjs.com/) package system from Node.js. Simply follow [these instructions](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages) from npm on how to create a package. 
+
+Steps:
+1. Create a new package.json in your project (you can run `ropm init` to have it help build one)
+2. Add `"ropm"` to the `keywords` portion of the package.json. Without this tag, ropm will completely ignore your package when copying files. 
 
 Here's a simple package.json showing how to add the `ropm` keyword:
 ```javascript

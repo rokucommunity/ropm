@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /* eslint-disable func-names */
 /* eslint-disable @typescript-eslint/no-invalid-this */
 import * as fsExtra from 'fs-extra';
@@ -197,6 +198,37 @@ describe('InstallCommand', function () {
                 ex = e;
             }
             expect(ex.message).to.include('Failed to compute prod dependencies');
+        });
+
+        it.only('ignores top-level package files', async () => {
+            writeProject('logger', {
+                'source/logger.brs': '',
+                //these files are at the top-level of the project and should be ignored
+                'readme.md': '',
+                'LICENSE': ''
+            });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            await command.run();
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'source', 'roku_modules', 'logger', 'logger.brs')
+            )).to.be.true;
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'readme.md')
+            )).to.be.false;
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'LICENSE')
+            )).to.be.false;
         });
 
     });
