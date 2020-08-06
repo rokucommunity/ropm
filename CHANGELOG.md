@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [0.1.1] - 2020-08-06
+### Added
+ -  "clean" command which removes all ropm files from a project (but leaves the package.json intact)
+### Changed
+ - remove unnecessary files from published `ropm` npm package
+ - the `"ropm"` keyword is now required in ropm module's package.json, and any package without it will be ignored by ropm
 ### Fixed
  - missing shebang at top of cli script causing problems running ropm from the terminal
  - fix running `ropm install` without any arguments
-### Changed
- - remove unnecessary files from published `ropm` npm package
 
 
 
