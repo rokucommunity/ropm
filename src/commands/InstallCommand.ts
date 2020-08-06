@@ -6,6 +6,7 @@ import * as rokuDeploy from 'roku-deploy';
 import * as del from 'del';
 import * as fsExtra from 'fs-extra';
 import { InitCommand } from './InitCommand';
+import { CleanCommand } from './CleanCommand';
 
 export class InstallCommand {
     constructor(
@@ -70,21 +71,10 @@ export class InstallCommand {
      * Deletes every roku_modules folder found in the hostRootDir
      */
     private async deleteAllRokuModulesFolders() {
-        let rokuModulesFolders = await util.globAll([
-            '*/roku_modules',
-            '!node_modules/**/*'
-        ], {
-            cwd: this.hostRootDir,
-            absolute: true
+        const cleanCommand = new CleanCommand({
+            cwd: this.cwd
         });
-
-        //delete the roku_modules folders
-        await Promise.all(
-            rokuModulesFolders.map(async (rokuModulesFolder) => {
-                console.log(`deleting ${rokuModulesFolder}`);
-                await del(rokuModulesFolder);
-            })
-        );
+        await cleanCommand.run();
     }
 
     /**
@@ -197,10 +187,14 @@ export class InstallCommand {
      * and won't be run in ~parallel.
      */
     getProdDependencies() {
+        try {
         let stdout = childProcess.execSync('npm ls --parseable --prod', {
             cwd: this.cwd
         }).toString();
         return stdout.trim().split(/\r?\n/);
+        } catch (e) {
+            throw new Error('Failed to compute prod dependencies: ' + e.message);
+        }
     }
 }
 

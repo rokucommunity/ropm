@@ -92,6 +92,15 @@ export class Util {
     }
 
     /**
+     * Determine if the directory is empty or not
+     */
+    async isEmptyDir(dirPath: string) {
+        //TODO this lists all files in the directory. Perhaps we should optimize this by using a directory reader? Might not matter...
+        let files = await fsExtra.readdir(dirPath);
+        return files.length === 0;
+    }
+
+    /**
      * A promise wrapper around glob-all
      */
     public async globAll(patterns, options: IOptions) {
@@ -136,6 +145,7 @@ export const util = new Util();
 export interface RopmPackageJson {
     dependencies?: { [key: string]: string };
     files?: string[];
+    keywords?: string[];
     ropm?: {
         /**
          * The path to the rootDir where all of the files for the roku module reside.

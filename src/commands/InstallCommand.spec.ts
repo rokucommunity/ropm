@@ -125,7 +125,7 @@ describe('InstallCommand', function () {
             });
 
             writeProject(projectName, {
-                'source/main.brs': ''
+                'src/source/main.brs': ''
             }, {
                 dependencies: {
                     'logger': `file:../logger`
@@ -155,6 +155,50 @@ describe('InstallCommand', function () {
 
             await command.run();
         });
+
+        it('cleans up before installing', async () => {
+            writeProject(projectName, {
+                'source/main.brs': '',
+                //a "leftover" file from a previous ropm install
+                'customDir/roku_modules/testlib/file.brs': ''
+            });
+
+            await command.run();
+            //the command should have deleted all roku_modules folders
+            expect(
+                fsExtra.pathExistsSync(
+                    path.join(tempDir, projectName, 'customDir', 'roku_modules')
+                )
+            ).to.be.false;
+            //the command should have deleted empty top-level folders that used to have roku_modules in them
+            expect(
+                fsExtra.pathExistsSync(
+                    path.join(tempDir, projectName, 'customDir')
+                )
+            ).to.be.false;
+
+        });
+
+        it('shows underlying error when `npm ls` fails', async () => {
+            writeProject(projectName, {
+                'source/main.brs': '',
+                //a "leftover" file from a previous ropm install
+                'customDir/roku_modules/testlib/file.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            let ex;
+            try {
+                await command.run();
+            } catch (e) {
+                ex = e;
+            }
+            expect(ex.message).to.include('Failed to compute prod dependencies');
+        });
+
     });
 
 });
