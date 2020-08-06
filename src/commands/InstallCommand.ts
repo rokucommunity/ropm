@@ -104,7 +104,7 @@ export class InstallCommand {
     private async npmInstall() {
         await util.spawnNpmAsync([
             'i',
-            ...this.args.packages
+            ...(this.args.packages ?? [])
         ], {
             cwd: this.cwd
         });

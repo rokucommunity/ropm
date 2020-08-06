@@ -144,6 +144,17 @@ describe('InstallCommand', function () {
                 path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'temp.brs')
             )).to.be.true;
         });
+
+        it('works when not passing in any packages', async () => {
+            //remove packages
+            delete args.packages;
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            });
+
+            await command.run();
+        });
     });
 
 });
