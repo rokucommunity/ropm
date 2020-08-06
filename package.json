@@ -14,6 +14,12 @@
   "bin": {
     "ropm": "dist/cli.js"
   },
+  "files": [
+    "dist/**/*",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
   "author": "Bronley Plumb",
   "license": "MIT",
   "dependencies": {
