@@ -16,14 +16,12 @@ export class File {
 
     public functionDefinitions = [] as Array<{
         name: string;
-        offsetBegin: number;
-        offsetEnd: number;
+        offset: number;
     }>;
 
     public functionCalls = [] as Array<{
         name: string;
-        offsetBegin: number;
-        offsetEnd: number;
+        offset: number;
     }>;
 
     /**
@@ -31,8 +29,7 @@ export class File {
      */
     public componentDeclarations = [] as Array<{
         name: string;
-        offsetBegin: number;
-        offsetEnd: number;
+        offset: number;
     }>;
 
     /**
@@ -40,8 +37,7 @@ export class File {
      */
     public componentReferences = [] as Array<{
         name: string;
-        offsetBegin: number;
-        offsetEnd: number;
+        offset: number;
     }>;
 
     private edits = [] as Edit[];
@@ -148,8 +144,7 @@ export class File {
 
             this.functionDefinitions.push({
                 name: functionName,
-                offsetBegin: startOffset,
-                offsetEnd: startOffset + functionName.length
+                offset: startOffset
             });
         }
     }
@@ -165,8 +160,7 @@ export class File {
 
             this.functionCalls.push({
                 name: functionName,
-                offsetBegin: match.index,
-                offsetEnd: match.index + functionName.length
+                offset: match.index
             });
         }
     }
@@ -177,8 +171,7 @@ export class File {
             this.componentDeclarations.push({
                 name: nameAttribute.value!,
                 //plus one to step past the opening "
-                offsetBegin: nameAttribute.syntax.value!.startOffset + 1,
-                offsetEnd: nameAttribute.syntax.value!.endOffset
+                offset: nameAttribute.syntax.value!.startOffset + 1
             });
         }
     }
@@ -193,8 +186,7 @@ export class File {
             this.componentReferences.push({
                 name: extendsAttribute.value!,
                 //plus one to step past the opening "
-                offsetBegin: extendsAttribute.syntax.value!.startOffset + 1,
-                offsetEnd: extendsAttribute.syntax.value!.endOffset,
+                offset: extendsAttribute.syntax.value!.startOffset + 1
             });
         }
     }
@@ -215,8 +207,7 @@ export class File {
 
             this.componentReferences.push({
                 name: componentName,
-                offsetBegin: startOffset,
-                offsetEnd: startOffset + componentName.length
+                offset: startOffset
             });
         }
     }
@@ -238,8 +229,7 @@ export class File {
 
             this.componentReferences.push({
                 name: componentName,
-                offsetBegin: startOffset,
-                offsetEnd: startOffset + componentName.length
+                offset: startOffset
             });
         }
     }
@@ -262,16 +252,14 @@ export class File {
             //save the opening tag
             this.componentReferences.push({
                 name: child?.name as string,
-                offsetBegin: offsetBegin,
-                offsetEnd: offsetBegin + child!.name!.length
+                offset: offsetBegin
             });
             //if there's a closing tag, save that
             if (child?.syntax.closeName) {
                 const offsetBegin = child!.syntax.closeName!.startOffset;
                 this.componentReferences.push({
                     name: child?.syntax.closeName.image as string,
-                    offsetBegin: offsetBegin,
-                    offsetEnd: offsetBegin + child!.name!.length
+                    offset: offsetBegin
                 });
             }
         }

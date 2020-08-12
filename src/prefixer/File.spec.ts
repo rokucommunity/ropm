@@ -42,13 +42,6 @@ describe('prefixer/File', () => {
         }
     }
 
-    function rangeToOffsets(startLineIndex: number, startColumnIndex: number, endLineIndex: number, endColumnIndex: number) {
-        return {
-            offsetBegin: getOffset(startLineIndex, startColumnIndex),
-            offsetEnd: getOffset(endLineIndex, endColumnIndex)
-        };
-    }
-
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
@@ -78,10 +71,10 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.functionDefinitions).to.eql([{
                 name: 'Main',
-                ...rangeToOffsets(1, 25, 1, 29)
+                offset: getOffset(1, 25)
             }, {
                 name: 'Main2',
-                ...rangeToOffsets(2, 25, 2, 30)
+                offset: getOffset(2, 25)
             }]);
         });
 
@@ -92,10 +85,10 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.functionDefinitions).to.eql([{
                 name: 'Main',
-                ...rangeToOffsets(1, 25, 1, 29)
+                offset: getOffset(1, 25)
             }, {
                 name: 'Main2',
-                ...rangeToOffsets(1, 41, 1, 46)
+                offset: getOffset(1, 41)
             }]);
         });
 
@@ -115,7 +108,7 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.functionDefinitions).to.eql([{
                 name: 'DoSomething',
-                ...rangeToOffsets(4, 28, 4, 39)
+                offset: getOffset(4, 28)
             }]);
         });
     });
@@ -135,10 +128,10 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.functionCalls).to.eql([{
                 name: 'doSomething',
-                ...rangeToOffsets(3, 20, 3, 31)
+                offset: getOffset(3, 20)
             }, {
                 name: 'doSomethingInner',
-                ...rangeToOffsets(6, 24, 6, 40)
+                offset: getOffset(6, 24)
             }]);
         });
 
@@ -158,7 +151,7 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.functionCalls).to.eql([{
                 name: 'DoSomething',
-                ...rangeToOffsets(5, 28, 5, 39)
+                offset: getOffset(5, 28)
             }]);
         });
     });
@@ -173,7 +166,7 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.componentDeclarations).to.eql([{
                 name: 'CustomComponent',
-                ...rangeToOffsets(1, 33, 1, 48)
+                offset: getOffset(1, 33)
             }]);
         });
     });
@@ -188,7 +181,7 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.componentReferences).to.eql([{
                 name: 'ParentComponent',
-                ...rangeToOffsets(1, 59, 1, 74)
+                offset: getOffset(1, 59)
             }]);
         });
 
@@ -206,13 +199,13 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.componentReferences).to.eql([{
                 name: 'Component1',
-                ...rangeToOffsets(3, 46, 3, 56)
+                offset: getOffset(3, 46)
             }, {
                 name: 'Component2',
-                ...rangeToOffsets(5, 49, 5, 59)
+                offset: getOffset(5, 49)
             }, {
                 name: 'Component3',
-                ...rangeToOffsets(7, 45, 7, 55)
+                offset: getOffset(7, 45)
             }]);
         });
 
@@ -240,16 +233,16 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(f.componentReferences).to.eql([{
                 name: 'Component1',
-                ...rangeToOffsets(3, 38, 3, 48)
+                offset: getOffset(3, 38)
             }, {
                 name: 'Component2',
-                ...rangeToOffsets(6, 42, 6, 52)
+                offset: getOffset(6, 42)
             }, {
                 name: 'Component3',
-                ...rangeToOffsets(10, 25, 10, 35)
+                offset: getOffset(10, 25)
             }, {
                 name: 'Component4',
-                ...rangeToOffsets(14, 43, 14, 53)
+                offset: getOffset(14, 43)
             }]);
         });
 
@@ -267,25 +260,25 @@ describe('prefixer/File', () => {
             await file.discover();
             expect(
                 file.componentReferences.sort((a, b) => {
-                    if (a.offsetBegin > b.offsetBegin) {
+                    if (a.offset > b.offset) {
                         return 1;
-                    } else if (a.offsetBegin < b.offsetBegin) {
+                    } else if (a.offset < b.offset) {
                         return -1;
                     }
                     return 0;
                 })
             ).to.eql([{
                 name: 'CustomComponent2',
-                ...rangeToOffsets(3, 25, 3, 41)
+                offset: getOffset(3, 25)
             }, {
                 name: 'CustomComponent2',
-                ...rangeToOffsets(3, 44, 3, 60)
+                offset: getOffset(3, 44)
             }, {
                 name: 'MarkupList',
-                ...rangeToOffsets(4, 25, 4, 35)
+                offset: getOffset(4, 25)
             }, {
                 name: 'SomeCustomComponent',
-                ...rangeToOffsets(5, 25, 5, 44)
+                offset: getOffset(5, 25)
             }]);
         });
     });

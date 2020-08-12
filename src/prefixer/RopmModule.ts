@@ -53,7 +53,7 @@ export class RopmModule {
                 if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
                     continue;
                 }
-                file.addEdit(func.offsetBegin, func.offsetBegin, prefix);
+                file.addEdit(func.offset, func.offset, prefix);
             }
 
             //prefix all function calls to our own function names
@@ -61,7 +61,7 @@ export class RopmModule {
                 const lowerName = call.name.toLowerCase();
                 //if this function is owned by our project, rename it
                 if (ownFunctionNames.includes(lowerName)) {
-                    file.addEdit(call.offsetBegin, call.offsetBegin, prefix);
+                    file.addEdit(call.offset, call.offset, prefix);
                     continue;
                 }
 
@@ -72,21 +72,21 @@ export class RopmModule {
                 if (idx > -1) {
                     const newPrefix = this.prefixMap[prefixMapKeys[idx]];
                     //begin position + the length of the original prefix + 1 for the underscore
-                    const offsetEnd = call.offsetBegin + possiblePrefix.length + 1
-                    file.addEdit(call.offsetBegin, offsetEnd, newPrefix + '_');
+                    const offsetEnd = call.offset + possiblePrefix.length + 1
+                    file.addEdit(call.offset, offsetEnd, newPrefix + '_');
                 }
             }
 
             //rename all component definitions
             for (let comp of file.componentDeclarations) {
-                file.addEdit(comp.offsetBegin, comp.offsetBegin, prefix);
+                file.addEdit(comp.offset, comp.offset, prefix);
             }
 
             //rename all component usage
             for (let comp of file.componentReferences) {
                 //if this component is owned by our module, rename it
                 if (ownComponentNames.includes(comp.name.toLowerCase())) {
-                    file.addEdit(comp.offsetBegin, comp.offsetBegin, prefix);
+                    file.addEdit(comp.offset, comp.offset, prefix);
                 }
             }
         }
