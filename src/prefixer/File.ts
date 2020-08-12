@@ -72,10 +72,10 @@ export class File {
         this.findFunctionDefinitions();
         this.findFunctionCalls();
         this.findCreateObjectComponentReferences();
-
+        this.findCreateChildComponentReferences();
         this.findComponentDefinitions();
         this.findExtendsComponentReferences();
-        
+
     }
 
     private findFunctionDefinitions() {
@@ -162,8 +162,27 @@ export class File {
         }
     }
 
-    private findCreateChildComponentReferences(lineIndex: number) {
+    /**
+     * Find all calls to `.CreateChild("COMPONENT_NAME")`.
+     * There is a slight chance this could catch some false positives for modules that have their own CreateChild(string) method, 
+     * but it's unlikely to matter since we would only replace these calls that actually contain known component names
+     */
+    private findCreateChildComponentReferences() {
+        const regexp = /(\.\s*CreateChild\s*\((?:\r?\n|\s)*")(.*)"/gi;
+        let match: RegExpExecArray | null;
 
+        //look through each line of the file 
+        while (match = regexp.exec(this.fileContents)) {
+            const componentName = match[2];
+
+            const startOffset = match.index + match[1].length;
+
+            this.componentReferences.push({
+                name: componentName,
+                startOffset: startOffset,
+                endOffset: startOffset + componentName.length
+            });
+        }
     }
 
 }
