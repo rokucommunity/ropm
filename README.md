@@ -36,13 +36,92 @@ then `ropm install` will create the following folders in your project
  - images/roku_modules/FancyWidget
  - fonts/roku_modules/FancyWidget
 
-## Don't commit roku_modules
-The `roku_modules` folders that ropm creates should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. Here's how to ignore roku_modules in your `.gitignore file:
+## Sanitizing module names
+Most `npm`-style package registries allow many characters in package names that are not valid identifiers within a Roku application. As such, these names need to be sanitized. The following transformations will be applied to every module name. 
+ - registry namespaces will have the `@` symbol removed and the `/` replaced with an underscore. (i.e. `@roku/sgdex` becomes `roku_sgdex`)
+ - All characters except for numbers, letters, and underscore will be removed. (i.e. `cool-package` becomes `coolpackage`)
 
-**.gitignore**
-```gitignore
-roku_modules
+While this does have the potential for name collisions, it should be very unlikely to happen. 
+
+
+## Prefixes
+When module authors publish their modules, they should not include any type of prefix to their components or functions. The prefixing will be handled by `ropm` itself. 
+
+`ropm` will scan every module for:
+ - function declaractions
+ - function calls
+ - component declarations
+ - component usage:
+   - component names in XML `extends` attribute
+   - use of a component as an element in XML files
+   - 
+
+Then, `ropm` will append a prefix to each of the previously-mentioned items. For example, consider the `FancyKeyboards` package:
+
+**xml**
+```xml
+<component name="SimpleKeyboard" extends="Keyboard">
 ```
+```xml
+<AdvancedKeyboard />
+```
+becomes
+```xml
+<component name="FancyKeyboards_SimpleKeyboard" extends="fancyKeyboards_Keyboard">
+```
+```xml
+<FancyKeyboards_AdvancedKeyboard />
+```
+
+**brs**
+```brightscript
+sub SetKeyboardLanguage(language)
+    WriteToRegistry("KeyboardLanguage", language)
+end sub
+sub WriteToRegistry(key, value)
+    '...
+end sub
+```
+```brightscript
+CreateObject("RoSGNode", "SimpleKeyboard")
+node.CreateChild("AdvancedKeyboard")
+```
+becomes
+```brightscript
+sub FancyKeyboards_SetKeyboardLanguage(language)
+    FancyKeyboards_WriteToRegistry("KeyboardLanguage", language)
+end sub
+sub FancyKeyboards_WriteToRegistry(key, value)
+    '...
+end sub
+```
+
+```brightscript
+CreateObject("RoSGNode", "FancyKeyboards_SimpleKeyboard")
+node.CreateChild("FancyKeyboards_AdvancedKeyboard")
+```
+
+**WARNING**: `ropm` does not currently support rewriting components created with `ifSGNodeChildren`'s `update()` call (see the docs [here](updatefields-as-roassociativearray-addfields-as-boolean-as-void)). If you are a ropm package author and need support for this, please raise an issue. 
+
+
+## Renaming modules
+By default, `ropm` will install modules with their default names from the registry. For example, if you run `ropm install roku-promise`, then the ropm package name will be `rokupromise`. But what if you wanted to reference it as `promise` in your project? You can accomplish this by leveraging the flexibility of the package.json `dependencies` section. Here's the command to install `roku-promise` with an alternate name:
+
+```bash
+ropm install promise@npm:roku-promise
+```
+
+This will install the `roku-promise` library from the `npmjs.com` registry and call it `promise`. 
+
+Here's the resulting package.json `dependencies` section:
+```json
+{
+    "dependencies": {
+        "promise": "npm:roku-promise@1.2.3"
+    }
+}
+```
+
 
 ## Do not change the code within roku_modules
 The files and folders within the `roku_modules` folders should not be altered at all, as these changes could be erased by future `ropm install` commands. If there are issues with a ropm module you are using, consider reaching out to the module publisher to have them fix and release a new version.
@@ -81,6 +160,15 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
     }
 }
 ```
+
+## Don't commit roku_modules
+The `roku_modules` folders that ropm creates should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. Here's how to ignore roku_modules in your `.gitignore file:
+
+**.gitignore**
+```gitignore
+roku_modules
+```
+
 
 ## How to create a ropm package
 The `ropm` package system leverages the [npm](https://www.npmjs.com/) package system from Node.js. Simply follow [these instructions](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages) from npm on how to create a package. 
