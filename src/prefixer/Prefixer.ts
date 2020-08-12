@@ -5,13 +5,13 @@ export class Prefixer {
 
     /**
      * Add a new project to the prefixer
-     * @param files the list of absolute file paths for this project
+     * @param filePaths the list of absolute file paths for this project
      * @param prefix the prefix to give all of this module's own functions and components (and their internal usage)
      * @param prefixMap if this module has its own dependencies, then this prefix map allows us to rename those prefixes
      */
-    public addModule(files: string[], prefix: string, prefixMap?: { [currentName: string]: string }) {
+    public addModule(filePaths: string[], prefix: string, prefixMap?: { [currentName: string]: string }) {
         this.modules.push(
-            new RopmModule(files, prefix, prefixMap)
+            new RopmModule(filePaths, prefix, prefixMap)
         );
     }
 

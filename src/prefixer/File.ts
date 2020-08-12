@@ -1,7 +1,7 @@
 /* eslint-disable no-cond-assign */
 import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
-import { buildAst, XMLDocument } from '@xml-tools/ast';
+import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 
 export class File {
     constructor(
@@ -12,37 +12,39 @@ export class File {
     /**
      * The in-memory copy of the file contents
      */
-    private fileContents!: string;
+    public fileContents!: string;
 
-    private functionDefinitions = [] as Array<{
+    public functionDefinitions = [] as Array<{
         name: string;
-        startOffset: number;
-        endOffset: number;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
 
-    private functionCalls = [] as Array<{
+    public functionCalls = [] as Array<{
         name: string;
-        startOffset: number;
-        endOffset: number;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
 
     /**
      * A list of locations in this file that DECLARE a component (i.e. <component name="<component_name"
      */
-    private componentDeclarations = [] as Array<{
+    public componentDeclarations = [] as Array<{
         name: string;
-        startOffset: number;
-        endOffset: number;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
 
     /**
      * A list of locations in this file that USE component names (in brs functions as well as xml)
      */
-    private componentReferences = [] as Array<{
+    public componentReferences = [] as Array<{
         name: string;
-        startOffset: number;
-        endOffset: number;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
+
+    private edits = [] as Edit[];
 
     /**
      * A concrete syntax tree for any parsed xml
@@ -66,6 +68,9 @@ export class File {
         }
     }
 
+    /**
+     * Scan the file for all functions and components
+     */
     public async discover() {
         await this.loadFile();
 
@@ -75,7 +80,61 @@ export class File {
         this.findCreateChildComponentReferences();
         this.findComponentDefinitions();
         this.findExtendsComponentReferences();
+        this.findXmlChildrenComponentReferences();
+    }
 
+    /**
+     * Add a new edit that should be applied to the file at a later time
+     */
+    public addEdit(offsetBegin: number, offsetEnd: number, newText: string) {
+        this.edits.push({
+            offsetBegin: offsetBegin,
+            offsetEnd: offsetEnd,
+            newText: newText
+        });
+    }
+
+    /**
+     * apply all of the current edits
+     */
+    public applyEdits() {
+        //noting to do if there are no edits
+        if (this.edits.length === 0) {
+            return;
+        }
+
+        //sort the edits in DESCENDING order of offset, so we can simply walk backwards in the file and apply all edits
+        const edits = this.edits.sort((e1, e2) => {
+            if (e1.offsetBegin > e2.offsetBegin) {
+                return -1;
+            } else if (e2.offsetBegin < e2.offsetBegin) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        let contents = this.fileContents;
+        let chunks = [] as string[];
+        for (const edit of edits) {
+            //store the traling part of the string
+            chunks.push(
+                contents.substring(edit.offsetEnd)
+            );
+            //store the edit text
+            chunks.push(edit.newText);
+
+            //remove everything after the start of the edit
+            contents = contents.substring(0, edit.offsetBegin);
+        }
+        chunks.push(contents);
+        this.fileContents = chunks.reverse().join('');
+    }
+
+    /**
+     * Write the new file contents back to disk
+     */
+    public async write() {
+        await fsExtra.writeFile(this.filePath, this.fileContents);
     }
 
     private findFunctionDefinitions() {
@@ -89,8 +148,8 @@ export class File {
 
             this.functionDefinitions.push({
                 name: functionName,
-                startOffset: startOffset,
-                endOffset: startOffset + functionName.length
+                offsetBegin: startOffset,
+                offsetEnd: startOffset + functionName.length
             });
         }
     }
@@ -106,8 +165,8 @@ export class File {
 
             this.functionCalls.push({
                 name: functionName,
-                startOffset: match.index,
-                endOffset: match.index + functionName.length
+                offsetBegin: match.index,
+                offsetEnd: match.index + functionName.length
             });
         }
     }
@@ -118,8 +177,8 @@ export class File {
             this.componentDeclarations.push({
                 name: nameAttribute.value!,
                 //plus one to step past the opening "
-                startOffset: nameAttribute.syntax.value!.startOffset + 1,
-                endOffset: nameAttribute.syntax.value!.endOffset
+                offsetBegin: nameAttribute.syntax.value!.startOffset + 1,
+                offsetEnd: nameAttribute.syntax.value!.endOffset
             });
         }
     }
@@ -134,8 +193,8 @@ export class File {
             this.componentReferences.push({
                 name: extendsAttribute.value!,
                 //plus one to step past the opening "
-                startOffset: extendsAttribute.syntax.value!.startOffset + 1,
-                endOffset: extendsAttribute.syntax.value!.endOffset,
+                offsetBegin: extendsAttribute.syntax.value!.startOffset + 1,
+                offsetEnd: extendsAttribute.syntax.value!.endOffset,
             });
         }
     }
@@ -156,8 +215,8 @@ export class File {
 
             this.componentReferences.push({
                 name: componentName,
-                startOffset: startOffset,
-                endOffset: startOffset + componentName.length
+                offsetBegin: startOffset,
+                offsetEnd: startOffset + componentName.length
             });
         }
     }
@@ -179,10 +238,49 @@ export class File {
 
             this.componentReferences.push({
                 name: componentName,
-                startOffset: startOffset,
-                endOffset: startOffset + componentName.length
+                offsetBegin: startOffset,
+                offsetEnd: startOffset + componentName.length
             });
         }
     }
 
+    /**
+     * Find all compoments used as XML elements
+     */
+    private findXmlChildrenComponentReferences() {
+        //all components must be added as chlidren of the `<children>` element in a `<component>`
+
+        const childrenElement = this.xmlAst?.rootElement?.subElements?.find(x => x.name?.toLowerCase() === 'children');
+        const children = [] as XMLElement[];
+        if (childrenElement) {
+            children.push(...childrenElement.subElements);
+        }
+        while (children.length > 0) {
+            const child = children.pop();
+            children.push(...child?.subElements ?? []);
+            const offsetBegin = child!.syntax.openName!.startOffset;
+            //save the opening tag
+            this.componentReferences.push({
+                name: child?.name as string,
+                offsetBegin: offsetBegin,
+                offsetEnd: offsetBegin + child!.name!.length
+            });
+            //if there's a closing tag, save that
+            if (child?.syntax.closeName) {
+                const offsetBegin = child!.syntax.closeName!.startOffset;
+                this.componentReferences.push({
+                    name: child?.syntax.closeName.image as string,
+                    offsetBegin: offsetBegin,
+                    offsetEnd: offsetBegin + child!.name!.length
+                });
+            }
+        }
+    }
 }
+
+export interface Edit {
+    offsetBegin: number;
+    offsetEnd: number;
+    newText: string;
+}
+

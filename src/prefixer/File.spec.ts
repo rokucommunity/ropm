@@ -9,7 +9,7 @@ const sinon = createSandbox();
 const tmpDir = path.join(process.cwd(), '.tmp');
 const filePath = path.join(tmpDir, 'file.brs');
 
-describe.only('prefixer/File', () => {
+describe('prefixer/File', () => {
 
     let file: File;
     let f: any;
@@ -44,8 +44,8 @@ describe.only('prefixer/File', () => {
 
     function rangeToOffsets(startLineIndex: number, startColumnIndex: number, endLineIndex: number, endColumnIndex: number) {
         return {
-            startOffset: getOffset(startLineIndex, startColumnIndex),
-            endOffset: getOffset(endLineIndex, endColumnIndex)
+            offsetBegin: getOffset(startLineIndex, startColumnIndex),
+            offsetEnd: getOffset(endLineIndex, endColumnIndex)
         };
     }
 
@@ -167,7 +167,7 @@ describe.only('prefixer/File', () => {
         it('finds component name', async () => {
             f.filePath = filePath.replace('.brs', '.xml');
             setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
-                <component name="CustomComponent" extends="Task" >
+                <component name="CustomComponent">
                 </component>
             `);
             await file.discover();
@@ -253,6 +253,89 @@ describe.only('prefixer/File', () => {
             }]);
         });
 
+        it('finds component name in xml usage', async () => {
+            f.filePath = filePath.replace('.brs', '.xml');
+            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent">
+                    <children>
+                        <CustomComponent2></CustomComponent2>
+                        <MarkupList />
+                        <SomeCustomComponent />
+                    </children>
+                </component>
+            `);
+            await file.discover();
+            expect(
+                file.componentReferences.sort((a, b) => {
+                    if (a.offsetBegin > b.offsetBegin) {
+                        return 1;
+                    } else if (a.offsetBegin < b.offsetBegin) {
+                        return -1;
+                    }
+                    return 0;
+                })
+            ).to.eql([{
+                name: 'CustomComponent2',
+                ...rangeToOffsets(3, 25, 3, 41)
+            }, {
+                name: 'CustomComponent2',
+                ...rangeToOffsets(3, 44, 3, 60)
+            }, {
+                name: 'MarkupList',
+                ...rangeToOffsets(4, 25, 4, 35)
+            }, {
+                name: 'SomeCustomComponent',
+                ...rangeToOffsets(5, 25, 5, 44)
+            }]);
+        });
+    });
 
+    describe('applyEdits', () => {
+        it('leaves file intact with no edits', async () => {
+            file.fileContents = 'hello world';
+            file.applyEdits();
+            expect(file.fileContents).to.equal('hello world');
+        });
+
+        it('applies zero-length edit as an insert', async () => {
+            file.fileContents = 'hello world';
+            file.addEdit(5, 5, ' my');
+            file.applyEdits();
+            expect(file.fileContents).to.equal('hello my world');
+        });
+
+        it('removes text with zero-length edit', async () => {
+            file.fileContents = 'hello world';
+            file.addEdit(5, 11, '');
+            file.applyEdits();
+            expect(file.fileContents).to.equal('hello');
+        });
+
+        it('replaces text', async () => {
+            file.fileContents = 'hello Jim, how are you';
+            file.addEdit(6, 9, 'Michael');
+            file.applyEdits();
+            expect(file.fileContents).to.equal('hello Michael, how are you');
+        });
+
+        it('works at beginning of string', () => {
+            file.fileContents = 'hello world';
+            file.addEdit(0, 5, 'goodbye');
+            file.applyEdits();
+            expect(file.fileContents).to.equal('goodbye world');
+        });
+
+        it('works with out-of-order edits', () => {
+            file.fileContents = 'one two three';
+            //middle
+            file.addEdit(4, 7, 'twelve');
+            //last
+            file.addEdit(8, 13, 'thirteen');
+            //first
+            file.addEdit(0, 3, 'eleven');
+
+            file.applyEdits();
+            expect(file.fileContents).to.equal('eleven twelve thirteen');
+        });
     });
 });

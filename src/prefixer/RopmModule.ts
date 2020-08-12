@@ -1,9 +1,138 @@
+import { File } from "./File";
+
 export class RopmModule {
     constructor(
-        private files: string[],
+        filePaths: string[],
         private prefix: string,
         private prefixMap?: { [currentPrefix: string]: string }
     ) {
-
+        for (let filePath of filePaths) {
+            this.files.push(
+                new File(filePath)
+            );
+        }
     }
+
+    public async process() {
+        //let all files discover all functions/components
+        await Promise.all(
+            this.files.map((file) => file.discover())
+        );
+
+        this.createEdits();
+
+        //apply all of the edits
+        for (let file of this.files) {
+            file.applyEdits();
+        }
+
+        //write the files back to disk with their changes applied
+        await Promise.all(
+            this.files.map((file) => file.write())
+        );
+    }
+
+    private readonly nonPrefixedFunctions = [
+        'runuserinterface',
+        'main',
+        'runscreensaver',
+        'init'
+    ];
+
+    private createEdits() {
+        const prefix = this.prefix + '_';
+        const ownFunctionNames = this.getDistinctFunctionDeclarationNames();
+        const ownComponentNames = this.getDistinctComponentDeclarationNames();
+
+        for (let file of this.files) {
+            //create an edit for each function definition
+            for (let func of file.functionDefinitions) {
+                //skip edits for special functions
+                if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
+                    continue;
+                }
+                file.addEdit(func.offsetBegin, func.offsetBegin, prefix);
+            }
+
+            //prefix all function calls to our own function names
+            for (let call of file.functionCalls) {
+                //if this function is owned by our project, rename it
+                if (ownFunctionNames.includes(call.name.toLowerCase())) {
+                    file.addEdit(call.offsetBegin, call.offsetBegin, prefix);
+                }
+            }
+
+            //rename all component definitions
+            for (let comp of file.componentDeclarations) {
+                file.addEdit(comp.offsetBegin, comp.offsetBegin, prefix);
+            }
+
+            //rename all component usage
+            for (let comp of file.componentReferences) {
+                //if this component is owned by our module, rename it
+                if (ownComponentNames.includes(comp.name.toLowerCase())) {
+                    file.addEdit(comp.offsetBegin, comp.offsetBegin, prefix);
+                }
+            }
+        }
+    }
+
+    /**
+     * Scan every file and compute the list of function declaration names.
+     */
+    public getDistinctFunctionDeclarationNames() {
+        const result = {};
+        for (let file of this.files) {
+            for (let func of file.functionDefinitions) {
+                //skip the special function names
+                if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
+                    continue;
+                }
+                result[func.name.toLowerCase()] = true;
+            }
+        }
+        return Object.keys(result);
+    }
+
+    /**
+     * Get the distinct names of function calls
+     */
+    public getDistinctFunctionCallNames() {
+        const result = {};
+        for (let file of this.files) {
+            for (let call of file.functionCalls) {
+                result[call.name.toLowerCase()] = true;
+            }
+        }
+        return Object.keys(result);
+    }
+
+    /**
+     * Get the distinct names of component declarations
+     */
+    public getDistinctComponentDeclarationNames() {
+        const result = {};
+        for (let file of this.files) {
+            for (let comp of file.componentDeclarations) {
+                result[comp.name.toLowerCase()] = true;
+            }
+        }
+        return Object.keys(result);
+    }
+
+    /**
+     * Get the distinct names of components used
+     */
+    public getDistinctComponentReferenceNames() {
+        const result = {};
+        for (let file of this.files) {
+            for (let comp of file.componentReferences) {
+                result[comp.name.toLowerCase()] = true;
+            }
+        }
+        return Object.keys(result);
+    }
+
+
+    public files = [] as File[];
 }
