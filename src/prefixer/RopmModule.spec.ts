@@ -112,6 +112,81 @@ describe('RopmModule', () => {
                 end sub
             `);
         });
+
+        it('renames dependency prefixes', async () => {
+            vfs = {
+                'source/main.brs': `
+                    sub PrintValue()
+                        print module1_GetValue()
+                    end sub
+                `
+            };
+            const module = new RopmModule([
+                'source/main.brs'
+            ], 'textlib', {
+                'module1': 'module2'
+            });
+            await module.process();
+
+            vfsEqual('source/main.brs', `
+                sub textlib_PrintValue()
+                    print module2_GetValue()
+                end sub
+            `);
+        });
+
+        /**
+         * This test converts the dependency name "module1" to "module2", and names this package "module1"
+         */
+        it('handles module prefix swapping', async () => {
+            vfs = {
+                'source/main.brs': `
+                    sub GetPromise()
+                        return module1_createTaskPromise("TaskName", {})
+                    end sub
+                `
+            };
+            const module = new RopmModule([
+                'source/main.brs'
+            ], 'module1', {
+                'module1': 'module2'
+            });
+            await module.process();
+
+            vfsEqual('source/main.brs', `
+                sub module1_GetPromise()
+                    return module2_createTaskPromise("TaskName", {})
+                end sub
+            `);
+        });
+
+        /**
+         * Converts dependency prefix "module1" to "module2", and "module2" to "module1"
+         */
+        it('swaps dependency module prefixes', async () => {
+            vfs = {
+                'source/main.brs': `
+                    sub PrintValues()
+                        print module1_GetValue()
+                        print module2_GetValue()
+                    end sub
+                `
+            };
+            const module = new RopmModule([
+                'source/main.brs'
+            ], 'textlib', {
+                'module1': 'module2',
+                'module2': 'module1'
+            });
+            await module.process();
+
+            vfsEqual('source/main.brs', `
+                sub textlib_PrintValues()
+                    print module2_GetValue()
+                    print module1_GetValue()
+                end sub
+            `);
+        });
     });
 
     function vfsEqual(path: string, expectedText: string) {

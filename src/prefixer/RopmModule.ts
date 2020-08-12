@@ -3,8 +3,8 @@ import { File } from "./File";
 export class RopmModule {
     constructor(
         filePaths: string[],
-        private prefix: string,
-        private prefixMap?: { [currentPrefix: string]: string }
+        private readonly prefix: string,
+        private readonly prefixMap: { [currentPrefix: string]: string }
     ) {
         for (let filePath of filePaths) {
             this.files.push(
@@ -43,6 +43,8 @@ export class RopmModule {
         const prefix = this.prefix + '_';
         const ownFunctionNames = this.getDistinctFunctionDeclarationNames();
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
+        const prefixMapKeys = Object.keys(this.prefixMap);
+        const prefixMapKeysLower = prefixMapKeys.map(x => x.toLowerCase());
 
         for (let file of this.files) {
             //create an edit for each function definition
@@ -56,9 +58,22 @@ export class RopmModule {
 
             //prefix all function calls to our own function names
             for (let call of file.functionCalls) {
+                const lowerName = call.name.toLowerCase();
                 //if this function is owned by our project, rename it
-                if (ownFunctionNames.includes(call.name.toLowerCase())) {
+                if (ownFunctionNames.includes(lowerName)) {
                     file.addEdit(call.offsetBegin, call.offsetBegin, prefix);
+                    continue;
+                }
+
+                //rename all function calls for dependencies
+                const possiblePrefix = lowerName.split('_')[0];
+                const idx = prefixMapKeysLower.indexOf(possiblePrefix);
+                //if we have a prefix match, then convert the old previx to the new prefix
+                if (idx > -1) {
+                    const newPrefix = this.prefixMap[prefixMapKeys[idx]];
+                    //begin position + the length of the original prefix + 1 for the underscore
+                    const offsetEnd = call.offsetBegin + possiblePrefix.length + 1
+                    file.addEdit(call.offsetBegin, offsetEnd, newPrefix + '_');
                 }
             }
 
