@@ -139,7 +139,7 @@ module.exports = {
             'never'
         ],
         'padded-blocks': 'off',
-        'prefer-const': 'off',
+        'prefer-const': 'on',
         'prefer-destructuring': 'off',
         'prefer-named-capture-group': 'off',
         'prefer-template': 'off',
