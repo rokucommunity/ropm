@@ -1,11 +1,10 @@
 import { util, RopmPackageJson } from '../util';
 import * as path from 'path';
 import * as childProcess from 'child_process';
-import * as packlist from 'npm-packlist';
-import * as rokuDeploy from 'roku-deploy';
 import * as fsExtra from 'fs-extra';
 import { InitCommand } from './InitCommand';
 import { CleanCommand } from './CleanCommand';
+import { ModuleManager } from '../prefixer/ModuleManager';
 
 export class InstallCommand {
     constructor(
@@ -15,6 +14,8 @@ export class InstallCommand {
     }
 
     private hostPackageJson?: RopmPackageJson;
+
+    private moduleManager = new ModuleManager();
 
     private get hostRootDir() {
         let packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
@@ -33,37 +34,11 @@ export class InstallCommand {
         }
     }
 
-    /**
-     * A list of globs that will always be ignored during copy from node_modules to roku_modules
-     */
-    static readonly fileIgnorePatterns = [
-        '!**/package.json',
-        '!./README',
-        '!./CHANGES',
-        '!./CHANGELOG',
-        '!./HISTORY',
-        '!./LICENSE',
-        '!./LICENCE',
-        '!./NOTICE',
-        '!**/.git',
-        '!**/.svn',
-        '!**/.hg',
-        '!**/.lock-wscript',
-        '!**/.*.swp',
-        '!**/.DS_Store',
-        '!**/npm-debug.log',
-        '!**/.npmrc',
-        '!**/node_modules',
-        '!**/config.gypi',
-        '!**/*.orig',
-        '!**/package-lock.json'
-    ];
-
     public async run(): Promise<void> {
         await this.loadHostPackageJson();
         await this.deleteAllRokuModulesFolders();
         await this.npmInstall();
-        await this.copyAllModulesToRokuModules();
+        await this.processModules();
     }
 
     /**
@@ -102,94 +77,21 @@ export class InstallCommand {
     /**
      * Copy all modules to roku_modules
      */
-    private async copyAllModulesToRokuModules() {
+    private async processModules() {
         let modulePaths = this.getProdDependencies();
 
         //remove the host module from the list (it should always be the first entry)
-        modulePaths.splice(0, 1);
+        let hostModulePath = modulePaths.splice(0, 1)[0];
+        this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath);
+
+        this.moduleManager.hostRootDir = this.hostRootDir;
 
         //copy all of them at once, wait for them all to complete
-        return Promise.all(
-            modulePaths.map((modulePath) => this.copyModuleToRokuModules(modulePath))
-        );
-    }
-
-    /**
-     * Copy a specific module to roku_modules
-     */
-    private async copyModuleToRokuModules(modulePath: string) {
-        const npmModuleName = util.getModuleName(modulePath) as string;
-
-        //skip modules that we can't derive a name from
-        if (!npmModuleName) {
-            return;
+        for (let modulePath of modulePaths) {
+            this.moduleManager.addModule(modulePath);
         }
 
-        //compute the ropm name for this module. This name has all invalid chars removed, and can be used as a brightscript variable/namespace
-        const ropmModuleName = util.getRopmNameFromModuleName(npmModuleName);
-
-        let modulePackageJson = await util.getPackageJson(modulePath);
-
-        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
-        if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
-            console.warn(`ropm: skipping prod dependency '${npmModuleName}' because it does not have the "ropm" keyword`);
-            return;
-        }
-        console.log(`ropm: copying '${npmModuleName}' as '${ropmModuleName}'`);
-
-        //use the rootDir from packageJson, or default to the current module path
-        const moduleRootDir = modulePackageJson.ropm?.rootDir ? path.resolve(modulePath, modulePackageJson.ropm.rootDir) : modulePath;
-
-        //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
-        let allFiles = await packlist({
-            path: moduleRootDir
-        });
-
-        //standardize each path
-        allFiles = allFiles.map((f) => rokuDeploy.util.standardizePath(f));
-
-        //get the list of all file paths within the rootDir
-        let rootDirFiles = await util.globAll([
-            '**/*',
-            ...InstallCommand.fileIgnorePatterns
-        ], {
-            cwd: moduleRootDir,
-            dot: true,
-            //skip matching folders (we'll handle file copying ourselves)
-            nodir: true
-        });
-
-        //standardize each path
-        rootDirFiles = rootDirFiles.map((f) => rokuDeploy.util.standardizePath(f));
-
-        const files = rootDirFiles
-
-            //only keep files that are both in the packlist AND the rootDir list
-            .filter((rootDirFile) => {
-                return allFiles.includes(
-                    rootDirFile
-                );
-            })
-
-            .filter((rootDirFile) => {
-                //filter top-level files (all files should be contained within a subfolder)
-                const fileIsLocatedInAFolder = !!/\\|\//.exec(rootDirFile);
-                return fileIsLocatedInAFolder;
-            });
-
-        //create a map of every source file and where it should be copied to
-        const fileMappings = files.map(filePath => {
-            const filePathParts = filePath.split(/\/|\\/);
-            const topLevelDir = filePathParts.splice(0, 1)[0];
-            let targetPath = path.join(this.hostRootDir, topLevelDir, 'roku_modules', ropmModuleName, ...filePathParts);
-            return {
-                src: path.resolve(moduleRootDir, filePath),
-                dest: targetPath
-            };
-        });
-
-        //copy the files for this module to their destinations in the host root dir
-        await util.copyFiles(fileMappings);
+        await this.moduleManager.process();
     }
 
     /**

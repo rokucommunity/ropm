@@ -40,6 +40,14 @@ export class File {
         offset: number;
     }>;
 
+    /**
+     * A list of file paths found in this file
+     */
+    public fileReferences = [] as Array<{
+        path: string;
+        offset: number;
+    }>;
+
     private edits = [] as Edit[];
 
     /**
@@ -72,11 +80,21 @@ export class File {
 
         this.findFunctionDefinitions();
         this.findFunctionCalls();
+        this.findComponentDefinitions();
+        this.findComponentReferences();
+        this.findFileReferences();
+    }
+
+    private findComponentReferences() {
         this.findCreateObjectComponentReferences();
         this.findCreateChildComponentReferences();
-        this.findComponentDefinitions();
         this.findExtendsComponentReferences();
         this.findXmlChildrenComponentReferences();
+    }
+
+    private findFileReferences() {
+        this.findFilePathStrings();
+        this.findFilePathsFromXmlScriptElements();
     }
 
     /**
@@ -261,6 +279,53 @@ export class File {
                     name: child?.syntax.closeName.image as string,
                     offset: offsetBegin
                 });
+            }
+        }
+    }
+
+    /**
+     * Look for every string containing a 'pkg:/' path
+     */
+    private findFilePathStrings() {
+        //look for any string containing `pkg:/`
+        let regexp = /"(pkg:\/.*)"/gi;
+        let match: RegExpExecArray | null;
+        while (match = regexp.exec(this.fileContents)) {
+            this.fileReferences.push({
+                //+1 to step past opening quote
+                offset: match.index + 1,
+                path: match[1]
+            });
+        }
+    }
+
+    /**
+     * Look for every `<script` element in XML files and extract their file paths
+     */
+    private findFilePathsFromXmlScriptElements() {
+        //skip non-xml files
+        if (!this.xmlAst) {
+            return;
+        }
+
+        //script elements must be direct-children of the `<component` element
+        let elements = this.xmlAst.rootElement?.subElements ?? [];
+        for (let element of elements) {
+            //if this is a script element
+            if (element.name?.toLowerCase() === 'script') {
+                let uriAttribute = element.attributes.find((x) => x.key?.toLowerCase() === 'uri');
+                //if we have a `uri` attribute
+                if (uriAttribute) {
+                    //+1 to step past the opening double-quote
+                    const offset = uriAttribute.syntax.value?.startOffset! + 1;
+                    //add this reference only if we don't already have it (the previous regex can sometimes match these)
+                    if (!this.fileReferences.find(x => x.offset === offset)) {
+                        this.fileReferences.push({
+                            path: uriAttribute.value!,
+                            offset: offset
+                        });
+                    }
+                }
             }
         }
     }

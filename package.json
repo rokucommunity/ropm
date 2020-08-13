@@ -28,6 +28,7 @@
   "author": "Bronley Plumb",
   "license": "MIT",
   "dependencies": {
+    "@types/semver": "^7.3.1",
     "@xml-tools/ast": "^5.0.0",
     "@xml-tools/parser": "^1.0.7",
     "del": "^5.1.0",
@@ -36,6 +37,7 @@
     "latinize": "^0.4.1",
     "npm-packlist": "^2.1.2",
     "roku-deploy": "^3.2.2",
+    "semver": "^7.3.2",
     "typescript": "^3.9.6",
     "yargs": "^15.4.1"
   },

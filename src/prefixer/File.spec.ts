@@ -283,6 +283,80 @@ describe('prefixer/File', () => {
         });
     });
 
+    describe('findFileReferences', () => {
+        it('finds absolute script paths in xml tags', async () => {
+            f.filePath = filePath.replace('.brs', '.xml');
+            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent">
+                    <script uri="pkg:/source/lib.brs" />
+                    <script uri="pkg:/components/folder1/somelib.brs" />
+                    <Poster uri="pkg:/images/CoolPhoto.png" />
+                </component>
+            `);
+            await file.discover();
+            expect(file.fileReferences).to.eql([{
+                path: 'pkg:/source/lib.brs',
+                offset: getOffset(2, 33)
+            }, {
+                path: 'pkg:/components/folder1/somelib.brs',
+                offset: getOffset(3, 33)
+            }, {
+                path: 'pkg:/images/CoolPhoto.png',
+                offset: getOffset(4, 33)
+            }]);
+        });
+
+        it('finds relative file paths in xml script tags', async () => {
+            f.filePath = filePath.replace('.brs', '.xml');
+            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent">
+                    <script uri="../lib.brs" />
+                    <script uri="comp.brs" />
+                </component>
+            `);
+            await file.discover();
+            expect(file.fileReferences).to.eql([{
+                path: '../lib.brs',
+                offset: getOffset(2, 33)
+            }, {
+                path: 'comp.brs',
+                offset: getOffset(3, 33)
+            }]);
+        });
+
+        it('finds absolute file paths in CDATA xml block', async () => {
+            f.filePath = filePath.replace('.brs', '.xml');
+            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent"> 
+                    <script type="text/brightscript">
+                        <![CDATA[
+                            sub DoSomething()
+                                thePath = "pkg:/source/lib.brs"
+                            end sub
+                        ]]>
+                    </script>
+                </component>
+            `);
+            await file.discover();
+            expect(file.fileReferences).to.eql([{
+                path: 'pkg:/source/lib.brs',
+                offset: getOffset(5, 43)
+            }]);
+        });
+
+        it('finds pkg paths in brs files', async () => {
+            setFileContents(`
+                sub main()
+                    filePath = "pkg:/images/CoolPhoto.brs"
+                end sub
+            `);
+            await file.discover();
+            expect(file.fileReferences).to.eql([{
+                path: 'pkg:/images/CoolPhoto.brs',
+                offset: getOffset(2, 32)
+            }]);
+        });
+    });
     describe('applyEdits', () => {
         it('leaves file intact with no edits', async () => {
             file.fileContents = 'hello world';

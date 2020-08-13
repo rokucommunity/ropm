@@ -1,16 +1,160 @@
 import { File } from "./File";
+import { util } from "../util";
+import * as path from 'path';
+import * as packlist from 'npm-packlist';
+import * as rokuDeploy from 'roku-deploy';
 
 export class RopmModule {
     constructor(
-        filePaths: string[],
-        private readonly prefix: string,
-        private readonly prefixMap: { [currentPrefix: string]: string }
+        public readonly hostRootDir: string,
+        public readonly moduleDir: string
     ) {
-        for (let filePath of filePaths) {
-            this.files.push(
-                new File(filePath)
-            );
+        this.npmAliasName = util.getModuleName(this.moduleDir) as string;
+
+        //compute the ropm name for this alias. This name has all invalid chars removed, and can be used as a brightscript variable/namespace
+        this.ropmModuleName = util.getRopmNameFromModuleName(this.npmAliasName);
+    }
+
+    /**
+     * A list of globs that will always be ignored during copy from node_modules to roku_modules
+     */
+    static readonly fileIgnorePatterns = [
+        '!**/package.json',
+        '!./README',
+        '!./CHANGES',
+        '!./CHANGELOG',
+        '!./HISTORY',
+        '!./LICENSE',
+        '!./LICENCE',
+        '!./NOTICE',
+        '!**/.git',
+        '!**/.svn',
+        '!**/.hg',
+        '!**/.lock-wscript',
+        '!**/.*.swp',
+        '!**/.DS_Store',
+        '!**/npm-debug.log',
+        '!**/.npmrc',
+        '!**/node_modules',
+        '!**/config.gypi',
+        '!**/*.orig',
+        '!**/package-lock.json'
+    ];
+
+    /**
+     * The name of this module. Users can rename modules on install-time, so this is the folder we must use
+     */
+    public npmAliasName: string;
+
+    /**
+     * The name of the module directly from the module's package.json. This is used to help resolve dependencies between packages
+     * even if an alias is used
+     */
+    public npmModuleName!: string;
+
+    /**
+     * The version of this current module
+     */
+    public version!: string;
+
+    /**
+     * The ropm name of this module. ROPM module names are sanitized npm names.
+     */
+    public ropmModuleName: string;
+
+    /**
+     * The path to the rootDir of this module
+     */
+    public moduleRootDir!: string;
+
+    /**
+     * A map from the original file location to its new destination.
+     * This is set during the copy process.
+     */
+    public fileMaps!: Array<{ src: string; dest: string }>;
+
+    public isValid = true;
+
+    public async init() {
+        //skip modules we can't derive a name from
+        if (!this.npmAliasName) {
+            this.isValid = false;
+            return;
         }
+
+        const packageLogText = `'${this.npmAliasName}'${this.npmAliasName !== this.npmModuleName ? `('${this.npmModuleName}')` : ''}`;
+
+        let modulePackageJson = await util.getPackageJson(this.moduleDir);
+
+        this.npmModuleName = modulePackageJson.name;
+
+        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
+        if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
+            console.warn(`ropm: skipping prod dependency ${packageLogText} because it does not have the "ropm" keyword`);
+            this.isValid = false;
+            return;
+        }
+
+        //use the rootDir from packageJson, or default to the current module path
+        this.moduleRootDir = modulePackageJson.ropm?.rootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.rootDir) : this.moduleDir;
+    }
+
+    public async copyFiles() {
+        const packageLogText = `'${this.npmAliasName}'${this.npmAliasName !== this.npmModuleName ? `('${this.npmModuleName}')` : ''}`;
+
+        console.log(`ropm: copying ${packageLogText} as '${this.ropmModuleName}'`);
+        //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
+        let allFiles = await packlist({
+            path: this.moduleRootDir
+        });
+
+        //standardize each path
+        allFiles = allFiles.map((f) => rokuDeploy.util.standardizePath(f));
+
+        //get the list of all file paths within the rootDir
+        let rootDirFiles = await util.globAll([
+            '**/*',
+            ...RopmModule.fileIgnorePatterns
+        ], {
+            cwd: this.moduleRootDir,
+            //follow symlinks
+            follow: true,
+            dot: true,
+            //skip matching folders (we'll handle file copying ourselves)
+            nodir: true
+        });
+
+        //standardize each path
+        rootDirFiles = rootDirFiles.map((f) => rokuDeploy.util.standardizePath(f));
+
+        const files = rootDirFiles
+
+            //only keep files that are both in the packlist AND the rootDir list
+            .filter((rootDirFile) => {
+                return allFiles.includes(
+                    rootDirFile
+                );
+            })
+
+            .filter((rootDirFile) => {
+                //filter top-level files (all files should be contained within a subfolder)
+                const fileIsLocatedInAFolder = !!/\\|\//.exec(rootDirFile);
+                return fileIsLocatedInAFolder;
+            });
+
+        //create a map of every source file and where it should be copied to
+        this.fileMaps = files.map(filePath => {
+            const filePathParts = filePath.split(/\/|\\/);
+            const topLevelDir = filePathParts.splice(0, 1)[0];
+            let targetPath = path.join(this.hostRootDir, topLevelDir, 'roku_modules', this.ropmModuleName, ...filePathParts);
+            return {
+                src: path.resolve(this.moduleRootDir, filePath),
+                dest: targetPath
+            };
+        });
+
+        //copy the files for this module to their destinations in the host root dir
+        await util.copyFiles(this.fileMaps);
     }
 
     public async process() {
@@ -40,7 +184,7 @@ export class RopmModule {
     ];
 
     private createEdits() {
-        const prefix = this.prefix + '_';
+        const prefix = this.ropmModuleName + '_';
         const ownFunctionNames = this.getDistinctFunctionDeclarationNames();
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
         const prefixMapKeys = Object.keys(this.prefixMap);

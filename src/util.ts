@@ -139,13 +139,45 @@ export class Util {
         }));
     }
 
+    /**
+     * Given the path to the host module, return its list of dependencies
+     */
+    public async getModuleDependencies(hostModulePath: string) {
+        const packageJson = await util.getPackageJson(hostModulePath);
+        const aliases = Object
+            .keys(packageJson.dependencies ?? {})
+            .map(x => util.getRopmNameFromModuleName(x));
+
+        //look up the original package name of each alias
+        let result = [] as {
+            alias: string;
+            npmPackageName: string;
+            version: string;
+        }[];
+
+        await Promise.all(
+            aliases.map(async (alias) => {
+                let packageJson = await util.getPackageJson(`${hostModulePath}/node_modules/${alias}`);
+                result.push({
+                    alias: alias,
+                    npmPackageName: packageJson.name,
+                    version: packageJson.version
+                });
+            })
+        );
+
+        return result;
+    }
+
 }
 export const util = new Util();
 
 export interface RopmPackageJson {
+    name: string;
     dependencies?: { [key: string]: string };
     files?: string[];
     keywords?: string[];
+    version: string;
     ropm?: {
         /**
          * The path to the rootDir where all of the files for the roku module reside.
