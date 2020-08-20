@@ -42,7 +42,7 @@ export class ModuleManager {
         );
 
         //remove duplicate/unnecessary modules 
-        this.reduceModules();
+        await this.reduceModules();
 
         //copy every file from every module to its target location
         await Promise.all(
@@ -59,7 +59,7 @@ export class ModuleManager {
      * Reduce the number of dependencies to only one version for each major.
      * Then, remove unnecessary dependencies
      */
-    public reduceModules() {
+    public async reduceModules() {
         const reducedDependencies = this.getReducedDependencies();
 
         //discard any modules that are not in the list
@@ -71,11 +71,13 @@ export class ModuleManager {
             //if this is not an approved module, or the module is invalid, then remove it
             if (!dep) {
                 this.modules.splice(i, 1);
-            } else {
-                //give the module the approved list of deps
-                module.createPrefixMap(reducedDependencies);
             }
         }
+
+        //give each module the approved list of dependencies
+        await Promise.all(
+            this.modules.map(x => x.createPrefixMap(reducedDependencies))
+        );
     }
 
     /**

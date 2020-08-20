@@ -115,7 +115,7 @@ export class RopmModule {
     public async copyFiles() {
         const packageLogText = `'${this.npmAliasName}'${this.npmAliasName !== this.npmModuleName ? `('${this.npmModuleName}')` : ''}`;
 
-        console.log(`ropm: copying ${packageLogText} as '${this.ropmModuleName}'`);
+        console.log(`ropm: copying ${packageLogText}@${this.version} as '${this.ropmModuleName}'`);
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
             path: this.rootDir

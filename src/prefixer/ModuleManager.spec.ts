@@ -6,7 +6,7 @@ import { file, fsEqual, createProjects, DepGraphNode } from "../TestHelpers.spec
 
 const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
-describe.only('ModuleManager', function () {
+describe('ModuleManager', function () {
     //tell mocha these tests take a long time
     this.timeout(20000);
 
@@ -45,17 +45,20 @@ describe.only('ModuleManager', function () {
                 npmModuleName: 'promise',
                 majorVersion: 1,
                 version: '1.0.0',
-                ropmModuleName: 'promise_v1'
+                ropmModuleName: 'promise'
             }]);
         });
 
         it('ignores the alias for non-host module dependencies', async () => {
             await createDependencies([{
-                alias: 'p',
-                name: 'promise'
+                name: "logger",
+                dependencies: [{
+                    alias: 'p',
+                    name: 'promise'
+                }]
             }]);
             await process();
-            expect(manager.getReducedDependencies()).to.eql([{
+            expect(manager.getReducedDependencies().filter(x => x.npmModuleName === 'promise')).to.eql([{
                 npmModuleName: 'promise',
                 majorVersion: 1,
                 version: '1.0.0',
@@ -126,7 +129,7 @@ describe.only('ModuleManager', function () {
             }]);
             await process();
 
-            manager.reduceModules();
+            await manager.reduceModules();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.0.0'],
                 ['promise', '2.0.0']
@@ -152,7 +155,7 @@ describe.only('ModuleManager', function () {
                 version: '2.0.0'
             }]);
             await process();
-            manager.reduceModules();
+            await manager.reduceModules();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.2.0'],
                 ['promise', '2.0.0']
