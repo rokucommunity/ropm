@@ -256,7 +256,7 @@ describe('InstallCommand', function () {
 
 });
 
-export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: RopmPackageJson) {
+export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: Partial<RopmPackageJson>) {
     for (let relativePath in files) {
         let filePath = path.join(tempDir, projectName, relativePath);
         fsExtra.ensureDirSync(

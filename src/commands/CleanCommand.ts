@@ -65,13 +65,13 @@ export class CleanCommand {
         //delete the roku_modules folders
         await Promise.all(
             rokuModulesFolders.map(async (rokuModulesDir) => {
-                console.log(`deleting ${rokuModulesDir}`);
+                console.log(`ropm: deleting ${rokuModulesDir}`);
                 await del(rokuModulesDir);
 
                 //if the parent dir is now empty, delete that folder too
                 const parentDir = path.dirname(rokuModulesDir);
                 if (await util.isEmptyDir(parentDir)) {
-                    console.log(`deleting empty ${parentDir}`);
+                    console.log(`ropm: deleting empty ${parentDir}`);
                     await del(parentDir);
                 }
             })

@@ -65,11 +65,12 @@ export class ModuleManager {
         //discard any modules that are not in the list
         for (var i = this.modules.length - 1; i >= 0; i--) {
             const module = this.modules[i];
+
             const dep = reducedDependencies.find((dep) => {
                 return dep.version === module.version && dep.npmModuleName === module.npmModuleName
             })
             //if this is not an approved module, or the module is invalid, then remove it
-            if (!dep) {
+            if (!dep || module.isValid === false) {
                 this.modules.splice(i, 1);
             }
         }

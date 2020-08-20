@@ -87,10 +87,13 @@ export class RopmModule {
      */
     public majorVersion!: number;
 
+    public isValid = true;
+
     public async init() {
         //skip modules we can't derive a name from
         if (!this.npmAliasName) {
-            throw new Error(`Cannot compute npm package name for "${this.moduleDir}"`);
+            console.error(`ropm: cannot compute npm package name for "${this.moduleDir}"`);
+            return this.isValid = false;
         }
 
         let modulePackageJson = await util.getPackageJson(this.moduleDir);
@@ -98,14 +101,16 @@ export class RopmModule {
         this.majorVersion = semver.major(modulePackageJson.version);
 
         if (!modulePackageJson.name) {
-            throw new Error(`missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
+            console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
+            return this.isValid = false;
         }
 
         this.npmModuleName = modulePackageJson.name;
 
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
         if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
-            throw new Error(`Skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
+            console.error(`ropm: skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
+            return this.isValid = false;
         }
 
         //use the rootDir from packageJson, or default to the current module path

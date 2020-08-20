@@ -60,7 +60,8 @@ export function trim(text: TemplateStringsArray, ...args) {
 /**
  * Helper function to scaffold a project with nested dependencies
  */
-export function createProjects(hostDir: string, moduleDir: string, node: DepGraphNode, result = [] as RopmModule[]) {
+export function createProjects(hostDir: string, moduleDir: string, node: DepGraphNode) {
+    let result = [] as RopmModule[];
     //write the package.json for this node
     const packageJson = {
         name: node.name,
@@ -68,10 +69,13 @@ export function createProjects(hostDir: string, moduleDir: string, node: DepGrap
         keywords: ['ropm'],
         dependencies: {}
     };
+    const innerProjects = [] as RopmModule[];
     for (const dependency of node?.dependencies ?? []) {
         const alias = dependency.alias ?? dependency.name;
         packageJson.dependencies[alias] = '';
-        createProjects(hostDir, path.join(moduleDir, 'node_modules', alias), dependency, result);
+        innerProjects.push(
+            ...createProjects(hostDir, path.join(moduleDir, 'node_modules', alias), dependency)
+        );
     }
     mergePackageJson(moduleDir, packageJson);
     if (hostDir !== moduleDir) {
@@ -79,6 +83,7 @@ export function createProjects(hostDir: string, moduleDir: string, node: DepGrap
             new RopmModule(hostDir, moduleDir)
         );
     }
+    result.push(...innerProjects);
     return result;
 }
 
