@@ -140,10 +140,10 @@ export class Util {
     }
 
     /**
-     * Given the path to the host module, return its list of dependencies
+     * Given a path to a module within node_modules, return its list of direct dependencies
      */
-    public async getModuleDependencies(hostModulePath: string) {
-        const packageJson = await util.getPackageJson(hostModulePath);
+    public async getModuleDependencies(moduleDir: string) {
+        const packageJson = await util.getPackageJson(moduleDir);
         const aliases = Object
             .keys(packageJson.dependencies ?? {})
             .map(x => util.getRopmNameFromModuleName(x));
@@ -151,22 +151,43 @@ export class Util {
         //look up the original package name of each alias
         let result = [] as {
             alias: string;
-            npmPackageName: string;
+            npmModuleName: string;
             version: string;
         }[];
 
         await Promise.all(
             aliases.map(async (alias) => {
-                let packageJson = await util.getPackageJson(`${hostModulePath}/node_modules/${alias}`);
+
+                let dependencyDir = await this.findDependencyDir(moduleDir, alias);
+                if (!dependencyDir) {
+                    throw new Error(`Could not resolve dependency "${alias}" for "${moduleDir}"`);
+                }
+                let packageJson = await util.getPackageJson(dependencyDir);
                 result.push({
                     alias: alias,
-                    npmPackageName: packageJson.name,
+                    npmModuleName: packageJson.name,
                     version: packageJson.version
                 });
             })
         );
 
         return result;
+    }
+
+    /**
+     * Given the path to a folder containing a node_modules folder, find the path to the specified package
+     * First look in ${startingDir}/node_modules. Then, walk up the directory tree, 
+     * looking in node_modules for that folder the whole way up to root.
+     */
+    public async findDependencyDir(startingDir: string, packageName: string) {
+        let dir = startingDir;
+        while (path.dirname(dir) !== dir) {
+            let modulePathCandidate = path.join(dir, 'node_modules', packageName);
+            if (await fsExtra.pathExists(modulePathCandidate)) {
+                return modulePathCandidate;
+            }
+            dir = path.dirname(dir);
+        };
     }
 
 }

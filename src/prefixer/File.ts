@@ -5,7 +5,14 @@ import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 
 export class File {
     constructor(
-        public readonly filePath: string
+        /**
+         * The path to the file's original location
+         */
+        public readonly src: string,
+        /**
+         * The path to the file's new location
+         */
+        public readonly dest: string
     ) {
     }
 
@@ -57,15 +64,15 @@ export class File {
 
     private async loadFile() {
         if (!this.fileContents) {
-            this.fileContents = (await fsExtra.readFile(this.filePath)).toString();
-            if (!this.xmlAst && this.filePath.toLowerCase().endsWith('.xml')) {
+            this.fileContents = (await fsExtra.readFile(this.dest)).toString();
+            if (!this.xmlAst && this.dest.toLowerCase().endsWith('.xml')) {
                 const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.fileContents);
                 //print every lex and parse error to the console
                 for (let lexError of lexErrors) {
-                    console.error(`XML parse error "${lexError.message}" at ${this.filePath}:${lexError.line}:${lexError.column}`);
+                    console.error(`XML parse error "${lexError.message}" at ${this.dest}:${lexError.line}:${lexError.column}`);
                 }
                 for (let parseError of parseErrors) {
-                    console.error(`XML parse error "${parseError.message}" at ${this.filePath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
+                    console.error(`XML parse error "${parseError.message}" at ${this.dest}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
                 }
                 this.xmlAst = buildAst(cst as any, tokenVector);
             }
@@ -148,7 +155,7 @@ export class File {
      * Write the new file contents back to disk
      */
     public async write() {
-        await fsExtra.writeFile(this.filePath, this.fileContents);
+        await fsExtra.writeFile(this.dest, this.fileContents);
     }
 
     private findFunctionDefinitions() {

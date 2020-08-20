@@ -1,25 +1,34 @@
 import { ModuleManager } from "./ModuleManager";
 import { expect } from "chai";
-import { RopmModule } from "./RopmModule";
 import * as path from 'path';
+import { util } from "../util";
+import { file, fsEqual, createProjects, DepGraphNode } from "../TestHelpers.spec";
 
-const hostRootDir = path.join(process.cwd(), '.tmp', 'hostApp');
+const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
-describe.only('ModuleManager', () => {
+describe.only('ModuleManager', function () {
+    //tell mocha these tests take a long time
+    this.timeout(20000);
+
     let manager: ModuleManager;
 
     beforeEach(() => {
         manager = new ModuleManager();
     });
 
-    function addModule(npmModuleName: string, version: string, alias = npmModuleName) {
-        const module = new RopmModule(
-            hostRootDir,
-            path.join(hostRootDir, 'roku_modules', alias)
+    async function process() {
+        manager.hostDependencies = await util.getModuleDependencies(hostDir);
+        await manager.process();
+    }
+
+    async function createDependencies(dependencies: DepGraphNode[]) {
+        manager.modules = createProjects(hostDir, hostDir, {
+            name: 'host',
+            dependencies: dependencies
+        });
+        await Promise.all(
+            manager.modules.map(x => x.init())
         );
-        module.npmModuleName = npmModuleName;
-        module.version = version;
-        manager.modules.push(module);
     }
 
     describe('getReducedDependencies', () => {
@@ -27,8 +36,11 @@ describe.only('ModuleManager', () => {
             expect(manager.getReducedDependencies()).to.eql([]);
         });
 
-        it('generates simple 1-1 map for modules', () => {
-            addModule('promise', '1.0.0');
+        it('generates simple 1-1 map for modules', async () => {
+            await createDependencies([{
+                name: 'promise'
+            }]);
+            await process();
             expect(manager.getReducedDependencies()).to.eql([{
                 npmModuleName: 'promise',
                 majorVersion: 1,
@@ -37,8 +49,12 @@ describe.only('ModuleManager', () => {
             }]);
         });
 
-        it('ignores the alias for non-host module dependencies', () => {
-            addModule('promise', '1.0.0', 'p');
+        it('ignores the alias for non-host module dependencies', async () => {
+            await createDependencies([{
+                alias: 'p',
+                name: 'promise'
+            }]);
+            await process();
             expect(manager.getReducedDependencies()).to.eql([{
                 npmModuleName: 'promise',
                 majorVersion: 1,
@@ -47,10 +63,20 @@ describe.only('ModuleManager', () => {
             }]);
         });
 
-        it('adds version postfix for non-host dependencies', () => {
-            addModule('promise', '1.0.0');
-            addModule('promise', '2.0.0');
-            expect(manager.getReducedDependencies().sort((a, b) => a.majorVersion - b.majorVersion)).to.eql([{
+        it('adds version postfix for non-host dependencies', async () => {
+            await createDependencies([{
+                name: 'logger',
+                dependencies: [{
+                    name: 'promise',
+                    version: '1.0.0',
+                    dependencies: [{
+                        name: 'promise',
+                        version: '2.0.0'
+                    }]
+                }]
+            }]);
+            await process();
+            expect(manager.getReducedDependencies().filter(x => x.npmModuleName !== 'logger').sort((a, b) => a.majorVersion - b.majorVersion)).to.eql([{
                 npmModuleName: 'promise',
                 majorVersion: 1,
                 version: '1.0.0',
@@ -63,14 +89,16 @@ describe.only('ModuleManager', () => {
             }]);
         });
 
-        it('uses the host alias when present', () => {
-            addModule('promise', '1.0.0');
-            addModule('promise', '2.0.0');
-            manager.hostDependencies = [{
+        it('uses the host alias when present', async () => {
+            await createDependencies([{
                 alias: 'q',
-                npmPackageName: 'promise',
+                name: 'promise',
                 version: '1.2.3'
-            }];
+            }, {
+                name: 'promise',
+                version: '2.0.0'
+            }]);
+            await process();
             expect(manager.getReducedDependencies().sort((a, b) => a.majorVersion - b.majorVersion)).to.eql([{
                 npmModuleName: 'promise',
                 majorVersion: 1,
@@ -80,15 +108,24 @@ describe.only('ModuleManager', () => {
                 npmModuleName: 'promise',
                 majorVersion: 2,
                 version: '2.0.0',
-                ropmModuleName: 'promise_v2'
+                ropmModuleName: 'promise'
             }]);
         });
     });
 
     describe('reduceModules', () => {
-        it('does not remove unique dependencies', () => {
-            addModule('promise', '1.0.0');
-            addModule('promise', '2.0.0');
+        it('does not remove unique dependencies', async () => {
+            await createDependencies([{
+                alias: 'p1',
+                name: 'promise',
+                version: '1.0.0'
+            }, {
+                alias: 'p2',
+                name: 'promise',
+                version: '2.0.0'
+            }]);
+            await process();
+
             manager.reduceModules();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.0.0'],
@@ -96,11 +133,25 @@ describe.only('ModuleManager', () => {
             ]);
         });
 
-        it('does removes unnecessary dependencies', () => {
-            addModule('promise', '1.0.0');
-            addModule('promise', '1.1.0');
-            addModule('promise', '1.2.0');
-            addModule('promise', '2.0.0');
+        it('removes unnecessary dependencies', async () => {
+            await createDependencies([{
+                alias: 'p1',
+                name: 'promise',
+                version: '1.0.0'
+            }, {
+                alias: 'p2',
+                name: 'promise',
+                version: '1.1.0'
+            }, {
+                alias: 'p3',
+                name: 'promise',
+                version: '1.2.0'
+            }, {
+                alias: 'p4',
+                name: 'promise',
+                version: '2.0.0'
+            }]);
+            await process();
             manager.reduceModules();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.2.0'],
@@ -108,4 +159,33 @@ describe.only('ModuleManager', () => {
             ]);
         });
     });
+
+    /**
+       * This test converts the dependency name "module1" to "module2", and names this package "module1"
+       */
+    it('handles module prefix swapping', async () => {
+        createDependencies([{
+            alias: 'logger',
+            name: 'simple-logger',
+            dependencies: [{
+                alias: 'logger',
+                name: 'complex-logger'
+            }],
+        }]);
+
+        //simple-logger calls method from complex-logger, aliased as `logger`
+        file(`${hostDir}/node_modules/logger/source/main.brs`, `
+            sub WriteToLog(message)
+                return logger_writeToLog(message)
+            end sub
+        `);
+        await process();
+
+        fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
+            sub logger_WriteToLog(message)
+                return complexlogger_v1_writeToLog(message)
+            end sub
+        `);
+    });
+
 });

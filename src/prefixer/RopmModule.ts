@@ -3,6 +3,8 @@ import { util } from "../util";
 import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
+import { Dependency } from "./ModuleManager";
+import * as semver from 'semver';
 
 export class RopmModule {
     constructor(
@@ -65,7 +67,7 @@ export class RopmModule {
     /**
      * The path to the rootDir of this module
      */
-    public moduleRootDir!: string;
+    public rootDir!: string;
 
     /**
      * A map from the original file location to its new destination.
@@ -73,30 +75,41 @@ export class RopmModule {
      */
     public fileMaps!: Array<{ src: string; dest: string }>;
 
-    public isValid = true;
+    /**
+     * A map from the prefixes used when this module was published, to the prefix that should be used
+     * when this module is installed in the overall project.
+     * This depends on the module properly referencing every dependency.
+     */
+    public prefixMap = {} as { [oldPrefix: string]: string };
+
+    /**
+     * The major version of this module
+     */
+    public majorVersion!: number;
 
     public async init() {
         //skip modules we can't derive a name from
         if (!this.npmAliasName) {
-            this.isValid = false;
-            return;
+            throw new Error(`Cannot compute npm package name for "${this.moduleDir}"`);
         }
 
-        const packageLogText = `'${this.npmAliasName}'${this.npmAliasName !== this.npmModuleName ? `('${this.npmModuleName}')` : ''}`;
-
         let modulePackageJson = await util.getPackageJson(this.moduleDir);
+        this.version = modulePackageJson.version;
+        this.majorVersion = semver.major(modulePackageJson.version);
+
+        if (!modulePackageJson.name) {
+            throw new Error(`missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
+        }
 
         this.npmModuleName = modulePackageJson.name;
 
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
         if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
-            console.warn(`ropm: skipping prod dependency ${packageLogText} because it does not have the "ropm" keyword`);
-            this.isValid = false;
-            return;
+            throw new Error(`Skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
         }
 
         //use the rootDir from packageJson, or default to the current module path
-        this.moduleRootDir = modulePackageJson.ropm?.rootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.rootDir) : this.moduleDir;
+        this.rootDir = modulePackageJson.ropm?.rootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.rootDir) : this.moduleDir;
     }
 
     public async copyFiles() {
@@ -105,7 +118,7 @@ export class RopmModule {
         console.log(`ropm: copying ${packageLogText} as '${this.ropmModuleName}'`);
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
-            path: this.moduleRootDir
+            path: this.rootDir
         });
 
         //standardize each path
@@ -116,7 +129,7 @@ export class RopmModule {
             '**/*',
             ...RopmModule.fileIgnorePatterns
         ], {
-            cwd: this.moduleRootDir,
+            cwd: this.rootDir,
             //follow symlinks
             follow: true,
             dot: true,
@@ -148,7 +161,7 @@ export class RopmModule {
             const topLevelDir = filePathParts.splice(0, 1)[0];
             let targetPath = path.join(this.hostRootDir, topLevelDir, 'roku_modules', this.ropmModuleName, ...filePathParts);
             return {
-                src: path.resolve(this.moduleRootDir, filePath),
+                src: path.resolve(this.rootDir, filePath),
                 dest: targetPath
             };
         });
@@ -157,12 +170,20 @@ export class RopmModule {
         await util.copyFiles(this.fileMaps);
     }
 
-    public async process() {
+    public async transform() {
+        //load all files
+        for (let obj of this.fileMaps) {
+            this.files.push(
+                new File(obj.src, obj.dest)
+            );
+
+        }
         //let all files discover all functions/components
         await Promise.all(
             this.files.map((file) => file.discover())
         );
 
+        //create the edits for every file
         this.createEdits();
 
         //apply all of the edits
@@ -182,6 +203,38 @@ export class RopmModule {
         'runscreensaver',
         'init'
     ];
+
+    /**
+     * Create the prefix map for this module
+     * @param programDependencies - the full list of resolved dependencies from the program. This is created by ModuleManager based on all modules in the program.
+     */
+    public async createPrefixMap(programDependencies: Dependency[]) {
+        //reassign own module name based on program dependencies
+        const ownDependency = programDependencies.find(
+            x => x.npmModuleName === this.npmModuleName && x.majorVersion === this.majorVersion
+        );
+        if (!ownDependency) {
+            throw new Error(`Cannot find own dependency ${this.npmModuleName}@${this.majorVersion} from programDependencies`)
+        }
+        this.ropmModuleName = ownDependency.ropmModuleName;
+
+        //compute all of the names of the dependencies within this module, and what prefixes we currently used for them.
+        const deps = await util.getModuleDependencies(this.moduleDir);
+        this.prefixMap = {};
+        for (const dep of deps) {
+            const depMajorVersion = semver.major(dep.version);
+            const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.majorVersion === depMajorVersion);
+            if (programDependency) {
+                this.prefixMap[dep.alias] = programDependency.ropmModuleName;
+            } else {
+                if (this.prefixMap[dep.alias]) {
+                    throw new Error(`Alias "${dep.alias}" already exists for ${this.moduleDir}`);
+                } else {
+                    this.prefixMap[dep.alias] = dep.alias;
+                }
+            }
+        }
+    }
 
     private createEdits() {
         const prefix = this.ropmModuleName + '_';
@@ -232,6 +285,11 @@ export class RopmModule {
                 if (ownComponentNames.includes(comp.name.toLowerCase())) {
                     file.addEdit(comp.offset, comp.offset, prefix);
                 }
+            }
+
+            //rewrite file references
+            for (let fileReference of file.fileReferences) {
+
             }
         }
     }

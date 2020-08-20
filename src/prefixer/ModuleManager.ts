@@ -1,7 +1,6 @@
 import { RopmModule } from './RopmModule';
 import * as semver from 'semver';
 import { util } from '../util';
-import { getHeapStatistics } from 'v8';
 
 export class ModuleManager {
     public modules = [] as RopmModule[];
@@ -12,7 +11,7 @@ export class ModuleManager {
      */
     public hostDependencies = [] as Array<{
         alias: string;
-        npmPackageName: string;
+        npmModuleName: string;
         version: string;
     }>;
 
@@ -45,6 +44,7 @@ export class ModuleManager {
         //remove duplicate/unnecessary modules 
         this.reduceModules();
 
+        //copy every file from every module to its target location
         await Promise.all(
             this.modules.map(x => x.copyFiles())
         );
@@ -68,13 +68,12 @@ export class ModuleManager {
             const dep = reducedDependencies.find((dep) => {
                 return dep.version === module.version && dep.npmModuleName === module.npmModuleName
             })
-            //if we found a dependency, and the module is valid
-            if (dep && module.isValid) {
-                //rename the alias for this module
-                module.ropmModuleName = dep.ropmModuleName;
-            } else {
-                //if this is not an approved module, or the module is invalid, then remove it
+            //if this is not an approved module, or the module is invalid, then remove it
+            if (!dep) {
                 this.modules.splice(i, 1);
+            } else {
+                //give the module the approved list of deps
+                module.createPrefixMap(reducedDependencies);
             }
         }
     }
@@ -116,12 +115,7 @@ export class ModuleManager {
             moduleVersions[npmModuleNameLower][majorVersion].aliases.push(module.ropmModuleName);
         }
 
-        const result = [] as Array<{
-            npmModuleName: string;
-            majorVersion: number;
-            version: string;
-            ropmModuleName: string;
-        }>;
+        const result = [] as Dependency[];
 
         //compute the list of unique aliases
         for (let moduleName in moduleVersions) {
@@ -130,7 +124,7 @@ export class ModuleManager {
                 const majorVersion = parseInt(majorVersions[i]);
 
                 const hostDependency = this.hostDependencies.find((dep) => {
-                    return dep.npmPackageName === moduleName && semver.major(dep.version) === majorVersion
+                    return dep.npmModuleName === moduleName && semver.major(dep.version) === majorVersion
                 });
 
                 const obj = moduleVersions[moduleName][majorVersion];
@@ -149,3 +143,10 @@ export class ModuleManager {
         return result;
     }
 }
+
+export interface Dependency {
+    npmModuleName: string;
+    majorVersion: number;
+    version: string;
+    ropmModuleName: string;
+};

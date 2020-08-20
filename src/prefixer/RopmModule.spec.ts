@@ -1,136 +1,176 @@
 import * as fsExtra from 'fs-extra';
-import { createSandbox } from 'sinon';
+import * as path from 'path';
 import { RopmModule } from "./RopmModule";
 import { expect } from "chai";
-const sinon = createSandbox();
+import { Dependency } from './ModuleManager';
+import * as semver from 'semver';
+import { mergePackageJson, tempDir, file, fsEqual } from '../TestHelpers.spec';
+
+const hostRootDir = path.join(tempDir, 'hostRootDir');
+const hostNodeModulesDir = path.join(hostRootDir, 'node_modules');
 
 describe('RopmModule', () => {
-    let vfs = {};
+    let programDependencies: Dependency[];
     beforeEach(() => {
-        vfs = {};
-        sinon.stub(fsExtra, 'readFile').callsFake((filePath) => {
-            return Promise.resolve(Buffer.from(vfs[filePath as string]));
-        });
-        sinon.stub(fsExtra, 'writeFile').callsFake((filePath, fileContents) => {
-            vfs[filePath as string] = fileContents;
-        });
+        programDependencies = [];
     });
-    afterEach(() => {
-        sinon.restore();
-    });
+
+    async function createModule(alias: string, packageJson?: any) {
+        const moduleRootDir = path.join(hostNodeModulesDir, alias);
+        mergePackageJson(moduleRootDir, {
+            name: alias,
+            keywords: ['ropm'],
+            version: '1.0.0',
+            ...packageJson
+        });
+        const module = new RopmModule(hostRootDir, moduleRootDir);
+        await module.init();
+        return module;
+    }
+
+    function addDependency(dir: string, name: string, alias = name, version = '1.0.0') {
+        const deps = {};
+        deps[name] = `npm:${name}@${version}`;
+        if (dir === hostRootDir) {
+            programDependencies.push({
+                version: version,
+                majorVersion: semver.major(version),
+                npmModuleName: name,
+                ropmModuleName: alias
+            });
+        }
+        mergePackageJson(dir, {
+            dependencies: deps
+        });
+    }
+
+
+    async function process(module: RopmModule) {
+        await module.createPrefixMap(programDependencies);
+        await module.copyFiles();
+        await module.transform();
+    }
 
     describe('process', () => {
         it('applies a prefix to all functions of a program', async () => {
-            vfs = {
-                'source/main.brs': `
-                    sub main()
-                        SanitizeText("123")
-                    end sub
-                    sub SanitizeText(text as string)
-                        PrintMessage("Sanitizing text: " + text)
-                    end sub
-                `,
-                'source/lib.brs': `
-                    sub PrintMessage(message)
-                        print message
-                    end sub
-                `
-            };
-            const module = new RopmModule([
-                'source/main.brs',
-                'source/lib.brs'
-            ], 'textlib', {});
-            await module.process();
+            const module = await createModule('logger');
+            addDependency(hostRootDir, 'logger');
 
-            vfsEqual('source/main.brs', `
+            file(`${module.rootDir}/source/main.brs`, `
                 sub main()
-                    textlib_SanitizeText("123")
+                    SanitizeText("123")
                 end sub
-                sub textlib_SanitizeText(text as string)
-                    textlib_PrintMessage("Sanitizing text: " + text)
+                sub SanitizeText(text as string)
+                    PrintMessage("Sanitizing text: " + text)
+                end sub
+            `);
+            file(`${module.rootDir}/source/lib.brs`, `
+                sub PrintMessage(message)
+                    print message
+                end sub
+            `);
+            await process(module);
+
+            fsEqual(`${hostRootDir}/source/roku_modules/logger/main.brs`, `
+                sub main()
+                    logger_SanitizeText("123")
+                end sub
+                sub logger_SanitizeText(text as string)
+                    logger_PrintMessage("Sanitizing text: " + text)
                 end sub
             `);
 
-            vfsEqual('source/lib.brs', `
-                sub textlib_PrintMessage(message)
+            fsEqual(`${hostRootDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_PrintMessage(message)
                     print message
                 end sub
             `);
         });
 
         it('applies a prefix to components and their usage', async () => {
-            vfs = {
-                'components/Component1.xml': trim`
-                    <?xml version="1.0" encoding="utf-8" ?>
-                    <component name="Component1" extends="Component2" >
-                    </component>
-                `,
-                'components/Component2.xml': trim`
-                    <?xml version="1.0" encoding="utf-8" ?>
-                    <component name="Component2" extends="Task" >
-                        <children>
-                            <Component1 />
-                            <Component2>
-                            </Component2>
-                        </children>
-                    </component>
-                `,
-                'source/main.brs': `
-                    sub main()
-                        comp = CreateObject("rosgnode", "Component1")
-                        comp.CreateChild("Component2")
-                    end sub
-                `
-            };
-            const module = new RopmModule([
-                'components/Component1.xml',
-                'components/Component2.xml',
-                'source/main.brs'
-            ], 'textlib', {});
-            await module.process();
+            const module = await createModule('logger');
+            addDependency(hostRootDir, 'logger');
 
-            vfsEqual('components/Component1.xml', `
+            file(`${module.rootDir}/components/Component1.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
-                <component name="textlib_Component1" extends="textlib_Component2" >
+                <component name="Component1" extends="Component2" >
                 </component>
             `);
-            vfsEqual('components/Component2.xml', `
+            file(`${module.rootDir}/components/Component2.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
-                <component name="textlib_Component2" extends="Task" >
+                <component name="Component2" extends="Task" >
                     <children>
-                        <textlib_Component1 />
-                        <textlib_Component2>
-                        </textlib_Component2>
+                        <Component1 />
+                        <Component2>
+                        </Component2>
+                    </children>
+                </component>
+            `);
+            file(`${module.rootDir}/source/main.brs`, `
+                sub main()
+                    comp = CreateObject("rosgnode", "Component1")
+                    comp.CreateChild("Component2")
+                end sub
+            `);
+            await process(module);
+
+            fsEqual(`${hostRootDir}/components/roku_modules/logger/Component1.xml`, `
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_Component1" extends="logger_Component2" >
+                </component>
+            `);
+            fsEqual(`${hostRootDir}/components/roku_modules/logger/Component2.xml`, `
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_Component2" extends="Task" >
+                    <children>
+                        <logger_Component1 />
+                        <logger_Component2>
+                        </logger_Component2>
                     </children>
                 </component>
             `);
 
-            vfsEqual('source/main.brs', `
+            fsEqual(`${hostRootDir}/source/roku_modules/logger/main.brs`, `
                 sub main()
-                    comp = CreateObject("rosgnode", "textlib_Component1")
-                    comp.CreateChild("textlib_Component2")
+                    comp = CreateObject("rosgnode", "logger_Component1")
+                    comp.CreateChild("logger_Component2")
                 end sub
             `);
         });
 
         it('renames dependency prefixes', async () => {
-            vfs = {
-                'source/main.brs': `
-                    sub PrintValue()
-                        print module1_GetValue()
-                    end sub
-                `
-            };
-            const module = new RopmModule([
-                'source/main.brs'
-            ], 'textlib', {
-                'module1': 'module2'
+            const logger = await createModule('logger', {
+                name: '@alpha/logger'
             });
-            await module.process();
+            await createModule('printer', {
+                name: '@bravo/printer'
+            });
 
-            vfsEqual('source/main.brs', `
-                sub textlib_PrintValue()
-                    print module2_GetValue()
+            //host depends on logger
+            addDependency(hostRootDir, '@alpha/logger', 'logger');
+            //logger depends on printer
+            mergePackageJson(logger.rootDir, {
+                dependencies: {
+                    'printer': 'npm:@bravo/printer@1.0.0'
+                }
+            });
+
+            file(`${logger.rootDir}/source/main.brs`, `
+                sub PrintValue(value)
+                    print printer_writeLine(value)
+                end sub
+            `);
+            programDependencies.push({
+                version: '1.0.0',
+                majorVersion: 1,
+                npmModuleName: '@bravo/printer',
+                ropmModuleName: 'console'
+            });
+            await process(logger);
+
+            fsEqual(`${hostRootDir}/source/roku_modules/logger/main.brs`, `
+                sub logger_PrintValue(value)
+                    print console_writeLine(value)
                 end sub
             `);
         });
@@ -139,13 +179,15 @@ describe('RopmModule', () => {
          * This test converts the dependency name "module1" to "module2", and names this package "module1"
          */
         it('handles module prefix swapping', async () => {
-            vfs = {
-                'source/main.brs': `
-                    sub GetPromise()
-                        return module1_createTaskPromise("TaskName", {})
-                    end sub
-                `
-            };
+            const module1 = await createModule('module1');
+            const module2 = await createModule('module2');
+            addDependency(hostRootDir, 'module1');
+            addDependency(hostRootDir, 'module2');
+            file(`${module1.rootDir}/source/main.brs`, `
+                sub GetPromise()
+                    return module1_createTaskPromise("TaskName", {})
+                end sub
+            `);
             const module = new RopmModule([
                 'source/main.brs'
             ], 'module1', {
@@ -153,7 +195,7 @@ describe('RopmModule', () => {
             });
             await module.process();
 
-            vfsEqual('source/main.brs', `
+            fsEqual('source/main.brs', `
                 sub module1_GetPromise()
                     return module2_createTaskPromise("TaskName", {})
                 end sub
@@ -180,8 +222,8 @@ describe('RopmModule', () => {
             });
             await module.process();
 
-            vfsEqual('source/main.brs', `
-                sub textlib_PrintValues()
+            fsEqual('source/main.brs', `
+                sub ${moduleName}_PrintValues()
                     print module2_GetValue()
                     print module1_GetValue()
                 end sub
@@ -189,51 +231,4 @@ describe('RopmModule', () => {
         });
     });
 
-    function vfsEqual(path: string, expectedText: string) {
-        expect(
-            trimLeading(
-                vfs[path]
-            )
-        ).to.equal(
-            trimLeading(expectedText)
-        );
-    }
 });
-
-
-function trim(text: TemplateStringsArray, ...args) {
-    return trimLeading(text[0]);
-}
-
-
-/**
- * Trim leading whitespace for every line (to make test writing cleaner
- */
-function trimLeading(text: string) {
-    let lines = text.split(/\r?\n/);
-    let minIndent = Number.MAX_SAFE_INTEGER;
-
-    //skip leading empty lines
-    while (lines[0]?.trim().length === 0) {
-        lines.splice(0, 1);
-    }
-
-    for (let line of lines) {
-        let trimmedLine = line.trimLeft();
-        //skip empty lines
-        if (trimmedLine.length === 0) {
-            continue;
-        }
-        let leadingSpaceCount = line.length - trimmedLine.length;
-        if (leadingSpaceCount < minIndent) {
-            minIndent = leadingSpaceCount;
-        }
-    }
-
-    //apply the trim to each line
-    for (let i = 0; i < lines.length; i++) {
-        lines[i] = lines[i].substring(minIndent);
-    }
-    return lines.join('\n');
-}
-

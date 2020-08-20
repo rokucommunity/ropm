@@ -7,7 +7,8 @@ import { createSandbox } from 'sinon';
 const sinon = createSandbox();
 
 const tmpDir = path.join(process.cwd(), '.tmp');
-const filePath = path.join(tmpDir, 'file.brs');
+const srcPath = path.join(tmpDir, 'src', 'file.brs');
+const destPath = path.join(tmpDir, 'dest', 'file.brs');
 
 describe('prefixer/File', () => {
 
@@ -19,8 +20,10 @@ describe('prefixer/File', () => {
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    function setFileContents(value: string) {
+    function setFile(value: string, extension = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
+        f.src = f.src.replace('.brs', '.' + extension);
+        f.dest = f.dest.replace('.brs', '.' + extension);
     }
 
     /**
@@ -45,7 +48,7 @@ describe('prefixer/File', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(filePath);
+        file = new File(srcPath, destPath);
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
@@ -57,14 +60,15 @@ describe('prefixer/File', () => {
 
     it('loads file from disk', async () => {
         sinon.restore();
-        fsExtra.writeFileSync(filePath, 'asdf');
+        fsExtra.ensureDirSync(path.dirname(destPath));
+        fsExtra.writeFileSync(destPath, 'asdf');
         await file.discover();
         expect((f.fileContents)).to.eql('asdf');
     });
 
     describe('findFunctionDefinitions', () => {
         it('finds functions in multiple lines', async () => {
-            setFileContents(`
+            setFile(`
                 function Main()
                 function Main2()
             `);
@@ -79,7 +83,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds multiple functions on a line (probably not possible, but why not...)', async () => {
-            setFileContents(`
+            setFile(`
                 function Main() function Main2()
             `);
             await file.discover();
@@ -93,8 +97,7 @@ describe('prefixer/File', () => {
         });
 
         it('works for xml files', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent" extends="Task" >
                 <script type="text/brightscript">
                     <![CDATA[
@@ -104,7 +107,7 @@ describe('prefixer/File', () => {
                     ]]>
                 </script>
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(f.functionDefinitions).to.eql([{
                 name: 'DoSomething',
@@ -115,7 +118,7 @@ describe('prefixer/File', () => {
 
     describe('findFunctionCalls', () => {
         it('works for brs files', async () => {
-            setFileContents(`
+            setFile(`
                 'should not match on "main"
                 sub main()
                     doSomething()
@@ -136,8 +139,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds function calls in xml files', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent" extends="Task" >
                 <script type="text/brightscript">
                     <![CDATA[
@@ -147,7 +149,7 @@ describe('prefixer/File', () => {
                     ]]>
                 </script>
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(f.functionCalls).to.eql([{
                 name: 'DoSomething',
@@ -158,11 +160,10 @@ describe('prefixer/File', () => {
 
     describe('findComponentDefinitions', () => {
         it('finds component name', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(f.componentDeclarations).to.eql([{
                 name: 'CustomComponent',
@@ -173,11 +174,10 @@ describe('prefixer/File', () => {
 
     describe('findComponentReferences', () => {
         it('finds component name from `extends` attribute', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent" extends="ParentComponent" >
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(f.componentReferences).to.eql([{
                 name: 'ParentComponent',
@@ -186,7 +186,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds component name in `createObject`', async () => {
-            setFileContents(`
+            setFile(`
                 sub main()
                     'normal
                     createObject("RoSGNode", "Component1")
@@ -210,7 +210,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds component name in `node.createChild`', async () => {
-            setFileContents(`
+            setFile(`
                 sub main()
                     'normal
                     node.CreateChild("Component1")
@@ -247,8 +247,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds component name in xml usage', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <children>
                         <CustomComponent2></CustomComponent2>
@@ -256,7 +255,7 @@ describe('prefixer/File', () => {
                         <SomeCustomComponent />
                     </children>
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(
                 file.componentReferences.sort((a, b) => {
@@ -285,14 +284,13 @@ describe('prefixer/File', () => {
 
     describe('findFileReferences', () => {
         it('finds absolute script paths in xml tags', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <script uri="pkg:/source/lib.brs" />
                     <script uri="pkg:/components/folder1/somelib.brs" />
                     <Poster uri="pkg:/images/CoolPhoto.png" />
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(file.fileReferences).to.eql([{
                 path: 'pkg:/source/lib.brs',
@@ -307,13 +305,12 @@ describe('prefixer/File', () => {
         });
 
         it('finds relative file paths in xml script tags', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <script uri="../lib.brs" />
                     <script uri="comp.brs" />
                 </component>
-            `);
+            `, 'file.xml');
             await file.discover();
             expect(file.fileReferences).to.eql([{
                 path: '../lib.brs',
@@ -325,8 +322,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds absolute file paths in CDATA xml block', async () => {
-            f.filePath = filePath.replace('.brs', '.xml');
-            setFileContents(`<?xml version="1.0" encoding="utf-8" ?>
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent"> 
                     <script type="text/brightscript">
                         <![CDATA[
@@ -336,7 +332,7 @@ describe('prefixer/File', () => {
                         ]]>
                     </script>
                 </component>
-            `);
+            `, 'xml');
             await file.discover();
             expect(file.fileReferences).to.eql([{
                 path: 'pkg:/source/lib.brs',
@@ -345,7 +341,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds pkg paths in brs files', async () => {
-            setFileContents(`
+            setFile(`
                 sub main()
                     filePath = "pkg:/images/CoolPhoto.brs"
                 end sub
