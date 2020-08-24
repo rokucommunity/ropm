@@ -219,7 +219,7 @@ export class RopmModule {
             x => x.npmModuleName === this.npmModuleName && x.majorVersion === this.majorVersion
         );
         if (!ownDependency) {
-            throw new Error(`Cannot find own dependency ${this.npmModuleName}@${this.majorVersion} from programDependencies`)
+            throw new Error(`Cannot find ${this.npmModuleName}@${this.majorVersion} in programDependencies`)
         }
         this.ropmModuleName = ownDependency.ropmModuleName;
 

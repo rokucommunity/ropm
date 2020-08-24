@@ -129,3 +129,16 @@ function trimLeading(text: string) {
     return lines.join('\n');
 }
 
+export async function expectThrowsAsync(func) {
+    let ex;
+    try {
+        await Promise.resolve(
+            func()
+        );
+    } catch (e) {
+        ex = e;
+    }
+    if (!ex) {
+        throw new Error('Expected exception to be thrown');
+    }
+}

@@ -6,12 +6,20 @@ import * as latinize from 'latinize';
 import { IOptions } from 'glob';
 
 export class Util {
+
+    /**
+     * Determine if the current OS is running a version of windows
+     */
+    private isWindowsPlatform() {
+        return process.platform.startsWith('win');
+    }
+
     /**
      * Executes an exec command and returns a promise that completes when it's finished
      */
-    spawnAsync(command: string, args: string[], options?: childProcess.SpawnOptions) {
+    spawnAsync(command: string, args?: string[], options?: childProcess.SpawnOptions) {
         return new Promise((resolve, reject) => {
-            const child = childProcess.spawn(command, args, {
+            const child = childProcess.spawn(command, args ?? [], {
                 ...(options ?? {}),
                 stdio: 'inherit'
             });
@@ -29,7 +37,7 @@ export class Util {
         //filter out undefined args
         args = args.filter(arg => arg !== undefined);
         return this.spawnAsync(
-            process.platform.startsWith('win') ? 'npm.cmd' : 'npm',
+            this.isWindowsPlatform() ? 'npm.cmd' : 'npm',
             args as string[],
             options
         );
@@ -103,7 +111,7 @@ export class Util {
     /**
      * A promise wrapper around glob-all
      */
-    public async globAll(patterns, options: IOptions) {
+    public async globAll(patterns, options?: IOptions) {
         return new Promise<string[]>((resolve, reject) => {
             globAll(patterns, options, (error, matches) => {
                 if (error) {
