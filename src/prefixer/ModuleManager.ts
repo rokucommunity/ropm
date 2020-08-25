@@ -42,7 +42,7 @@ export class ModuleManager {
         );
 
         //remove duplicate/unnecessary modules 
-        await this.reduceModules();
+        await this.reduceModulesAndCreatePrefixMaps();
 
         //copy every file from every module to its target location
         await Promise.all(
@@ -59,7 +59,7 @@ export class ModuleManager {
      * Reduce the number of dependencies to only one version for each major.
      * Then, remove unnecessary dependencies
      */
-    public async reduceModules() {
+    public async reduceModulesAndCreatePrefixMaps() {
         const reducedDependencies = this.getReducedDependencies();
 
         //discard any modules that are not in the list

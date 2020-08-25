@@ -130,7 +130,7 @@ describe('ModuleManager', function () {
             }]);
             await process();
 
-            await manager.reduceModules();
+            await manager.reduceModulesAndCreatePrefixMaps();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.0.0'],
                 ['promise', '2.0.0']
@@ -156,7 +156,7 @@ describe('ModuleManager', function () {
                 version: '2.0.0'
             }]);
             await process();
-            await manager.reduceModules();
+            await manager.reduceModulesAndCreatePrefixMaps();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.2.0'],
                 ['promise', '2.0.0']
@@ -307,6 +307,45 @@ describe('ModuleManager', function () {
             `);
         });
 
-    });
+        it('rewrites file paths for own package', async () => {
+            let [logger] = await createDependencies([{
+                name: 'logger'
+            }]);
 
+            file(`${logger.rootDir}/source/common.brs`, `
+                sub echo(message)
+                    print message
+                end sub
+            `);
+
+            file(`${logger.rootDir}/components/common.brs`, `
+                sub echo(message)
+                    print message
+                end sub
+            `);
+
+
+            file(`${logger.rootDir}/components/Component1.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="Component1">
+                    <script uri="pkg:/source/common.brs" />
+                    <script uri="common.brs" />
+                    <script uri="./common.brs" />
+                    <script uri="../components/common.brs" />
+                </component>
+            `);
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_Component1">
+                    <script uri="pkg:/source/roku_modules/logger/common.brs" />
+                    <script uri="pkg:/components/roku_modules/logger/common.brs" />
+                    <script uri="pkg:/components/roku_modules/logger/common.brs" />
+                    <script uri="pkg:/components/roku_modules/logger/common.brs" />
+                </component>
+            `);
+        });
+    });
 });

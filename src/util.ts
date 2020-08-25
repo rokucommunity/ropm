@@ -4,6 +4,7 @@ import * as fsExtra from 'fs-extra';
 import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
 import { IOptions } from 'glob';
+import { string } from 'yargs';
 
 export class Util {
 
@@ -196,6 +197,29 @@ export class Util {
             }
             dir = path.dirname(dir);
         };
+    }
+
+    /**
+     * Replace the first case-insensitive occurance of {search} in {subject} with {replace}
+     */
+    public replaceCaseInsensitive(search: string, subject: string, replace: string) {
+        let idx = subject.toLowerCase().indexOf(search.toLowerCase());
+        if (idx > -1) {
+            return subject.substring(0, idx) + replace + subject.substring(idx + search.length);
+        } else {
+            return subject;
+        }
+    }
+
+    /**
+     * If the text starts with a slash, remove it
+     */
+    public removeLeadingSlash(text: string) {
+        if (text.startsWith('/') || text.startsWith('\\')) {
+            return text.substring(1);
+        } else {
+            return text;
+        }
     }
 
 }

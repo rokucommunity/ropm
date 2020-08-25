@@ -179,7 +179,7 @@ export class RopmModule {
         //load all files
         for (let obj of this.fileMaps) {
             this.files.push(
-                new File(obj.src, obj.dest)
+                new File(obj.src, obj.dest, this.rootDir)
             );
 
         }
@@ -294,9 +294,29 @@ export class RopmModule {
 
             //rewrite file references
             for (let fileReference of file.fileReferences) {
-
+                this.createFileReferenceEdit(file, fileReference);
             }
         }
+    }
+
+    private createFileReferenceEdit(file: File, fileReference: { path: string; offset: number }) {
+        let pkgPathAbsolute: string;
+        if (fileReference.path.startsWith('pkg:')) {
+            pkgPathAbsolute = fileReference.path;
+
+            //relative path. resolve to absolute path
+        } else {
+            pkgPathAbsolute = `pkg:/` + path.posix.normalize(path.dirname(file.pkgPath) + '/' + fileReference.path);
+        }
+
+        let parts = pkgPathAbsolute.split('/');
+        //discard the first part (pkg:)
+        parts.splice(0, 1);
+        let baseFolder = parts[0];
+        //remove the base folder part
+        parts.splice(0, 1);
+        let newPath = `pkg:/${baseFolder}/roku_modules/${this.ropmModuleName}/${parts.join('/')}`;
+        file.addEdit(fileReference.offset, fileReference.offset + fileReference.path.length, newPath);
     }
 
     /**

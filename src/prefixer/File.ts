@@ -2,6 +2,8 @@
 import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
+import { util } from '../util';
+import * as path from 'path';
 
 export class File {
     constructor(
@@ -12,9 +14,23 @@ export class File {
         /**
          * The path to the file's new location
          */
-        public readonly dest: string
+        public readonly dest: string,
+        /**
+         * The absolute path to the rootDir for this file
+         */
+        public readonly rootDir: string
     ) {
+        this.pkgPath = path.posix.normalize(
+            util.removeLeadingSlash(
+                util.replaceCaseInsensitive(rootDir, src, '').replace(/\\/g, '/')
+            )
+        );
     }
+
+    /**
+     * The full pkg path to the file (minus the `pkg:/` protocol since we never actually need that part
+     */
+    public pkgPath: string;
 
     /**
      * The in-memory copy of the file contents
