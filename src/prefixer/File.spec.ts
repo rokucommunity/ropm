@@ -7,7 +7,8 @@ import { createSandbox } from 'sinon';
 const sinon = createSandbox();
 
 const tmpDir = path.join(process.cwd(), '.tmp');
-const srcPath = path.join(tmpDir, 'src', 'file.brs');
+const srcRootDir = path.join(tmpDir, 'srcRootDir');
+const srcPath = path.join(srcRootDir, 'source', 'file.brs');
 const destPath = path.join(tmpDir, 'dest', 'file.brs');
 
 describe('prefixer/File', () => {
@@ -48,7 +49,7 @@ describe('prefixer/File', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath);
+        file = new File(srcPath, destPath, srcRootDir);
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
