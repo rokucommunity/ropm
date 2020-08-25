@@ -41,7 +41,7 @@ export class ModuleManager {
             this.modules.map(x => x.init())
         );
 
-        //remove duplicate/unnecessary modules 
+        //remove duplicate/unnecessary modules
         await this.reduceModulesAndCreatePrefixMaps();
 
         //copy every file from every module to its target location
@@ -52,7 +52,7 @@ export class ModuleManager {
         //have each module apply transforms (rename functions, components, file paths, etc...)
         await Promise.all(
             this.modules.map(x => x.transform())
-        )
+        );
     }
 
     /**
@@ -63,12 +63,12 @@ export class ModuleManager {
         const reducedDependencies = this.getReducedDependencies();
 
         //discard any modules that are not in the list
-        for (var i = this.modules.length - 1; i >= 0; i--) {
+        for (let i = this.modules.length - 1; i >= 0; i--) {
             const module = this.modules[i];
 
             const dep = reducedDependencies.find((dep) => {
-                return dep.version === module.version && dep.npmModuleName === module.npmModuleName
-            })
+                return dep.version === module.version && dep.npmModuleName === module.npmModuleName;
+            });
             //if this is not an approved module, or the module is invalid, then remove it
             if (!dep || module.isValid === false) {
                 this.modules.splice(i, 1);
@@ -92,25 +92,25 @@ export class ModuleManager {
                 [majorVersioNNumber: string]: {
                     highestVersion: string;
                     aliases: string[];
-                }
-            }
+                };
+            };
         };
 
         //for each package of the same name, compute the highest version within each major version range
-        for (let module of this.modules) {
+        for (const module of this.modules) {
             const npmModuleNameLower = module.npmModuleName.toLowerCase();
             //make the bucket if not exist
             if (!moduleVersions[npmModuleNameLower]) {
                 moduleVersions[npmModuleNameLower] = {};
             }
-            let majorVersion = semver.major(module.version);
+            const majorVersion = semver.major(module.version);
             if (!moduleVersions[npmModuleNameLower][majorVersion]) {
                 moduleVersions[npmModuleNameLower][majorVersion] = {
                     highestVersion: module.version,
                     aliases: []
                 };
             }
-            let previousVersion = moduleVersions[npmModuleNameLower][majorVersion].highestVersion ?? module.version;
+            const previousVersion = moduleVersions[npmModuleNameLower][majorVersion].highestVersion ?? module.version;
             //if this new version is higher, keep it
             if (semver.compare(module.version, previousVersion) > 0) {
                 moduleVersions[npmModuleNameLower][majorVersion].highestVersion = module.version;
@@ -121,13 +121,13 @@ export class ModuleManager {
         const result = [] as Dependency[];
 
         //compute the list of unique aliases
-        for (let moduleName in moduleVersions) {
+        for (const moduleName in moduleVersions) {
             const majorVersions = Object.keys(moduleVersions[moduleName]).sort();
             for (let i = 0; i < majorVersions.length; i++) {
                 const majorVersion = parseInt(majorVersions[i]);
 
                 const hostDependency = this.hostDependencies.find((dep) => {
-                    return dep.npmModuleName === moduleName && semver.major(dep.version) === majorVersion
+                    return dep.npmModuleName === moduleName && semver.major(dep.version) === majorVersion;
                 });
 
                 const obj = moduleVersions[moduleName][majorVersion];
@@ -135,10 +135,10 @@ export class ModuleManager {
                 result.push({
                     majorVersion: majorVersion,
                     npmModuleName: moduleName,
-                    //use the hosts's alias, or default to the module name 
+                    //use the hosts's alias, or default to the module name
                     ropmModuleName: hostDependency?.alias ?? `${util.getRopmNameFromModuleName(moduleName)}_v${majorVersion}`,
                     //use the highest version within this major range
-                    version: semver.maxSatisfying([obj.highestVersion, hostDependency?.version ?? '0.0.0'], '*')!
+                    version: semver.maxSatisfying([obj.highestVersion, hostDependency?.version ?? '0.0.0'], '*') as string
                 });
             }
         }
@@ -152,4 +152,4 @@ export interface Dependency {
     majorVersion: number;
     version: string;
     ropmModuleName: string;
-};
+}

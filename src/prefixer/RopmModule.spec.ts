@@ -1,6 +1,6 @@
-import { RopmModule } from "./RopmModule";
-import { tempDir, mergePackageJson, createProjects, expectThrowsAsync } from "../TestHelpers.spec";
-import { expect } from "chai";
+import { RopmModule } from './RopmModule';
+import { tempDir, mergePackageJson, createProjects, expectThrowsAsync } from '../TestHelpers.spec';
+import { expect } from 'chai';
 
 
 const hostDir = `${tempDir}/host`;
@@ -8,7 +8,7 @@ const hostDir = `${tempDir}/host`;
 describe('RopmModule', () => {
     describe('init', () => {
         it('invalidates with missing alias name', async () => {
-            let [logger] = createProjects(hostDir, hostDir, {
+            const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
                     name: 'logger'
@@ -20,7 +20,7 @@ describe('RopmModule', () => {
         });
 
         it('invalidates with missing alias name', async () => {
-            let [logger] = createProjects(hostDir, hostDir, {
+            const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
                     name: 'logger'
@@ -30,13 +30,13 @@ describe('RopmModule', () => {
                 //blank out the name
                 name: ''
             });
-            let module = new RopmModule(hostDir, logger.moduleDir);
+            const module = new RopmModule(hostDir, logger.moduleDir);
             await module.init();
             expect(module.isValid).to.be.false;
         });
 
         it('handles missing `keywords` array', async () => {
-            let [logger] = createProjects(hostDir, hostDir, {
+            const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
                     name: 'logger'
@@ -45,7 +45,7 @@ describe('RopmModule', () => {
             mergePackageJson(logger.moduleDir, {
                 keywords: undefined
             });
-            let module = new RopmModule(hostDir, logger.moduleDir);
+            const module = new RopmModule(hostDir, logger.moduleDir);
             await module.init();
             expect(module.isValid).to.be.false;
         });
@@ -53,7 +53,7 @@ describe('RopmModule', () => {
 
     describe('createPrefixMap', () => {
         it('throws when missing own dependency', async () => {
-            let [logger] = createProjects(hostDir, hostDir, {
+            const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
                     name: 'logger'
@@ -63,7 +63,7 @@ describe('RopmModule', () => {
         });
 
         it('throws when missing dependency', async () => {
-            let [logger] = createProjects(hostDir, hostDir, {
+            const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
                     name: 'logger',

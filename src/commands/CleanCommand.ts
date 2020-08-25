@@ -16,7 +16,7 @@ export class CleanCommand {
         if (this.args.rootDir) {
             return path.resolve(this.cwd, this.args.rootDir);
         } else {
-            let packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
+            const packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
             if (packageJsonRootDir) {
                 return path.resolve(this.cwd, packageJsonRootDir);
             } else {
@@ -54,7 +54,7 @@ export class CleanCommand {
     }
 
     private async deleteAllRokuModulesFolders() {
-        let rokuModulesFolders = await util.globAll([
+        const rokuModulesFolders = await util.globAll([
             '*/roku_modules',
             '!node_modules/**/*'
         ], {

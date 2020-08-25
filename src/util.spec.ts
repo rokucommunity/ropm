@@ -73,7 +73,7 @@ describe('Util', () => {
                 return {
                     addListener: function (name: string, callback: any) {
                         if (name === 'exit') {
-                            setTimeout(callback, 1);
+                            setTimeout(() => callback(), 1);
                         }
                     }
                 } as any;
@@ -124,9 +124,9 @@ describe('Util', () => {
         });
     });
 
-    describe('getModuleDependencies', async () => {
+    describe('getModuleDependencies', () => {
         it('throws when dependency is missing', async () => {
-            let hostDir = `${tempDir}/project-a`;
+            const hostDir = `${tempDir}/project-a`;
             createProjects(hostDir, hostDir, {
                 name: 'project-a',
                 dependencies: [{
@@ -139,9 +139,9 @@ describe('Util', () => {
         });
     });
 
-    describe('findDependencyDir', async () => {
+    describe('findDependencyDir', () => {
         it('throws when dependency is missing', async () => {
-            let hostDir = `${tempDir}/project-a`;
+            const hostDir = `${tempDir}/project-a`;
             createProjects(hostDir, hostDir, {
                 name: 'project-a',
                 dependencies: [{

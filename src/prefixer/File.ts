@@ -84,10 +84,10 @@ export class File {
             if (!this.xmlAst && this.dest.toLowerCase().endsWith('.xml')) {
                 const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.fileContents);
                 //print every lex and parse error to the console
-                for (let lexError of lexErrors) {
+                for (const lexError of lexErrors) {
                     console.error(`XML parse error "${lexError.message}" at ${this.dest}:${lexError.line}:${lexError.column}`);
                 }
-                for (let parseError of parseErrors) {
+                for (const parseError of parseErrors) {
                     console.error(`XML parse error "${parseError.message}" at ${this.dest}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
                 }
                 this.xmlAst = buildAst(cst as any, tokenVector);
@@ -144,14 +144,14 @@ export class File {
         const edits = this.edits.sort((e1, e2) => {
             if (e1.offsetBegin > e2.offsetBegin) {
                 return -1;
-            } else if (e2.offsetBegin < e2.offsetBegin) {
+            } else if (e1.offsetBegin < e2.offsetBegin) {
                 return 1;
             } else {
                 return 0;
             }
         });
         let contents = this.fileContents;
-        let chunks = [] as string[];
+        const chunks = [] as string[];
         for (const edit of edits) {
             //store the traling part of the string
             chunks.push(
@@ -208,11 +208,11 @@ export class File {
 
     private findComponentDefinitions() {
         const nameAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'name');
-        if (nameAttribute) {
+        if (nameAttribute?.value && nameAttribute?.syntax?.value) {
             this.componentDeclarations.push({
-                name: nameAttribute.value!,
+                name: nameAttribute.value,
                 //plus one to step past the opening "
-                offset: nameAttribute.syntax.value!.startOffset + 1
+                offset: nameAttribute.syntax.value.startOffset + 1
             });
         }
     }
@@ -223,11 +223,11 @@ export class File {
     private findExtendsComponentReferences() {
         //get any "extends" attribute from the xml
         const extendsAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'extends');
-        if (extendsAttribute) {
+        if (extendsAttribute?.value && extendsAttribute?.syntax?.value) {
             this.componentReferences.push({
-                name: extendsAttribute.value!,
+                name: extendsAttribute.value,
                 //plus one to step past the opening "
-                offset: extendsAttribute.syntax.value!.startOffset + 1
+                offset: extendsAttribute.syntax.value.startOffset + 1
             });
         }
     }
@@ -240,7 +240,7 @@ export class File {
 
         let match: RegExpExecArray | null;
 
-        //look through each line of the file 
+        //look through each line of the file
         while (match = regexp.exec(this.fileContents)) {
             const componentName = match[2];
 
@@ -255,14 +255,14 @@ export class File {
 
     /**
      * Find all calls to `.CreateChild("COMPONENT_NAME")`.
-     * There is a slight chance this could catch some false positives for modules that have their own CreateChild(string) method, 
+     * There is a slight chance this could catch some false positives for modules that have their own CreateChild(string) method,
      * but it's unlikely to matter since we would only replace these calls that actually contain known component names
      */
     private findCreateChildComponentReferences() {
         const regexp = /(\.\s*CreateChild\s*\((?:\r?\n|\s)*")(.*)"/gi;
         let match: RegExpExecArray | null;
 
-        //look through each line of the file 
+        //look through each line of the file
         while (match = regexp.exec(this.fileContents)) {
             const componentName = match[2];
 
@@ -288,18 +288,20 @@ export class File {
         }
         while (children.length > 0) {
             const child = children.pop();
-            children.push(...child?.subElements ?? []);
-            const offsetBegin = child!.syntax.openName!.startOffset;
-            //save the opening tag
-            this.componentReferences.push({
-                name: child?.name as string,
-                offset: offsetBegin
-            });
+            if (child?.syntax?.openName) {
+                children.push(...child?.subElements ?? []);
+                const offsetBegin = child.syntax.openName.startOffset;
+                //save the opening tag
+                this.componentReferences.push({
+                    name: child?.name as string,
+                    offset: offsetBegin
+                });
+            }
             //if there's a closing tag, save that
             if (child?.syntax.closeName) {
-                const offsetBegin = child!.syntax.closeName!.startOffset;
+                const offsetBegin = child.syntax.closeName.startOffset;
                 this.componentReferences.push({
-                    name: child?.syntax.closeName.image as string,
+                    name: child.syntax.closeName.image,
                     offset: offsetBegin
                 });
             }
@@ -311,7 +313,7 @@ export class File {
      */
     private findFilePathStrings() {
         //look for any string containing `pkg:/`
-        let regexp = /"(pkg:\/.*)"/gi;
+        const regexp = /"(pkg:\/.*)"/gi;
         let match: RegExpExecArray | null;
         while (match = regexp.exec(this.fileContents)) {
             this.fileReferences.push({
@@ -332,19 +334,19 @@ export class File {
         }
 
         //script elements must be direct-children of the `<component` element
-        let elements = this.xmlAst.rootElement?.subElements ?? [];
-        for (let element of elements) {
+        const elements = this.xmlAst.rootElement?.subElements ?? [];
+        for (const element of elements) {
             //if this is a script element
             if (element.name?.toLowerCase() === 'script') {
-                let uriAttribute = element.attributes.find((x) => x.key?.toLowerCase() === 'uri');
+                const uriAttribute = element.attributes.find((x) => x.key?.toLowerCase() === 'uri');
                 //if we have a `uri` attribute
-                if (uriAttribute) {
+                if (uriAttribute?.value && uriAttribute?.syntax?.value) {
                     //+1 to step past the opening double-quote
-                    const offset = uriAttribute.syntax.value?.startOffset! + 1;
+                    const offset = uriAttribute.syntax.value.startOffset + 1;
                     //add this reference only if we don't already have it (the previous regex can sometimes match these)
                     if (!this.fileReferences.find(x => x.offset === offset)) {
                         this.fileReferences.push({
-                            path: uriAttribute.value!,
+                            path: uriAttribute.value,
                             offset: offset
                         });
                     }

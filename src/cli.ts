@@ -18,7 +18,7 @@ new Promise((resolve, reject) => {
                 .alias('y', 'force');
 
         }, (args: any) => {
-            let command = new InitCommand(args);
+            const command = new InitCommand(args);
             command.run().then(resolve, reject);
         })
 
@@ -26,7 +26,7 @@ new Promise((resolve, reject) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
         }, (args: any) => {
-            let command = new InstallCommand(args);
+            const command = new InstallCommand(args);
             command.run().then(resolve, reject);
         })
         .alias('i', 'install')
@@ -35,7 +35,7 @@ new Promise((resolve, reject) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
         }, (args: any) => {
-            let command = new CleanCommand(args);
+            const command = new CleanCommand(args);
             command.run().then(resolve, reject);
         })
         .argv;

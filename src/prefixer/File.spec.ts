@@ -355,27 +355,27 @@ describe('prefixer/File', () => {
         });
     });
     describe('applyEdits', () => {
-        it('leaves file intact with no edits', async () => {
+        it('leaves file intact with no edits', () => {
             file.fileContents = 'hello world';
             file.applyEdits();
             expect(file.fileContents).to.equal('hello world');
         });
 
-        it('applies zero-length edit as an insert', async () => {
+        it('applies zero-length edit as an insert', () => {
             file.fileContents = 'hello world';
             file.addEdit(5, 5, ' my');
             file.applyEdits();
             expect(file.fileContents).to.equal('hello my world');
         });
 
-        it('removes text with zero-length edit', async () => {
+        it('removes text with zero-length edit', () => {
             file.fileContents = 'hello world';
             file.addEdit(5, 11, '');
             file.applyEdits();
             expect(file.fileContents).to.equal('hello');
         });
 
-        it('replaces text', async () => {
+        it('replaces text', () => {
             file.fileContents = 'hello Jim, how are you';
             file.addEdit(6, 9, 'Michael');
             file.applyEdits();

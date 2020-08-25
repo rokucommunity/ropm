@@ -1,9 +1,9 @@
-import { File } from "./File";
-import { util } from "../util";
+import { File } from './File';
+import { util } from '../util';
 import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
-import { Dependency } from "./ModuleManager";
+import { Dependency } from './ModuleManager';
 import * as semver from 'semver';
 
 export class RopmModule {
@@ -93,16 +93,18 @@ export class RopmModule {
         //skip modules we can't derive a name from
         if (!this.npmAliasName) {
             console.error(`ropm: cannot compute npm package name for "${this.moduleDir}"`);
-            return this.isValid = false;
+            this.isValid = false;
+            return;
         }
 
-        let modulePackageJson = await util.getPackageJson(this.moduleDir);
+        const modulePackageJson = await util.getPackageJson(this.moduleDir);
         this.version = modulePackageJson.version;
         this.majorVersion = semver.major(modulePackageJson.version);
 
         if (!modulePackageJson.name) {
             console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
-            return this.isValid = false;
+            this.isValid = false;
+            return;
         }
 
         this.npmModuleName = modulePackageJson.name;
@@ -110,7 +112,8 @@ export class RopmModule {
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
         if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
             console.error(`ropm: skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
-            return this.isValid = false;
+            this.isValid = false;
+            return;
         }
 
         //use the rootDir from packageJson, or default to the current module path
@@ -164,7 +167,7 @@ export class RopmModule {
         this.fileMaps = files.map(filePath => {
             const filePathParts = filePath.split(/\/|\\/);
             const topLevelDir = filePathParts.splice(0, 1)[0];
-            let targetPath = path.join(this.hostRootDir, topLevelDir, 'roku_modules', this.ropmModuleName, ...filePathParts);
+            const targetPath = path.join(this.hostRootDir, topLevelDir, 'roku_modules', this.ropmModuleName, ...filePathParts);
             return {
                 src: path.resolve(this.rootDir, filePath),
                 dest: targetPath
@@ -177,7 +180,7 @@ export class RopmModule {
 
     public async transform() {
         //load all files
-        for (let obj of this.fileMaps) {
+        for (const obj of this.fileMaps) {
             this.files.push(
                 new File(obj.src, obj.dest, this.rootDir)
             );
@@ -192,7 +195,7 @@ export class RopmModule {
         this.createEdits();
 
         //apply all of the edits
-        for (let file of this.files) {
+        for (const file of this.files) {
             file.applyEdits();
         }
 
@@ -219,7 +222,7 @@ export class RopmModule {
             x => x.npmModuleName === this.npmModuleName && x.majorVersion === this.majorVersion
         );
         if (!ownDependency) {
-            throw new Error(`Cannot find ${this.npmModuleName}@${this.majorVersion} in programDependencies`)
+            throw new Error(`Cannot find ${this.npmModuleName}@${this.majorVersion} in programDependencies`);
         }
         this.ropmModuleName = ownDependency.ropmModuleName;
 
@@ -231,12 +234,10 @@ export class RopmModule {
             const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.majorVersion === depMajorVersion);
             if (programDependency) {
                 this.prefixMap[dep.alias] = programDependency.ropmModuleName;
+            } else if (this.prefixMap[dep.alias]) {
+                throw new Error(`Alias "${dep.alias}" already exists for ${this.moduleDir}`);
             } else {
-                if (this.prefixMap[dep.alias]) {
-                    throw new Error(`Alias "${dep.alias}" already exists for ${this.moduleDir}`);
-                } else {
-                    this.prefixMap[dep.alias] = dep.alias;
-                }
+                this.prefixMap[dep.alias] = dep.alias;
             }
         }
     }
@@ -248,9 +249,9 @@ export class RopmModule {
         const prefixMapKeys = Object.keys(this.prefixMap);
         const prefixMapKeysLower = prefixMapKeys.map(x => x.toLowerCase());
 
-        for (let file of this.files) {
+        for (const file of this.files) {
             //create an edit for each function definition
-            for (let func of file.functionDefinitions) {
+            for (const func of file.functionDefinitions) {
                 //skip edits for special functions
                 if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
                     continue;
@@ -259,7 +260,7 @@ export class RopmModule {
             }
 
             //prefix all function calls to our own function names
-            for (let call of file.functionCalls) {
+            for (const call of file.functionCalls) {
                 const lowerName = call.name.toLowerCase();
                 //if this function is owned by our project, rename it
                 if (ownFunctionNames.includes(lowerName)) {
@@ -274,18 +275,18 @@ export class RopmModule {
                 if (idx > -1) {
                     const newPrefix = this.prefixMap[prefixMapKeys[idx]];
                     //begin position + the length of the original prefix + 1 for the underscore
-                    const offsetEnd = call.offset + possiblePrefix.length + 1
+                    const offsetEnd = call.offset + possiblePrefix.length + 1;
                     file.addEdit(call.offset, offsetEnd, newPrefix + '_');
                 }
             }
 
             //rename all component definitions
-            for (let comp of file.componentDeclarations) {
+            for (const comp of file.componentDeclarations) {
                 file.addEdit(comp.offset, comp.offset, prefix);
             }
 
             //rename all component usage
-            for (let comp of file.componentReferences) {
+            for (const comp of file.componentReferences) {
                 //if this component is owned by our module, rename it
                 if (ownComponentNames.includes(comp.name.toLowerCase())) {
                     file.addEdit(comp.offset, comp.offset, prefix);
@@ -293,7 +294,7 @@ export class RopmModule {
             }
 
             //rewrite file references
-            for (let fileReference of file.fileReferences) {
+            for (const fileReference of file.fileReferences) {
                 this.createFileReferenceEdit(file, fileReference);
             }
         }
@@ -309,13 +310,13 @@ export class RopmModule {
             pkgPathAbsolute = `pkg:/` + path.posix.normalize(path.dirname(file.pkgPath) + '/' + fileReference.path);
         }
 
-        let parts = pkgPathAbsolute.split('/');
+        const parts = pkgPathAbsolute.split('/');
         //discard the first part (pkg:)
         parts.splice(0, 1);
-        let baseFolder = parts[0];
+        const baseFolder = parts[0];
         //remove the base folder part
         parts.splice(0, 1);
-        let newPath = `pkg:/${baseFolder}/roku_modules/${this.ropmModuleName}/${parts.join('/')}`;
+        const newPath = `pkg:/${baseFolder}/roku_modules/${this.ropmModuleName}/${parts.join('/')}`;
         file.addEdit(fileReference.offset, fileReference.offset + fileReference.path.length, newPath);
     }
 
@@ -324,8 +325,8 @@ export class RopmModule {
      */
     public getDistinctFunctionDeclarationNames() {
         const result = {};
-        for (let file of this.files) {
-            for (let func of file.functionDefinitions) {
+        for (const file of this.files) {
+            for (const func of file.functionDefinitions) {
                 //skip the special function names
                 if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
                     continue;
@@ -341,8 +342,8 @@ export class RopmModule {
      */
     public getDistinctFunctionCallNames() {
         const result = {};
-        for (let file of this.files) {
-            for (let call of file.functionCalls) {
+        for (const file of this.files) {
+            for (const call of file.functionCalls) {
                 result[call.name.toLowerCase()] = true;
             }
         }
@@ -354,8 +355,8 @@ export class RopmModule {
      */
     public getDistinctComponentDeclarationNames() {
         const result = {};
-        for (let file of this.files) {
-            for (let comp of file.componentDeclarations) {
+        for (const file of this.files) {
+            for (const comp of file.componentDeclarations) {
                 result[comp.name.toLowerCase()] = true;
             }
         }
@@ -367,8 +368,8 @@ export class RopmModule {
      */
     public getDistinctComponentReferenceNames() {
         const result = {};
-        for (let file of this.files) {
-            for (let comp of file.componentReferences) {
+        for (const file of this.files) {
+            for (const comp of file.componentReferences) {
                 result[comp.name.toLowerCase()] = true;
             }
         }

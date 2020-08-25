@@ -50,7 +50,7 @@ export class Util {
         if (typeof modulePath !== 'string') {
             return undefined;
         }
-        let parts = modulePath.split(/\\|\//);
+        const parts = modulePath.split(/\\|\//);
         //get folder name
         const moduleName = parts.pop();
         if (!moduleName) {
@@ -93,9 +93,9 @@ export class Util {
     async getPackageJson(modulePath: string) {
         const packageJsonPath = path.join(modulePath, 'package.json');
 
-        let text = await fsExtra.readFile(packageJsonPath);
+        const text = await fsExtra.readFile(packageJsonPath);
 
-        let packageJson = JSON.parse(text.toString()) as RopmPackageJson;
+        const packageJson = JSON.parse(text.toString()) as RopmPackageJson;
         return packageJson;
     }
 
@@ -104,7 +104,7 @@ export class Util {
      */
     async isEmptyDir(dirPath: string) {
         //TODO this lists all files in the directory. Perhaps we should optimize this by using a directory reader? Might not matter...
-        let files = await fsExtra.readdir(dirPath);
+        const files = await fsExtra.readdir(dirPath);
         return files.length === 0;
     }
 
@@ -157,7 +157,7 @@ export class Util {
             .map(x => util.getRopmNameFromModuleName(x));
 
         //look up the original package name of each alias
-        let result = [] as {
+        const result = [] as {
             alias: string;
             npmModuleName: string;
             version: string;
@@ -166,11 +166,11 @@ export class Util {
         await Promise.all(
             aliases.map(async (alias) => {
 
-                let dependencyDir = await this.findDependencyDir(moduleDir, alias);
+                const dependencyDir = await this.findDependencyDir(moduleDir, alias);
                 if (!dependencyDir) {
                     throw new Error(`Could not resolve dependency "${alias}" for "${moduleDir}"`);
                 }
-                let packageJson = await util.getPackageJson(dependencyDir);
+                const packageJson = await util.getPackageJson(dependencyDir);
                 result.push({
                     alias: alias,
                     npmModuleName: packageJson.name,
@@ -184,25 +184,25 @@ export class Util {
 
     /**
      * Given the path to a folder containing a node_modules folder, find the path to the specified package
-     * First look in ${startingDir}/node_modules. Then, walk up the directory tree, 
+     * First look in ${startingDir}/node_modules. Then, walk up the directory tree,
      * looking in node_modules for that folder the whole way up to root.
      */
     public async findDependencyDir(startingDir: string, packageName: string) {
         let dir = startingDir;
         while (path.dirname(dir) !== dir) {
-            let modulePathCandidate = path.join(dir, 'node_modules', packageName);
+            const modulePathCandidate = path.join(dir, 'node_modules', packageName);
             if (await fsExtra.pathExists(modulePathCandidate)) {
                 return modulePathCandidate;
             }
             dir = path.dirname(dir);
-        };
+        }
     }
 
     /**
      * Replace the first case-insensitive occurance of {search} in {subject} with {replace}
      */
     public replaceCaseInsensitive(search: string, subject: string, replace: string) {
-        let idx = subject.toLowerCase().indexOf(search.toLowerCase());
+        const idx = subject.toLowerCase().indexOf(search.toLowerCase());
         if (idx > -1) {
             return subject.substring(0, idx) + replace + subject.substring(idx + search.length);
         } else {

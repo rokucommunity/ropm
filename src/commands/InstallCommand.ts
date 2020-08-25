@@ -18,7 +18,7 @@ export class InstallCommand {
     private moduleManager = new ModuleManager();
 
     private get hostRootDir() {
-        let packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
+        const packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
         if (packageJsonRootDir) {
             return path.resolve(this.cwd, packageJsonRootDir);
         } else {
@@ -78,16 +78,16 @@ export class InstallCommand {
      * Copy all modules to roku_modules
      */
     private async processModules() {
-        let modulePaths = this.getProdDependencies();
+        const modulePaths = this.getProdDependencies();
 
         //remove the host module from the list (it should always be the first entry)
-        let hostModulePath = modulePaths.splice(0, 1)[0];
+        const hostModulePath = modulePaths.splice(0, 1)[0];
         this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath);
 
         this.moduleManager.hostRootDir = this.hostRootDir;
 
         //copy all of them at once, wait for them all to complete
-        for (let modulePath of modulePaths) {
+        for (const modulePath of modulePaths) {
             this.moduleManager.addModule(modulePath);
         }
 
@@ -101,7 +101,7 @@ export class InstallCommand {
      */
     getProdDependencies() {
         try {
-            let stdout = childProcess.execSync('npm ls --parseable --prod', {
+            const stdout = childProcess.execSync('npm ls --parseable --prod', {
                 cwd: this.cwd
             }).toString();
             return stdout.trim().split(/\r?\n/);

@@ -1,8 +1,8 @@
-import { ModuleManager } from "./ModuleManager";
-import { expect } from "chai";
+import { ModuleManager } from './ModuleManager';
+import { expect } from 'chai';
 import * as path from 'path';
-import { util } from "../util";
-import { file, fsEqual, createProjects, DepGraphNode, trim } from "../TestHelpers.spec";
+import { util } from '../util';
+import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelpers.spec';
 
 const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
@@ -52,7 +52,7 @@ describe('ModuleManager', function () {
 
         it('ignores the alias for non-host module dependencies', async () => {
             await createDependencies([{
-                name: "logger",
+                name: 'logger',
                 dependencies: [{
                     alias: 'p',
                     name: 'promise'
@@ -170,13 +170,13 @@ describe('ModuleManager', function () {
          * This test converts the dependency name "module1" to "module2", and names this package "module1"
          */
         it('handles module prefix swapping', async () => {
-            createDependencies([{
+            await createDependencies([{
                 alias: 'logger',
                 name: 'simple-logger',
                 dependencies: [{
                     alias: 'logger',
                     name: 'complex-logger'
-                }],
+                }]
             }]);
 
             //simple-logger calls method from complex-logger, aliased as `logger`
@@ -195,7 +195,7 @@ describe('ModuleManager', function () {
         });
 
         it('applies a prefix to all functions of a program', async () => {
-            let [logger] = await createDependencies([{
+            const [logger] = await createDependencies([{
                 name: 'logger'
             }]);
 
@@ -231,7 +231,7 @@ describe('ModuleManager', function () {
         });
 
         it('applies a prefix to components and their usage', async () => {
-            let [logger] = await createDependencies([{
+            const [logger] = await createDependencies([{
                 name: 'logger'
             }]);
 
@@ -283,7 +283,7 @@ describe('ModuleManager', function () {
         });
 
         it('renames dependency prefixes', async () => {
-            let [logger] = await createDependencies([{
+            const [logger] = await createDependencies([{
                 alias: 'logger',
                 name: '@alpha/logger',
                 dependencies: [{
@@ -308,7 +308,7 @@ describe('ModuleManager', function () {
         });
 
         it('rewrites file paths for own package', async () => {
-            let [logger] = await createDependencies([{
+            const [logger] = await createDependencies([{
                 name: 'logger'
             }]);
 
