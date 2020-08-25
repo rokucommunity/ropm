@@ -4,7 +4,6 @@ import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import { createSandbox } from 'sinon';
 import { tempDir, expectThrowsAsync, createProjects } from './TestHelpers.spec';
-import { fsEqual } from './TestHelpers.spec';
 export const sinon = createSandbox();
 
 describe('Util', () => {

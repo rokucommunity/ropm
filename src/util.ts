@@ -4,7 +4,6 @@ import * as fsExtra from 'fs-extra';
 import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
 import { IOptions } from 'glob';
-import { string } from 'yargs';
 
 export class Util {
 
