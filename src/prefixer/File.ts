@@ -313,7 +313,7 @@ export class File {
      */
     private findFilePathStrings() {
         //look for any string containing `pkg:/`
-        const regexp = /"(pkg:\/.*)"/gi;
+        const regexp = /"(pkg:\/[^"]+)"/gi;
         let match: RegExpExecArray | null;
         while (match = regexp.exec(this.fileContents)) {
             this.fileReferences.push({

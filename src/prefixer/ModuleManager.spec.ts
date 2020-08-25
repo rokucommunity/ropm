@@ -347,7 +347,7 @@ describe('ModuleManager', function () {
             `);
         });
 
-        it.only('rewrites script references to dependency files', async () => {
+        it('rewrites script references to dependency files', async () => {
             const [logger, promise] = await createDependencies([{
                 name: 'logger',
                 dependencies: [{
@@ -373,6 +373,72 @@ describe('ModuleManager', function () {
                     <script uri="pkg:/source/roku_modules/promise_v1/promise.brs" />
                     <script uri="pkg:/source/roku_modules/promise_v1/promise.brs" />
                 </component>
+            `);
+        });
+
+        it('rewrites <Poster> file paths', async () => {
+            const [logger, photolib] = await createDependencies([{
+                name: 'logger',
+                dependencies: [{
+                    name: 'photolib'
+                }]
+            }]);
+
+            file(`${photolib.rootDir}/images/picture.jpg`, ``);
+
+            file(`${logger.rootDir}/components/Component1.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="Component1">
+                    <children>
+                        <Poster uri="pkg:/images/photo.jpg" />
+                        <!--dependency paths
+                        <Poster uri="pkg:/images/roku_modules/photolib/photo.jpg" />
+                    </children>
+                </component>
+            `);
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_Component1">
+                    <children>
+                        <Poster uri="pkg:/images/roku_modules/logger/photo.jpg" />
+                        <!--dependency paths
+                        <Poster uri="pkg:/images/roku_modules/photolib_v1/photo.jpg" />
+                    </children>
+                </component>
+            `);
+        });
+
+        it('does not rewrite simple "pkg:/" paths with nothing else in it', async () => {
+            const [logger] = await createDependencies([{
+                name: 'logger'
+            }]);
+            file(`${logger.rootDir}/source/common.brs`, `
+                sub GetImagePath(imageName)
+                    
+                    'will be rewritten because we have content after 'pkg:/'
+                    image1 = "pkg:/images/" + imageName
+                    
+                    'will not be rewritten because the 'pkg:/' is isolated
+                    image2 = "pkg:/" + "images/" + imageName
+
+                end sub
+            `);
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/common.brs`, `
+                sub logger_GetImagePath(imageName)
+                    
+                    'will be rewritten because we have content after 'pkg:/'
+                    image1 = "pkg:/images/roku_modules/logger/" + imageName
+                    
+                    'will not be rewritten because the 'pkg:/' is isolated
+                    image2 = "pkg:/" + "images/" + imageName
+
+                end sub
             `);
         });
     });
