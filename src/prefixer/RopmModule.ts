@@ -316,7 +316,23 @@ export class RopmModule {
         const baseFolder = parts[0];
         //remove the base folder part
         parts.splice(0, 1);
-        const newPath = `pkg:/${baseFolder}/roku_modules/${this.ropmModuleName}/${parts.join('/')}`;
+
+        let newPath: string;
+
+        //if the second folder is `roku_modules`
+        if (parts[0] === 'roku_modules') {
+            //remove the roku_modules bit
+            parts.splice(0, 1);
+            //this is a reference to a dependency's file
+            const dependencyName = parts[0];
+            //remove the dependency name bit
+            parts.splice(0, 1);
+            const newDependencyName = this.prefixMap[dependencyName.toLowerCase()];
+            newPath = `pkg:/${baseFolder}/roku_modules/${newDependencyName}/${parts.join('/')}`;
+        } else {
+            //this is a reference to this module's own file
+            newPath = `pkg:/${baseFolder}/roku_modules/${this.ropmModuleName}/${parts.join('/')}`;
+        }
         file.addEdit(fileReference.offset, fileReference.offset + fileReference.path.length, newPath);
     }
 

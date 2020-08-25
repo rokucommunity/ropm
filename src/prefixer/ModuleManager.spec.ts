@@ -307,7 +307,7 @@ describe('ModuleManager', function () {
             `);
         });
 
-        it('rewrites file paths for own package', async () => {
+        it('rewrites script paths for own package', async () => {
             const [logger] = await createDependencies([{
                 name: 'logger'
             }]);
@@ -323,7 +323,6 @@ describe('ModuleManager', function () {
                     print message
                 end sub
             `);
-
 
             file(`${logger.rootDir}/components/Component1.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -344,6 +343,35 @@ describe('ModuleManager', function () {
                     <script uri="pkg:/components/roku_modules/logger/common.brs" />
                     <script uri="pkg:/components/roku_modules/logger/common.brs" />
                     <script uri="pkg:/components/roku_modules/logger/common.brs" />
+                </component>
+            `);
+        });
+
+        it.only('rewrites script references to dependency files', async () => {
+            const [logger, promise] = await createDependencies([{
+                name: 'logger',
+                dependencies: [{
+                    name: 'promise'
+                }]
+            }]);
+
+            file(`${promise.rootDir}/source/promise.brs`, ``);
+
+            file(`${logger.rootDir}/components/Component1.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="Component1">
+                    <script uri="pkg:/source/roku_modules/promise/promise.brs" />
+                    <script uri="../source/roku_modules/promise/promise.brs" />
+                </component>
+            `);
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_Component1">
+                    <script uri="pkg:/source/roku_modules/promise_v1/promise.brs" />
+                    <script uri="pkg:/source/roku_modules/promise_v1/promise.brs" />
                 </component>
             `);
         });
