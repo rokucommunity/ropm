@@ -83,9 +83,9 @@ export class RopmModule {
     public prefixMap = {} as { [oldPrefix: string]: string };
 
     /**
-     * The major version of this module
+     * The dominant version of the dependency. This will be the major version in most cases, will be the full version string for pre-release versions
      */
-    public majorVersion!: number;
+    public dominantVersion!: string;
 
     public isValid = true;
 
@@ -99,7 +99,7 @@ export class RopmModule {
 
         const modulePackageJson = await util.getPackageJson(this.moduleDir);
         this.version = modulePackageJson.version;
-        this.majorVersion = semver.major(modulePackageJson.version);
+        this.dominantVersion = semver.major(modulePackageJson.version).toString();
 
         if (!modulePackageJson.name) {
             console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
@@ -219,10 +219,10 @@ export class RopmModule {
     public async createPrefixMap(programDependencies: Dependency[]) {
         //reassign own module name based on program dependencies
         const ownDependency = programDependencies.find(
-            x => x.npmModuleName === this.npmModuleName && x.majorVersion === this.majorVersion
+            x => x.npmModuleName === this.npmModuleName && x.dominantVersion === this.dominantVersion
         );
         if (!ownDependency) {
-            throw new Error(`Cannot find ${this.npmModuleName}@${this.majorVersion} in programDependencies`);
+            throw new Error(`Cannot find ${this.npmModuleName}@${this.dominantVersion} in programDependencies`);
         }
         this.ropmModuleName = ownDependency.ropmModuleName;
 
@@ -230,14 +230,14 @@ export class RopmModule {
         const deps = await util.getModuleDependencies(this.moduleDir);
         this.prefixMap = {};
         for (const dep of deps) {
-            const depMajorVersion = semver.major(dep.version);
-            const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.majorVersion === depMajorVersion);
+            const depMajorVersion = semver.major(dep.version).toString();
+            const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.dominantVersion === depMajorVersion);
             if (programDependency) {
-                this.prefixMap[dep.alias] = programDependency.ropmModuleName;
-            } else if (this.prefixMap[dep.alias]) {
-                throw new Error(`Alias "${dep.alias}" already exists for ${this.moduleDir}`);
+                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
+            } else if (this.prefixMap[dep.npmModuleName]) {
+                throw new Error(`Alias "${dep.ropmModuleName}" already exists for ${this.moduleDir}`);
             } else {
-                this.prefixMap[dep.alias] = dep.alias;
+                this.prefixMap[dep.ropmModuleName] = dep.ropmModuleName;
             }
         }
     }

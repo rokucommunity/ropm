@@ -1,6 +1,6 @@
 import { RopmModule } from './RopmModule';
 import * as semver from 'semver';
-import { util } from '../util';
+import { util, ModuleDependency } from '../util';
 
 export class ModuleManager {
     public modules = [] as RopmModule[];
@@ -9,11 +9,7 @@ export class ModuleManager {
      * A list of all direct dependencies of the host application.
      * This is used to pick which version prettier prefixes whenever there's multiple versions required
      */
-    public hostDependencies = [] as Array<{
-        alias: string;
-        npmModuleName: string;
-        version: string;
-    }>;
+    public hostDependencies = [] as ModuleDependency[];
 
     /**
      * The absolute path to the rootDir of the host application
@@ -86,10 +82,11 @@ export class ModuleManager {
      * Also derive the optimal ropm alias for each dependency based on the host app aliases and the aliases from all dependencies
      */
     public getReducedDependencies() {
-        //versions[moduleName][majorVersionNumber] = highestVersionNumber
+        //versions[moduleName][dominantVersion] = highestVersionNumber
         const moduleVersions = {} as {
             [moduleName: string]: {
-                [majorVersioNNumber: string]: {
+                //the dominantVersion is a single int, or the full version number for pre-release versions
+                [dominantVersion: string]: {
                     highestVersion: string;
                     aliases: string[];
                 };
@@ -103,42 +100,69 @@ export class ModuleManager {
             if (!moduleVersions[npmModuleNameLower]) {
                 moduleVersions[npmModuleNameLower] = {};
             }
-            const majorVersion = semver.major(module.version);
-            if (!moduleVersions[npmModuleNameLower][majorVersion]) {
-                moduleVersions[npmModuleNameLower][majorVersion] = {
+            let dominantVersion: string;
+            if (semver.prerelease(module.version)) {
+                dominantVersion = module.version;
+            } else {
+                dominantVersion = semver.major(module.version).toString();
+            }
+
+            if (!moduleVersions[npmModuleNameLower][dominantVersion]) {
+                moduleVersions[npmModuleNameLower][dominantVersion] = {
                     highestVersion: module.version,
                     aliases: []
                 };
             }
-            const previousVersion = moduleVersions[npmModuleNameLower][majorVersion].highestVersion ?? module.version;
+            const previousVersion = moduleVersions[npmModuleNameLower][dominantVersion].highestVersion ?? module.version;
             //if this new version is higher, keep it
             if (semver.compare(module.version, previousVersion) > 0) {
-                moduleVersions[npmModuleNameLower][majorVersion].highestVersion = module.version;
+                moduleVersions[npmModuleNameLower][dominantVersion].highestVersion = module.version;
             }
-            moduleVersions[npmModuleNameLower][majorVersion].aliases.push(module.ropmModuleName);
+            moduleVersions[npmModuleNameLower][dominantVersion].aliases.push(module.ropmModuleName);
         }
 
         const result = [] as Dependency[];
 
         //compute the list of unique aliases
         for (const moduleName in moduleVersions) {
-            const majorVersions = Object.keys(moduleVersions[moduleName]).sort();
-            for (let i = 0; i < majorVersions.length; i++) {
-                const majorVersion = parseInt(majorVersions[i]);
+            const dominantVersions = Object.keys(moduleVersions[moduleName]).sort();
+            for (let i = 0; i < dominantVersions.length; i++) {
+                const dominantVersion = dominantVersions[i];
 
                 const hostDependency = this.hostDependencies.find((dep) => {
-                    return dep.npmModuleName === moduleName && semver.major(dep.version) === majorVersion;
+                    //the modules need to have the same name
+                    if (dep.npmModuleName !== moduleName) {
+                        return false;
+                    }
+                    //if this is a prerelease dependency
+                    if (semver.prerelease(dep.version)) {
+                        //compare entire version string
+                        return dep.version === dominantVersion;
+                    } else {
+                        //compare major versions
+                        return semver.major(dep.version).toString() === dominantVersion;
+                    }
                 });
 
-                const obj = moduleVersions[moduleName][majorVersion];
+                const obj = moduleVersions[moduleName][dominantVersion];
+                //convert the version number into a valid roku identifier
+                const dominantVersionIdentifier = util.prereleaseToRokuIdentifier(dominantVersion);
+
+                let version: string;
+                if (semver.prerelease(dominantVersion)) {
+                    //use exactly this prerelease version
+                    version = dominantVersion;
+                } else {
+                    //use the highest version within this major range
+                    version = semver.maxSatisfying([obj.highestVersion, hostDependency?.version ?? '0.0.0'], '*') as string;
+                }
 
                 result.push({
-                    majorVersion: majorVersion,
+                    dominantVersion: dominantVersion.toString(),
                     npmModuleName: moduleName,
                     //use the hosts's alias, or default to the module name
-                    ropmModuleName: hostDependency?.alias ?? `${util.getRopmNameFromModuleName(moduleName)}_v${majorVersion}`,
-                    //use the highest version within this major range
-                    version: semver.maxSatisfying([obj.highestVersion, hostDependency?.version ?? '0.0.0'], '*') as string
+                    ropmModuleName: hostDependency?.ropmModuleName ?? `${util.getRopmNameFromModuleName(moduleName)}_v${dominantVersionIdentifier}`,
+                    version: version
                 });
             }
         }
@@ -149,7 +173,10 @@ export class ModuleManager {
 
 export interface Dependency {
     npmModuleName: string;
-    majorVersion: number;
+    /**
+     * The dominant version of the dependency. This will be the major version in most cases, will be the full version string for pre-release versions
+     */
+    dominantVersion: string;
     version: string;
     ropmModuleName: string;
 }

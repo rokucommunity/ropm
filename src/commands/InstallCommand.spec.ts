@@ -6,8 +6,9 @@ import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
+import { tempDir } from '../TestHelpers.spec';
+import { InitCommand } from './InitCommand';
 
-const tempDir = path.join(process.cwd(), '.tmp');
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
 
@@ -251,9 +252,7 @@ describe('InstallCommand', function () {
                 path.join(projectDir, 'LICENSE')
             ), 'LICENSE should not exist').to.be.false;
         });
-
     });
-
 });
 
 export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: Partial<RopmPackageJson>) {

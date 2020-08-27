@@ -5,6 +5,7 @@ import * as childProcess from 'child_process';
 import { createSandbox } from 'sinon';
 import { tempDir, expectThrowsAsync, createProjects } from './TestHelpers.spec';
 export const sinon = createSandbox();
+import * as path from 'path';
 
 describe('Util', () => {
     beforeEach(() => {
@@ -136,6 +137,24 @@ describe('Util', () => {
             fsExtra.removeSync(`${hostDir}/node_modules/project-b`);
 
             await expectThrowsAsync(() => util.getModuleDependencies(hostDir));
+        });
+
+        it('properly handles ropm aliases', async () => {
+            const hostDir = path.join(tempDir, 'app');
+            createProjects(hostDir, hostDir, {
+                name: 'app',
+                dependencies: [{
+                    name: 'project-abc'
+                }]
+            });
+
+            const deps = await util.getModuleDependencies(hostDir);
+            expect(deps).to.eql([{
+                npmAlias: 'project-abc',
+                ropmModuleName: 'projectabc',
+                npmModuleName: 'project-abc',
+                version: '1.0.0'
+            }]);
         });
     });
 

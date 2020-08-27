@@ -44,7 +44,7 @@ describe('ModuleManager', function () {
             await process();
             expect(manager.getReducedDependencies()).to.eql([{
                 npmModuleName: 'promise',
-                majorVersion: 1,
+                dominantVersion: '1',
                 version: '1.0.0',
                 ropmModuleName: 'promise'
             }]);
@@ -61,7 +61,7 @@ describe('ModuleManager', function () {
             await process();
             expect(manager.getReducedDependencies().filter(x => x.npmModuleName === 'promise')).to.eql([{
                 npmModuleName: 'promise',
-                majorVersion: 1,
+                dominantVersion: '1',
                 version: '1.0.0',
                 ropmModuleName: 'promise_v1'
             }]);
@@ -80,14 +80,14 @@ describe('ModuleManager', function () {
                 }]
             }]);
             await process();
-            expect(manager.getReducedDependencies().filter(x => x.npmModuleName !== 'logger').sort((a, b) => a.majorVersion - b.majorVersion)).to.eql([{
+            expect(manager.getReducedDependencies().filter(x => x.npmModuleName !== 'logger').sort((a, b) => a.dominantVersion.localeCompare(b.dominantVersion))).to.eql([{
                 npmModuleName: 'promise',
-                majorVersion: 1,
+                dominantVersion: '1',
                 version: '1.0.0',
                 ropmModuleName: 'promise_v1'
             }, {
                 npmModuleName: 'promise',
-                majorVersion: 2,
+                dominantVersion: '2',
                 version: '2.0.0',
                 ropmModuleName: 'promise_v2'
             }]);
@@ -103,16 +103,51 @@ describe('ModuleManager', function () {
                 version: '2.0.0'
             }]);
             await process();
-            expect(manager.getReducedDependencies().sort((a, b) => a.majorVersion - b.majorVersion)).to.eql([{
+            expect(manager.getReducedDependencies().sort((a, b) => a.dominantVersion.localeCompare(b.dominantVersion))).to.eql([{
                 npmModuleName: 'promise',
-                majorVersion: 1,
+                dominantVersion: '1',
                 version: '1.2.3',
                 ropmModuleName: 'q'
             }, {
                 npmModuleName: 'promise',
-                majorVersion: 2,
+                dominantVersion: '2',
                 version: '2.0.0',
                 ropmModuleName: 'promise'
+            }]);
+        });
+
+        it('retains preversion versions', async () => {
+            await createDependencies([{
+                name: 'cool-package',
+                version: '4.0.0-b4'
+            }]);
+            expect(manager.getReducedDependencies().sort((a, b) => a.dominantVersion.localeCompare(b.dominantVersion))).to.eql([{
+                npmModuleName: 'cool-package',
+                dominantVersion: '4.0.0-b4',
+                version: '4.0.0-b4',
+                ropmModuleName: 'coolpackage_v4_0_0_b4'
+            }]);
+        });
+
+        it('does not de-dupe prerelease versions', async () => {
+            await createDependencies([{
+                name: 'cool-package',
+                version: '1.0.0-b1',
+                dependencies: [{
+                    name: 'cool-package',
+                    version: '1.0.0-b2'
+                }]
+            }]);
+            expect(manager.getReducedDependencies().sort((a, b) => a.dominantVersion.localeCompare(b.dominantVersion))).to.eql([{
+                npmModuleName: 'cool-package',
+                dominantVersion: '1.0.0-b1',
+                version: '1.0.0-b1',
+                ropmModuleName: 'coolpackage_v1_0_0_b1'
+            }, {
+                npmModuleName: 'cool-package',
+                dominantVersion: '1.0.0-b2',
+                version: '1.0.0-b2',
+                ropmModuleName: 'coolpackage_v1_0_0_b2'
             }]);
         });
     });

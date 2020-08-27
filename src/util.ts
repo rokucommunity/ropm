@@ -152,27 +152,22 @@ export class Util {
      */
     public async getModuleDependencies(moduleDir: string) {
         const packageJson = await util.getPackageJson(moduleDir);
-        const aliases = Object
-            .keys(packageJson.dependencies ?? {})
-            .map(x => util.getRopmNameFromModuleName(x));
+        const npmAliases = Object.keys(packageJson.dependencies ?? {});
 
         //look up the original package name of each alias
-        const result = [] as {
-            alias: string;
-            npmModuleName: string;
-            version: string;
-        }[];
+        const result = [] as ModuleDependency[];
 
         await Promise.all(
-            aliases.map(async (alias) => {
+            npmAliases.map(async (npmAlias) => {
 
-                const dependencyDir = await this.findDependencyDir(moduleDir, alias);
+                const dependencyDir = await this.findDependencyDir(moduleDir, npmAlias);
                 if (!dependencyDir) {
-                    throw new Error(`Could not resolve dependency "${alias}" for "${moduleDir}"`);
+                    throw new Error(`Could not resolve dependency "${npmAlias}" for "${moduleDir}"`);
                 }
                 const packageJson = await util.getPackageJson(dependencyDir);
                 result.push({
-                    alias: alias,
+                    npmAlias: npmAlias,
+                    ropmModuleName: util.getRopmNameFromModuleName(npmAlias),
                     npmModuleName: packageJson.name,
                     version: packageJson.version
                 });
@@ -180,6 +175,23 @@ export class Util {
         );
 
         return result;
+    }
+
+    /**
+     * Given a full verison string that ends with a prerelease text,
+     * convert that into a valid roku identifier. This is unique in that we want
+     * the identifier to still be version number-ish.
+     */
+    public prereleaseToRokuIdentifier(preversion: string) {
+        let identifier = this.getRopmNameFromModuleName(
+            //replace all periods or dashes with underscores
+            preversion.replace(/\.|-/g, '_')
+        );
+        //strip the leading identifier
+        if (identifier.startsWith('_')) {
+            identifier = identifier.substring(1);
+        }
+        return identifier;
     }
 
     /**
@@ -236,4 +248,11 @@ export interface RopmPackageJson {
          */
         rootDir?: string;
     };
+}
+
+export interface ModuleDependency {
+    npmAlias: string;
+    ropmModuleName: string;
+    npmModuleName: string;
+    version: string;
 }

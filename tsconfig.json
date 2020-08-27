@@ -24,7 +24,7 @@
     ],
     "exclude": [
         "node_modules/**/*",
-        ".eslintrc.js"
+        "src/**/*.spec.ts"
     ],
     "ts-node": {
         "transpileOnly": true
