@@ -37,7 +37,7 @@ export class CleanCommand {
      * finds the package.json file for the current host
      */
     private async loadHostPackageJson() {
-        if (this.skipLoadHostPackageJson) {
+        if (this.skipLoadHostPackageJson === false) {
             //if the host doesn't currently have a package.json
             if (await fsExtra.pathExists(path.resolve(this.cwd, 'package.json')) === false) {
                 console.log('Creating package.json');
@@ -55,7 +55,7 @@ export class CleanCommand {
 
     private async deleteAllRokuModulesFolders() {
         const rokuModulesFolders = await util.globAll([
-            '**/*/roku_modules',
+            '*/roku_modules',
             '!node_modules/**/*'
         ], {
             cwd: this.hostRootDir,

@@ -4,7 +4,7 @@ import { CleanCommand } from './CleanCommand';
 import { expect } from 'chai';
 import * as path from 'path';
 
-describe.only('CleanCommand', () => {
+describe('CleanCommand', () => {
     const appDir = `${tempDir}/app`;
 
     it('clears empty roku_modules folders', async () => {
