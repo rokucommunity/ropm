@@ -5,7 +5,7 @@ import { expect } from 'chai';
 
 describe('UninstallCommand', () => {
     const appDir = `${tempDir}/app`;
-    it.only('removes from package.json', async () => {
+    it('removes from package.json', async () => {
         mergePackageJson(appDir, {
             dependencies: {
                 promise: `file:/${tempDir}/proimse`
