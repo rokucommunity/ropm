@@ -1,10 +1,8 @@
 import { ModuleManager } from './ModuleManager';
-import * as fsExtra from 'fs-extra';
 import { expect } from 'chai';
 import * as path from 'path';
 import { util } from '../util';
-import { file, fsEqual, createProjects, DepGraphNode, trim, tempDir } from '../TestHelpers.spec';
-import { InstallCommand } from '../commands/InstallCommand';
+import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelpers.spec';
 
 const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 

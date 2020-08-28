@@ -130,7 +130,7 @@ function trimLeading(text: string) {
 }
 
 export async function expectThrowsAsync(func, startingText?: string) {
-    let ex: Error;
+    let ex!: Error;
     try {
         await Promise.resolve(
             func()

@@ -55,7 +55,7 @@ export class CleanCommand {
 
     private async deleteAllRokuModulesFolders() {
         const rokuModulesFolders = await util.globAll([
-            '*/roku_modules',
+            '**/*/roku_modules',
             '!node_modules/**/*'
         ], {
             cwd: this.hostRootDir,

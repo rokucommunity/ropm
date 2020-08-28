@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable func-names */
-/* eslint-disable @typescript-eslint/no-invalid-this */
 import * as fsExtra from 'fs-extra';
 import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
 import { tempDir } from '../TestHelpers.spec';
-import { InitCommand } from './InitCommand';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);

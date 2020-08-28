@@ -19,7 +19,7 @@ describe('RopmModule', () => {
             expect(logger.isValid).to.be.false;
         });
 
-        it.only('computes dominantVersion properly for prerelease', async () => {
+        it('computes dominantVersion properly for prerelease', async () => {
             const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
