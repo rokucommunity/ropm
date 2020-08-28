@@ -99,7 +99,7 @@ export class RopmModule {
 
         const modulePackageJson = await util.getPackageJson(this.moduleDir);
         this.version = modulePackageJson.version;
-        this.dominantVersion = semver.major(modulePackageJson.version).toString();
+        this.dominantVersion = util.getDominantVersion(modulePackageJson.version);
 
         if (!modulePackageJson.name) {
             console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);

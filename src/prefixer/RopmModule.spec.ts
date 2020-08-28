@@ -19,6 +19,18 @@ describe('RopmModule', () => {
             expect(logger.isValid).to.be.false;
         });
 
+        it.only('computes dominantVersion properly for prerelease', async () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    version: '1.2.3-beta.1'
+                }]
+            });
+            await logger.init();
+            expect(logger.dominantVersion).to.equal('1.2.3-beta.1');
+        });
+
         it('invalidates with missing alias name', async () => {
             const [logger] = createProjects(hostDir, hostDir, {
                 name: 'host',
@@ -102,7 +114,7 @@ describe('RopmModule', () => {
                 ropmModuleName: 'logger',
                 version: '1.0.0',
                 dominantVersion: '1',
-            },{
+            }, {
                 npmModuleName: 'promise',
                 ropmModuleName: 'promise',
                 version: '2.0.0-beta.1',
