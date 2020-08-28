@@ -5,6 +5,7 @@ import * as yargs from 'yargs';
 import { InstallCommand } from './commands/InstallCommand';
 import { InitCommand } from './commands/InitCommand';
 import { CleanCommand } from './commands/CleanCommand';
+import { UninstallCommand } from './commands/UninstallCommand';
 
 new Promise((resolve, reject) => {
     // eslint-disable-next-line
@@ -22,14 +23,17 @@ new Promise((resolve, reject) => {
             command.run().then(resolve, reject);
         })
 
-        .command('install [packages..]', 'Download Roku dependencies into the roku_modules folder', (builder) => {
+        .command([
+            'install [packages..]',
+            'i'
+        ], 'Download Roku dependencies into the roku_modules folder', (builder) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
         }, (args: any) => {
+            console.error('running');
             const command = new InstallCommand(args);
             command.run().then(resolve, reject);
         })
-        .alias('i', 'install')
 
         .command('clean', 'Remove all roku_module files and folders from the root directory', (builder) => {
             return builder
@@ -38,6 +42,18 @@ new Promise((resolve, reject) => {
             const command = new CleanCommand(args);
             command.run().then(resolve, reject);
         })
+
+        .command([
+            'uninstall [packages..]',
+            'un', 'unlink', 'remove', 'rm', 'r'
+        ], 'Uninstall the specified dependencies', (builder) => {
+            return builder
+                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
+        }, (args: any) => {
+            const command = new UninstallCommand(args);
+            command.run().then(resolve, reject);
+        })
+
         .argv;
 }).catch((e) => {
     console.error(e);

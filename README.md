@@ -187,7 +187,7 @@ If you wish to install all ropm dependencies in a different location, then you s
 ```
 ## CLI commands
 ### install
-Install a Roku package locally in both `node_modules` and `roku_modules`. This also updates the local `package.json` `dependencies` section. 
+Install one or more packages locally in both `node_modules` and `roku_modules`. This also updates the local `package.json` `dependencies` section. 
 
 Examples:
 ```bash
@@ -196,6 +196,26 @@ ropm install roku-promise
 
 ```bash
 ropm install module1 module2 module3
+```
+
+### clean
+Clean out all `ropm_modules` folders found in `rootDir`
+
+Example:
+```bash
+ropm clean
+```
+
+### uninstall
+Uninstall one or more packages from both `node_modules` and `roku_modules`. This also updates the local `package.json` `dependencies` section
+
+Examples:
+```bash
+ropm uninstall roku-promise
+```
+
+```bash
+ropm uninstall module1 module2 module3
 ```
 
 
