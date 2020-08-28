@@ -230,16 +230,50 @@ export class RopmModule {
         const deps = await util.getModuleDependencies(this.moduleDir);
         this.prefixMap = {};
         for (const dep of deps) {
-            const depMajorVersion = semver.major(dep.version).toString();
-            const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.dominantVersion === depMajorVersion);
-            if (!programDependency) {
+            const depDominantVersion = util.getDominantVersion(dep.version);
+            const programDependency = programDependencies.find(
+                (x) => x.npmModuleName === dep.npmModuleName && x.dominantVersion === depDominantVersion
+            );
+
+            if (programDependency) {
+                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
+            } else {
                 const dependencyText = dep.npmAlias === dep.npmModuleName ? dep.npmAlias : `${dep.npmAlias}(${dep.npmModuleName})`;
                 throw new Error(`Cannot find suitable program dependency for ${dependencyText}@${dep.version}`);
-            } else {
-                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
             }
         }
     }
+
+    /**
+     * Create the prefix map for this module
+     * @param programDependencies - the full list of resolved dependencies from the program. This is created by ModuleManager based on all modules in the program.
+     */
+    public async createPrefixMap1(programDependencies: Dependency[]) {
+        //reassign own module name based on program dependencies
+        const ownDependency = programDependencies.find(
+            x => x.npmModuleName === this.npmModuleName && x.dominantVersion === this.dominantVersion
+        );
+        if (!ownDependency) {
+            throw new Error(`Cannot find ${this.npmModuleName}@${this.dominantVersion} in programDependencies`);
+        }
+        this.ropmModuleName = ownDependency.ropmModuleName;
+
+        //compute all of the names of the dependencies within this module, and what prefixes we currently used for them.
+        const deps = await util.getModuleDependencies(this.moduleDir);
+        this.prefixMap = {};
+        for (const dep of deps) {
+            const depMajorVersion = semver.major(dep.version).toString();
+            const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.dominantVersion === depMajorVersion);
+            if (programDependency) {
+                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
+            } else if (this.prefixMap[dep.npmModuleName]) {
+                throw new Error(`Alias "${dep.ropmModuleName}" already exists for ${this.moduleDir}`);
+            } else {
+                this.prefixMap[dep.ropmModuleName] = dep.ropmModuleName;
+            }
+        }
+    }
+
 
     private createEdits() {
         const prefix = this.ropmModuleName + '_';

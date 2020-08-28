@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
+import * as semver from 'semver';
 import { IOptions } from 'glob';
 
 export class Util {
@@ -231,6 +232,14 @@ export class Util {
         } else {
             return text;
         }
+    }
+
+    /**
+     * Get the dominant version for a given version. This is the major number for normal versions,
+     * or the entire version string for prerelease versions
+     */
+    public getDominantVersion(version: string) {
+        return semver.prerelease(version) ? version : semver.major(version).toString();
     }
 
 }

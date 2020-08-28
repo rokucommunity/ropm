@@ -100,12 +100,7 @@ export class ModuleManager {
             if (!moduleVersions[npmModuleNameLower]) {
                 moduleVersions[npmModuleNameLower] = {};
             }
-            let dominantVersion: string;
-            if (semver.prerelease(module.version)) {
-                dominantVersion = module.version;
-            } else {
-                dominantVersion = semver.major(module.version).toString();
-            }
+            const dominantVersion = util.getDominantVersion(module.version);
 
             if (!moduleVersions[npmModuleNameLower][dominantVersion]) {
                 moduleVersions[npmModuleNameLower][dominantVersion] = {
@@ -129,20 +124,9 @@ export class ModuleManager {
             for (let i = 0; i < dominantVersions.length; i++) {
                 const dominantVersion = dominantVersions[i];
 
-                const hostDependency = this.hostDependencies.find((dep) => {
-                    //the modules need to have the same name
-                    if (dep.npmModuleName !== moduleName) {
-                        return false;
-                    }
-                    //if this is a prerelease dependency
-                    if (semver.prerelease(dep.version)) {
-                        //compare entire version string
-                        return dep.version === dominantVersion;
-                    } else {
-                        //compare major versions
-                        return semver.major(dep.version).toString() === dominantVersion;
-                    }
-                });
+                const hostDependency = this.hostDependencies.find(
+                    dep => dep.npmModuleName === moduleName && util.getDominantVersion(dep.version) === dominantVersion
+                );
 
                 const obj = moduleVersions[moduleName][dominantVersion];
                 //convert the version number into a valid roku identifier
@@ -161,7 +145,7 @@ export class ModuleManager {
                     dominantVersion: dominantVersion.toString(),
                     npmModuleName: moduleName,
                     //use the hosts's alias, or default to the module name
-                    ropmModuleName: hostDependency?.ropmModuleName ?? `${util.getRopmNameFromModuleName(moduleName)}_v${dominantVersionIdentifier}`,
+                    ropmModuleName: hostDependency?.npmAlias ?? `${util.getRopmNameFromModuleName(moduleName)}_v${dominantVersionIdentifier}`,
                     version: version
                 });
             }
