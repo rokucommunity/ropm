@@ -113,12 +113,12 @@ describe('RopmModule', () => {
                 npmModuleName: 'logger',
                 ropmModuleName: 'logger',
                 version: '1.0.0',
-                dominantVersion: '1',
+                dominantVersion: '1'
             }, {
                 npmModuleName: 'promise',
                 ropmModuleName: 'promise',
                 version: '2.0.0-beta.1',
-                dominantVersion: '2.0.0-beta.1',
+                dominantVersion: '2.0.0-beta.1'
             }]);
         });
     });
