@@ -15,11 +15,11 @@ A package manager for the Roku platform.
 ## How it works
 `ropm` leverages NodeJS's `npm` module system behind the scenes. This means when you create packages, they should be pushed to an `npm` registry such as [npm](https://www.npmjs.com/), [GitHub packages](https://github.com/features/packages), or even an on-premise registry. 
 
-The Roku project structure is fairly strict. There are a few hard rules:
-1. Components must be stored underneath `pkg:/components/`. 
+The Roku project structure is fairly strict. There are a few rules:
+1. Components must be stored somewhere underneath `pkg:/components/`. 
 2. Component names must be unique across the entire project
 3. Components each create their own scope
-4. All files found in `pkg:/source/` are compiled into a single scope.
+4. All files found underneath `pkg:/source/` are compiled into a single scope.
 5. All functions in a scope must have a unique name
 
 This provides unique challenges for a Roku package manager, because file paths alone are not enough to prevent symbol collisions. `ropm` solves the naming collision problem by rewriting the names of all functions and components in an ropm module.
@@ -152,15 +152,55 @@ Here's the resulting package.json `dependencies` section:
 }
 ```
 
+## Semantic versioning
+It is highly recommended that `ropm` package authors strictly adhere to the rules of [Semantic Versioning](https://semver.org/). This will provide the most stability and consistency for consumers of your package, as well as provide the highest performance and smallest possible package size. 
+
+### Version narrowing
+
+Whenever ropm encounters a project that directly or indirectly requires multiple versions of a ropm module, ropm will attempt to minimize the number of versions of that package. 
+
+For example, consider a project that has these dependencies:
+ - roku-promise version 1.1.0
+ - roku-promise version 1.4.0
+ 
+ ropm will only install `1.4.0` since semantic versioning states that the only differences between `1.1.0` and `1.4.0` are new features and bugfixes, and should not contain breaking changes.
+
+Here's another example:
+ - roku-promise@`1.1.0`
+ - roku-promise@`1.4.0`
+ - roku-promise@`2.0.0`
+ - roku-promise@`2.3.4`
+
+ropm will only install `1.4.0` and `2.3.4` since those are the highest versions within the same major range. 
+
+### Prerelease versions
+Due to their unstable nature, prerelease versions of packages have special treatment in ropm. Each prerelease version will be considered a standalone package. Example: 
+
+ - roku-promise@`1.0.0-beta.1`
+ - roku-promise@`1.0.0-beta.2`
+
+_Both_ versions will be copied to the project. We do not recommend publishing packages that depend on prerelease versions of a package. 
+
+### Version prefixing
+As previously mentioned, all packages will have prefixes applied to functions and components. All direct dependencies of a project (i.e. the packages listed in your app's `package.json` `dependencies` section) will use the exact dependency name listed. However, in order to resolve version conflicts and maintain consistency, any indirect dependencies (i.e. the dependencies of your dependencies) will be prefixed using the major version. 
+
+For example, consider the following dependency graph:
+ - logger@`1.0.0`
+    - fileLogger@`2.0.0`
+ - simple-list@`1.2.0`
+    - complex-list@`3.0.0`
+The prefixes will be as follows:
+ - logger
+ - fileLogger_v2
+ - simplelist
+ - complexlist_v3
+
+
+
+
 
 ## Do not change the code within roku_modules
 The files and folders within the `roku_modules` folders should not be altered at all, as these changes could be erased by future `ropm install` commands. If there are issues with a ropm module you are using, consider reaching out to the module publisher to have them fix and release a new version.
-
-## The algorithm
-When running `ropm install`, `ropm` does the following operations for each package:
-1. For each folder in the ropm package's `rootDir` folder, delete `${rootDir}/<folder_name>/roku_modules/<package_name>` and then copy all of the files from that corresponding folder.
-2. Rewrites function names, function calls, callfunc statements, and component names to have a prefix. (this prevents naming collisions)
-3. Rewrites in-code file paths to point to the new file locations
 
 ## Don't commit roku_modules
 The `roku_modules` folders that ropm creates should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. Here's how to ignore roku_modules in your `.gitignore file:
@@ -169,6 +209,12 @@ The `roku_modules` folders that ropm creates should not be commited to your proj
 ```gitignore
 roku_modules
 ```
+
+## The algorithm
+Running `ropm install` executes the following operations for each package:
+1. For each folder in the ropm package's `rootDir` folder, delete `${rootDir}/<folder_name>/roku_modules/<package_name>` and then copy all of the files from that corresponding folder.
+2. Rewrite function names, function calls, callfunc statements, and component names to have a prefix. (this prevents naming collisions)
+3. Rewrite in-code file references to point to their new locations
 
 ## Configuring ropm
 You can configure certain characteristics of ropm by specifying ropm options in the `package.json`. 
@@ -226,22 +272,21 @@ The `ropm` package system leverages the [npm](https://www.npmjs.com/) package sy
 
 Steps:
 1. Create a new package.json in your project (you can run `ropm init` to have it help build one)
-2. Add `"ropm"` to the `keywords` portion of the package.json. Without this tag, `ropm` will completely ignore your package when copying files. 
-3. Ensure that all files are contained within a folder (preferably `source/`, `/components`, `images/` or `fonts/`). Files at the root of a ropm package will be ignored.
+2. Add `"ropm"` to the `keywords` portion of the package.json. Without this tag, `ropm` will completely ignore your package when installed in an application folder. 
+3. Ensure that all files are contained within a folder (preferably `source/`, `/components`, `images/`, and `fonts/`). Files at the root of a ropm package will be ignored.
 
-Here's a simple package.json showing how to add the `ropm` keyword:
-```javascript
-{
-    "name": "pretty-list",
-    "version": "0.0.1",
-    "description": "",
-    "keywords": ["ropm"]
-    //...additional package.json properties
-}
-```
+    Here's a simple package.json showing how to add the `ropm` keyword:
+    ```javascript
+    {
+        "name": "pretty-list",
+        "version": "0.0.1",
+        "description": "",
+        "keywords": ["ropm"]
+        //...additional package.json properties
+    }
+    ```
+4. publish your package to a registry using the instructions from your registry of choice ([npm](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages), [GitHub Packages](https://docs.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-npm-for-use-with-github-packages))
 
-## Semantic versioning
-It is highly recommended that `ropm` package authors strictly adhere to the rules of [Semantic Versioning](https://semver.org/). This will provide the most stability and consistency for consumers of your package, as well as provide the highest performance and smallest possible package size. Whenever `ropm` encounters a project that directly or indirectly requires multiple versions of a ropm module, `ropm` will attempt to minimize the number of versions of that package. For example, if a project has dependencies that require both version `1.1.0` and `1.4.0` of `roku-promise`, `ropm` will opt to install `1.4.0` for both projects, since semantic versioning states that the only differences between `1.1.0` and `1.4.0` are new features and bugfixes, and should not contain breaking changes.
 
 ## Changing module's `rootDir`
 By default, `ropm` will assume the root of your module is where all of your files reside, and will copy every file from your package, with a few exceptions: 
