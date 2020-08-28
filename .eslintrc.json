@@ -10,7 +10,8 @@
         "project": "./tsconfig.json"
     },
     "plugins": [
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "no-only-tests"
     ],
     "extends": [
         "eslint:all",
@@ -113,6 +114,7 @@
         "no-invalid-this": "off",
         "no-labels": "off",
         "no-negated-condition": "off",
+        "no-only-tests/no-only-tests": "error",
         "no-param-reassign": "off",
         "no-plusplus": "off",
         "no-process-exit": "off",
