@@ -3,15 +3,24 @@ import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
+import * as semver from 'semver';
 import { IOptions } from 'glob';
 
 export class Util {
+
+    /**
+     * Determine if the current OS is running a version of windows
+     */
+    private isWindowsPlatform() {
+        return process.platform.startsWith('win');
+    }
+
     /**
      * Executes an exec command and returns a promise that completes when it's finished
      */
-    spawnAsync(command: string, args: string[], options?: childProcess.SpawnOptions) {
+    spawnAsync(command: string, args?: string[], options?: childProcess.SpawnOptions) {
         return new Promise((resolve, reject) => {
-            const child = childProcess.spawn(command, args, {
+            const child = childProcess.spawn(command, args ?? [], {
                 ...(options ?? {}),
                 stdio: 'inherit'
             });
@@ -29,7 +38,7 @@ export class Util {
         //filter out undefined args
         args = args.filter(arg => arg !== undefined);
         return this.spawnAsync(
-            process.platform.startsWith('win') ? 'npm.cmd' : 'npm',
+            this.isWindowsPlatform() ? 'npm.cmd' : 'npm',
             args as string[],
             options
         );
@@ -42,7 +51,7 @@ export class Util {
         if (typeof modulePath !== 'string') {
             return undefined;
         }
-        let parts = modulePath.split(/\\|\//);
+        const parts = modulePath.split(/\\|\//);
         //get folder name
         const moduleName = parts.pop();
         if (!moduleName) {
@@ -85,9 +94,9 @@ export class Util {
     async getPackageJson(modulePath: string) {
         const packageJsonPath = path.join(modulePath, 'package.json');
 
-        let text = await fsExtra.readFile(packageJsonPath);
+        const text = await fsExtra.readFile(packageJsonPath);
 
-        let packageJson = JSON.parse(text.toString()) as RopmPackageJson;
+        const packageJson = JSON.parse(text.toString()) as RopmPackageJson;
         return packageJson;
     }
 
@@ -96,14 +105,14 @@ export class Util {
      */
     async isEmptyDir(dirPath: string) {
         //TODO this lists all files in the directory. Perhaps we should optimize this by using a directory reader? Might not matter...
-        let files = await fsExtra.readdir(dirPath);
+        const files = await fsExtra.readdir(dirPath);
         return files.length === 0;
     }
 
     /**
      * A promise wrapper around glob-all
      */
-    public async globAll(patterns, options: IOptions) {
+    public async globAll(patterns, options?: IOptions) {
         return new Promise<string[]>((resolve, reject) => {
             globAll(patterns, options, (error, matches) => {
                 if (error) {
@@ -139,17 +148,120 @@ export class Util {
         }));
     }
 
+    /**
+     * Given a path to a module within node_modules, return its list of direct dependencies
+     */
+    public async getModuleDependencies(moduleDir: string) {
+        const packageJson = await util.getPackageJson(moduleDir);
+        const npmAliases = Object.keys(packageJson.dependencies ?? {});
+
+        //look up the original package name of each alias
+        const result = [] as ModuleDependency[];
+
+        await Promise.all(
+            npmAliases.map(async (npmAlias) => {
+
+                const dependencyDir = await this.findDependencyDir(moduleDir, npmAlias);
+                if (!dependencyDir) {
+                    throw new Error(`Could not resolve dependency "${npmAlias}" for "${moduleDir}"`);
+                }
+                const packageJson = await util.getPackageJson(dependencyDir);
+                result.push({
+                    npmAlias: npmAlias,
+                    ropmModuleName: util.getRopmNameFromModuleName(npmAlias),
+                    npmModuleName: packageJson.name,
+                    version: packageJson.version
+                });
+            })
+        );
+
+        return result;
+    }
+
+    /**
+     * Given a full verison string that ends with a prerelease text,
+     * convert that into a valid roku identifier. This is unique in that we want
+     * the identifier to still be version number-ish.
+     */
+    public prereleaseToRokuIdentifier(preversion: string) {
+        let identifier = this.getRopmNameFromModuleName(
+            //replace all periods or dashes with underscores
+            preversion.replace(/\.|-/g, '_')
+        );
+        //strip the leading identifier
+        if (identifier.startsWith('_')) {
+            identifier = identifier.substring(1);
+        }
+        return identifier;
+    }
+
+    /**
+     * Given the path to a folder containing a node_modules folder, find the path to the specified package
+     * First look in ${startingDir}/node_modules. Then, walk up the directory tree,
+     * looking in node_modules for that folder the whole way up to root.
+     */
+    public async findDependencyDir(startingDir: string, packageName: string) {
+        let dir = startingDir;
+        while (path.dirname(dir) !== dir) {
+            const modulePathCandidate = path.join(dir, 'node_modules', packageName);
+            if (await fsExtra.pathExists(modulePathCandidate)) {
+                return modulePathCandidate;
+            }
+            dir = path.dirname(dir);
+        }
+    }
+
+    /**
+     * Replace the first case-insensitive occurance of {search} in {subject} with {replace}
+     */
+    public replaceCaseInsensitive(search: string, subject: string, replace: string) {
+        const idx = subject.toLowerCase().indexOf(search.toLowerCase());
+        if (idx > -1) {
+            return subject.substring(0, idx) + replace + subject.substring(idx + search.length);
+        } else {
+            return subject;
+        }
+    }
+
+    /**
+     * If the text starts with a slash, remove it
+     */
+    public removeLeadingSlash(text: string) {
+        if (text.startsWith('/') || text.startsWith('\\')) {
+            return text.substring(1);
+        } else {
+            return text;
+        }
+    }
+
+    /**
+     * Get the dominant version for a given version. This is the major number for normal versions,
+     * or the entire version string for prerelease versions
+     */
+    public getDominantVersion(version: string) {
+        return semver.prerelease(version) ? version : semver.major(version).toString();
+    }
+
 }
 export const util = new Util();
 
 export interface RopmPackageJson {
+    name: string;
     dependencies?: { [key: string]: string };
     files?: string[];
     keywords?: string[];
+    version: string;
     ropm?: {
         /**
          * The path to the rootDir where all of the files for the roku module reside.
          */
         rootDir?: string;
     };
+}
+
+export interface ModuleDependency {
+    npmAlias: string;
+    ropmModuleName: string;
+    npmModuleName: string;
+    version: string;
 }

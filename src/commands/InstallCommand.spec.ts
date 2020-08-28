@@ -1,20 +1,15 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable func-names */
-/* eslint-disable @typescript-eslint/no-invalid-this */
 import * as fsExtra from 'fs-extra';
 import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
+import { tempDir } from '../TestHelpers.spec';
 
-const tempDir = path.join(process.cwd(), '.tmp');
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
 
-describe('InstallCommand', function () {
-    //tell mocha these tests take a long time
-    this.timeout(20000);
-
+describe('InstallCommand', () => {
     let args: InstallCommandArgs;
     let command: InstallCommand;
 
@@ -251,14 +246,12 @@ describe('InstallCommand', function () {
                 path.join(projectDir, 'LICENSE')
             ), 'LICENSE should not exist').to.be.false;
         });
-
     });
-
 });
 
-export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: RopmPackageJson) {
-    for (let relativePath in files) {
-        let filePath = path.join(tempDir, projectName, relativePath);
+export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: Partial<RopmPackageJson>) {
+    for (const relativePath in files) {
+        const filePath = path.join(tempDir, projectName, relativePath);
         fsExtra.ensureDirSync(
             path.dirname(filePath)
         );

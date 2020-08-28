@@ -16,7 +16,7 @@ export class CleanCommand {
         if (this.args.rootDir) {
             return path.resolve(this.cwd, this.args.rootDir);
         } else {
-            let packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
+            const packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
             if (packageJsonRootDir) {
                 return path.resolve(this.cwd, packageJsonRootDir);
             } else {
@@ -37,7 +37,7 @@ export class CleanCommand {
      * finds the package.json file for the current host
      */
     private async loadHostPackageJson() {
-        if (this.skipLoadHostPackageJson) {
+        if (this.skipLoadHostPackageJson === false) {
             //if the host doesn't currently have a package.json
             if (await fsExtra.pathExists(path.resolve(this.cwd, 'package.json')) === false) {
                 console.log('Creating package.json');
@@ -54,7 +54,7 @@ export class CleanCommand {
     }
 
     private async deleteAllRokuModulesFolders() {
-        let rokuModulesFolders = await util.globAll([
+        const rokuModulesFolders = await util.globAll([
             '*/roku_modules',
             '!node_modules/**/*'
         ], {
@@ -65,13 +65,13 @@ export class CleanCommand {
         //delete the roku_modules folders
         await Promise.all(
             rokuModulesFolders.map(async (rokuModulesDir) => {
-                console.log(`deleting ${rokuModulesDir}`);
+                console.log(`ropm: deleting ${rokuModulesDir}`);
                 await del(rokuModulesDir);
 
                 //if the parent dir is now empty, delete that folder too
                 const parentDir = path.dirname(rokuModulesDir);
                 if (await util.isEmptyDir(parentDir)) {
-                    console.log(`deleting empty ${parentDir}`);
+                    console.log(`ropm: deleting empty ${parentDir}`);
                     await del(parentDir);
                 }
             })
