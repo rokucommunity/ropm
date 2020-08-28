@@ -6,10 +6,7 @@ import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelper
 
 const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
-describe('ModuleManager', function () {
-    //tell mocha these tests take a long time
-    this.timeout(20000);
-
+describe('ModuleManager', () => {
     let manager: ModuleManager;
 
     beforeEach(() => {

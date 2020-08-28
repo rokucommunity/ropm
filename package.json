@@ -68,6 +68,7 @@
       "source-map-support/register",
       "ts-node/register"
     ],
+    "timeout": 20000,
     "fullTrace": true,
     "watchExtensions": [
       "ts"

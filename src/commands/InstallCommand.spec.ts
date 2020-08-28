@@ -9,10 +9,7 @@ import { tempDir } from '../TestHelpers.spec';
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
 
-describe('InstallCommand', function () {
-    //tell mocha these tests take a long time
-    this.timeout(20000);
-
+describe('InstallCommand', () => {
     let args: InstallCommandArgs;
     let command: InstallCommand;
 
