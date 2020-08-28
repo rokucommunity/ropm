@@ -232,12 +232,11 @@ export class RopmModule {
         for (const dep of deps) {
             const depMajorVersion = semver.major(dep.version).toString();
             const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.dominantVersion === depMajorVersion);
-            if (programDependency) {
-                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
-            } else if (this.prefixMap[dep.npmModuleName]) {
-                throw new Error(`Alias "${dep.ropmModuleName}" already exists for ${this.moduleDir}`);
+            if (!programDependency) {
+                const dependencyText = dep.npmAlias === dep.npmModuleName ? dep.npmAlias : `${dep.npmAlias}(${dep.npmModuleName})`;
+                throw new Error(`Cannot find suitable program dependency for ${dependencyText}@${dep.version}`);
             } else {
-                this.prefixMap[dep.ropmModuleName] = dep.ropmModuleName;
+                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
             }
         }
     }

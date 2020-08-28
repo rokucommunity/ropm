@@ -72,13 +72,15 @@ describe('RopmModule', () => {
                     }]
                 }]
             });
+            await logger.init();
+
             //NOTE: omitted program dependency for `promise`
             await expectThrowsAsync(() => logger.createPrefixMap([{
-                majorVersion: 1,
+                dominantVersion: '1',
                 version: '1.0.0',
                 npmModuleName: 'logger',
                 ropmModuleName: 'logger'
-            }]));
+            }]), `Cannot find suitable program dependency for promise@1.0.0`);
         });
     });
 });

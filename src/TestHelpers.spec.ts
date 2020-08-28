@@ -129,8 +129,8 @@ function trimLeading(text: string) {
     return lines.join('\n');
 }
 
-export async function expectThrowsAsync(func) {
-    let ex;
+export async function expectThrowsAsync(func, startingText?: string) {
+    let ex: Error;
     try {
         await Promise.resolve(
             func()
@@ -140,5 +140,9 @@ export async function expectThrowsAsync(func) {
     }
     if (!ex) {
         throw new Error('Expected exception to be thrown');
+    }
+    //if starting text was provided, then the lower error message must start with that text, or this test will fail
+    if (startingText && !ex.message.toLowerCase().startsWith(startingText.toLowerCase())) {
+        throw new Error(`Expected error message '${ex.message}' to start with '${startingText}'`);
     }
 }
