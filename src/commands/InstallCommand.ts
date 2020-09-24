@@ -102,7 +102,6 @@ export class InstallCommand {
     getProdDependencies() {
         let stdout: string;
         try {
-            let stderr: string;
             stdout = childProcess.execSync('npm ls --parseable --prod', {
                 cwd: this.cwd
             }).toString();
