@@ -64,7 +64,7 @@ describe('InstallCommand', () => {
                 'src/source/logger.brs': ''
             }, {
                 ropm: {
-                    rootDir: 'src'
+                    packageRootDir: 'src'
                 }
             });
 

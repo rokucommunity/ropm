@@ -9,6 +9,9 @@ import * as semver from 'semver';
 export class RopmModule {
     constructor(
         public readonly hostRootDir: string,
+        /**
+         * The directory at the root of the module. This is the folder where the package.json resides
+         */
         public readonly moduleDir: string
     ) {
         this.npmAliasName = util.getModuleName(this.moduleDir) as string;
@@ -67,9 +70,9 @@ export class RopmModule {
     public ropmModuleName: string;
 
     /**
-     * The path to the rootDir of this module
+     * The path where this module's package code resides.
      */
-    public rootDir!: string;
+    public packageRootDir!: string;
 
     /**
      * A map from the original file location to its new destination.
@@ -119,7 +122,7 @@ export class RopmModule {
         }
 
         //use the rootDir from packageJson, or default to the current module path
-        this.rootDir = modulePackageJson.ropm?.rootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.rootDir) : this.moduleDir;
+        this.packageRootDir = modulePackageJson.ropm?.packageRootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.packageRootDir) : this.moduleDir;
     }
 
     public async copyFiles() {
@@ -128,7 +131,7 @@ export class RopmModule {
         console.log(`ropm: copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
-            path: this.rootDir
+            path: this.packageRootDir
         });
 
         //standardize each path
@@ -139,7 +142,7 @@ export class RopmModule {
             '**/*',
             ...RopmModule.fileIgnorePatterns
         ], {
-            cwd: this.rootDir,
+            cwd: this.packageRootDir,
             //follow symlinks
             follow: true,
             dot: true,
@@ -171,7 +174,7 @@ export class RopmModule {
             const topLevelDir = filePathParts.splice(0, 1)[0];
             const targetPath = path.join(this.hostRootDir, topLevelDir, 'roku_modules', this.ropmModuleName, ...filePathParts);
             return {
-                src: path.resolve(this.rootDir, filePath),
+                src: path.resolve(this.packageRootDir, filePath),
                 dest: targetPath
             };
         });
@@ -184,7 +187,7 @@ export class RopmModule {
         //load all files
         for (const obj of this.fileMaps) {
             this.files.push(
-                new File(obj.src, obj.dest, this.rootDir)
+                new File(obj.src, obj.dest, this.packageRootDir)
             );
 
         }

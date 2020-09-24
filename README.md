@@ -321,4 +321,4 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 
 ## rootDir versus packageRootDir
  - `rootDir` - specifies where ropm_modules should be installed in your project. 
- - `packageRootDir` is for package authors to specify where their package module code resides (like in `dist`, `out`, `build`, `src`, etc...). 
+ - `packageRootDir` is exclusively for package authors to specify where their package module code resides (like in `dist`, `out`, `build`, `src`, etc...). 

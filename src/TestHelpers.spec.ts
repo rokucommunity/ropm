@@ -64,6 +64,7 @@ export function createProjects(hostDir: string, moduleDir: string, node: DepGrap
     const result = [] as RopmModule[];
     //write the package.json for this node
     const packageJson = {
+        ...node,
         name: node.name,
         version: node.version ?? '1.0.0',
         keywords: ['ropm'],
@@ -72,7 +73,7 @@ export function createProjects(hostDir: string, moduleDir: string, node: DepGrap
     const innerProjects = [] as RopmModule[];
     for (const dependency of node?.dependencies ?? []) {
         const alias = dependency.alias ?? dependency.name;
-        packageJson.dependencies[alias] = '';
+        packageJson.dependencies[alias] = dependency.version ?? '1.0.0';
         innerProjects.push(
             ...createProjects(hostDir, path.join(moduleDir, 'node_modules', alias), dependency)
         );
@@ -92,6 +93,10 @@ export interface DepGraphNode {
     name: string;
     version?: string;
     dependencies?: Array<DepGraphNode>;
+    ropm?: {
+        rootDir?: string;
+        packageRootDir?: string;
+    };
 }
 
 

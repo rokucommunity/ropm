@@ -119,5 +119,5 @@ export interface InstallCommandArgs {
     /**
      * The list of packages that should be installed
      */
-    packages: string[];
+    packages?: string[];
 }

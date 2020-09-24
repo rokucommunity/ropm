@@ -253,9 +253,14 @@ export interface RopmPackageJson {
     version: string;
     ropm?: {
         /**
-         * The path to the rootDir where all of the files for the roku module reside.
+         * The path to the rootDir of the project where `ropm` should install all ropm modules
          */
         rootDir?: string;
+        /**
+         * The path to the rootDir of the a ropm module's package files. Use this if your module stores files in a subdirectory.
+         * NOTE: This should only be used by ropm package AUTHORS
+         */
+        packageRootDir?: string;
     };
 }
 

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { util } from '../util';
 import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelpers.spec';
 import * as fsExtra from 'fs-extra';
+import { InstallCommand } from '../commands/InstallCommand';
 
 const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
@@ -232,7 +233,7 @@ describe('ModuleManager', () => {
                 name: 'logger'
             }]);
 
-            file(`${logger.rootDir}/source/main.brs`, `
+            file(`${logger.packageRootDir}/source/main.brs`, `
                 sub main()
                     SanitizeText("123")
                 end sub
@@ -240,7 +241,7 @@ describe('ModuleManager', () => {
                     PrintMessage("Sanitizing text: " + text)
                 end sub
             `);
-            file(`${logger.rootDir}/source/lib.brs`, `
+            file(`${logger.packageRootDir}/source/lib.brs`, `
                 sub PrintMessage(message)
                     print message
                 end sub
@@ -268,12 +269,12 @@ describe('ModuleManager', () => {
                 name: 'logger'
             }]);
 
-            file(`${logger.rootDir}/components/Component1.xml`, trim`
+            file(`${logger.packageRootDir}/components/Component1.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="Component1" extends="Component2" >
                 </component>
             `);
-            file(`${logger.rootDir}/components/Component2.xml`, trim`
+            file(`${logger.packageRootDir}/components/Component2.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="Component2" extends="Task" >
                     <children>
@@ -283,7 +284,7 @@ describe('ModuleManager', () => {
                     </children>
                 </component>
             `);
-            file(`${logger.rootDir}/source/main.brs`, `
+            file(`${logger.packageRootDir}/source/main.brs`, `
                 sub main()
                     comp = CreateObject("rosgnode", "Component1")
                     comp.CreateChild("Component2")
@@ -325,7 +326,7 @@ describe('ModuleManager', () => {
                 }]
             }]);
 
-            file(`${logger.rootDir}/source/main.brs`, `
+            file(`${logger.packageRootDir}/source/main.brs`, `
                 sub PrintValue(value)
                     print logger_writeLine(value)
                 end sub
@@ -345,19 +346,19 @@ describe('ModuleManager', () => {
                 name: 'logger'
             }]);
 
-            file(`${logger.rootDir}/source/common.brs`, `
+            file(`${logger.packageRootDir}/source/common.brs`, `
                 sub echo(message)
                     print message
                 end sub
             `);
 
-            file(`${logger.rootDir}/components/common.brs`, `
+            file(`${logger.packageRootDir}/components/common.brs`, `
                 sub echo(message)
                     print message
                 end sub
             `);
 
-            file(`${logger.rootDir}/components/Component1.xml`, trim`
+            file(`${logger.packageRootDir}/components/Component1.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="Component1">
                     <script uri="pkg:/source/common.brs" />
@@ -389,7 +390,7 @@ describe('ModuleManager', () => {
             }]))[1];
 
             // the jsonlib package forgot to exclude its roku_modules folder
-            file(`${promise.rootDir}/source/roku_modules/jsonlib/json.brs`, ``);
+            file(`${promise.packageRootDir}/source/roku_modules/jsonlib/json.brs`, ``);
 
             await process();
 
@@ -405,9 +406,9 @@ describe('ModuleManager', () => {
                 }]
             }]);
 
-            file(`${promise.rootDir}/source/promise.brs`, ``);
+            file(`${promise.packageRootDir}/source/promise.brs`, ``);
 
-            file(`${logger.rootDir}/components/Component1.xml`, trim`
+            file(`${logger.packageRootDir}/components/Component1.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="Component1">
                     <script uri="pkg:/source/roku_modules/promise/promise.brs" />
@@ -434,9 +435,9 @@ describe('ModuleManager', () => {
                 }]
             }]);
 
-            file(`${photolib.rootDir}/images/picture.jpg`, ``);
+            file(`${photolib.packageRootDir}/images/picture.jpg`, ``);
 
-            file(`${logger.rootDir}/components/Component1.xml`, trim`
+            file(`${logger.packageRootDir}/components/Component1.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="Component1">
                     <children>
@@ -465,7 +466,7 @@ describe('ModuleManager', () => {
             const [logger] = await createDependencies([{
                 name: 'logger'
             }]);
-            file(`${logger.rootDir}/source/common.brs`, `
+            file(`${logger.packageRootDir}/source/common.brs`, `
                 sub GetImagePath(imageName)
                     
                     'will be rewritten because we have content after 'pkg:/'
@@ -490,6 +491,37 @@ describe('ModuleManager', () => {
 
                 end sub
             `);
+        });
+
+        it('supports a package using both rootDir and packageRootDir', async () => {
+            const [logger, photolib] = await createDependencies([{
+                name: 'logger',
+                ropm: {
+                    rootDir: 'src',
+                    packageRootDir: 'dist'
+                },
+                dependencies: [{
+                    name: 'photolib'
+                }]
+            }]);
+
+            file(`${logger.moduleDir}/dist/source/logger_dist.brs`, ``);
+            file(`${photolib.packageRootDir}/source/photolib.brs`, '');
+
+            //run install on the logger module, which should put logger's dependencies into logger's rootDir
+            let command = new InstallCommand({
+                cwd: logger.moduleDir
+            });
+            await command.run();
+            expect(fsExtra.pathExistsSync(`${logger.moduleDir}/src/source/roku_modules/photolib/photolib.brs`)).to.be.true;
+
+            //now run npm install on the host app, which should read logger's packageRootDir path and use those files
+            command = new InstallCommand({
+                cwd: hostDir
+            });
+            await command.run();
+            expect(fsExtra.pathExistsSync(`${hostDir}/source/roku_modules/logger/logger_dist.brs`)).to.be.true;
+
         });
     });
 });
