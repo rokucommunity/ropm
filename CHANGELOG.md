@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [Unreleased]
+### Added
+ - `ropm.noprefix` package.json option to prevent certain modules from having a prefix applied. 
+### Fixed
+ - dependency component references were not being renamed according to their resolved prefix.
+
+
+
 ## [0.3.0] - 2020-09-23
 ### Added
  - `ropm.packageRootDir` for use by package authors to define where their package code resides. This deviates from the previous functionalith where both were handled by `rootDir`, now `rootDir` is exclusively for ropm INSTALL location.

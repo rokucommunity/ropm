@@ -70,6 +70,12 @@ export function createProjects(hostDir: string, moduleDir: string, node: DepGrap
         keywords: ['ropm'],
         dependencies: {}
     };
+    delete packageJson._files;
+    for (const relativePath in node._files ?? {}) {
+        const absolutePath = path.join(moduleDir, relativePath);
+        fsExtra.ensureDirSync(path.dirname(absolutePath));
+        fsExtra.writeFileSync(absolutePath, node._files?.[relativePath] ?? '');
+    }
     const innerProjects = [] as RopmModule[];
     for (const dependency of node?.dependencies ?? []) {
         const alias = dependency.alias ?? dependency.name;
@@ -93,9 +99,11 @@ export interface DepGraphNode {
     name: string;
     version?: string;
     dependencies?: Array<DepGraphNode>;
+    _files?: { [relativePath: string]: string };
     ropm?: {
         rootDir?: string;
         packageRootDir?: string;
+        noprefix?: string[];
     };
 }
 

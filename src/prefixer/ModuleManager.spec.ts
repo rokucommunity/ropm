@@ -1,3 +1,4 @@
+/* eslint-disable no-multi-assign */
 import { ModuleManager } from './ModuleManager';
 import { expect } from 'chai';
 import * as path from 'path';
@@ -10,13 +11,16 @@ const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
 describe('ModuleManager', () => {
     let manager: ModuleManager;
+    let noprefix: string[];
 
     beforeEach(() => {
         manager = new ModuleManager();
+        noprefix = [];
     });
 
     async function process() {
         manager.hostDependencies = await util.getModuleDependencies(hostDir);
+        manager.noprefix = noprefix;
         await manager.process();
     }
 
@@ -442,7 +446,7 @@ describe('ModuleManager', () => {
                 <component name="Component1">
                     <children>
                         <Poster uri="pkg:/images/photo.jpg" />
-                        <!--dependency paths
+                        <!--dependency paths-->
                         <Poster uri="pkg:/images/roku_modules/photolib/photo.jpg" />
                     </children>
                 </component>
@@ -455,7 +459,7 @@ describe('ModuleManager', () => {
                 <component name="logger_Component1">
                     <children>
                         <Poster uri="pkg:/images/roku_modules/logger/photo.jpg" />
-                        <!--dependency paths
+                        <!--dependency paths-->
                         <Poster uri="pkg:/images/roku_modules/photolib_v1/photo.jpg" />
                     </children>
                 </component>
@@ -522,6 +526,179 @@ describe('ModuleManager', () => {
             await command.run();
             expect(fsExtra.pathExistsSync(`${hostDir}/source/roku_modules/logger/logger_dist.brs`)).to.be.true;
 
+        });
+
+        it('supports a package using both rootDir and packageRootDir', async () => {
+            noprefix = ['logger'];
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/loggerlib.brs': `
+                            sub logInfo(message)
+                                print message
+                            end sub
+                        `,
+                        'components/loggercomp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="loggercomp"></component>
+                        `
+                    }
+                }, {
+                    name: 'json',
+                    _files: {
+                        'source/jsonlib.brs': `
+                            sub parseJson(text)
+                                return {}
+                            end sub
+                        `,
+                        'components/jsoncomp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="jsoncomp">
+                            </component>
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            //the logger module should have no prefixes applied to its functions or components
+            fsEqual(`${hostDir}/source/roku_modules/logger/loggerlib.brs`, `
+                sub logInfo(message)
+                    print message
+                end sub
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="loggercomp"></component>
+            `);
+
+            //the json module should be prefixed
+            fsEqual(`${hostDir}/source/roku_modules/json/jsonlib.brs`, `
+                sub json_parseJson(text)
+                    return {}
+                end sub
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/json/jsoncomp.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="json_jsoncomp">
+                </component>
+            `);
+        });
+
+        it('supports a package using both rootDir and packageRootDir', async () => {
+            noprefix = ['logger'];
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/loggerlib.brs': `
+                            sub logInfo(message)
+                                print message
+                            end sub
+                        `,
+                        'components/loggercomp1.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="loggercomp1"></component>
+                        `,
+                        'components/loggercomp2.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="loggercomp2">
+                                <children>
+                                    <!--reference component1 in component2 -->
+                                    <loggercomp1></loggercomp1>
+                                </children>
+                            </component>
+                        `
+                    }
+                }, {
+                    name: 'json',
+                    _files: {
+                        'source/jsonlib.brs': `
+                            sub parseJson(text)
+                                return {}
+                            end sub
+                        `,
+                        'components/jsoncomp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="jsoncomp">
+                            </component>
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            //the logger module should have no prefixes applied to its functions or components
+            fsEqual(`${hostDir}/source/roku_modules/logger/loggerlib.brs`, `
+                sub logInfo(message)
+                    print message
+                end sub
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp1.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="loggercomp1"></component>
+            `);
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp2.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="loggercomp2">
+                    <children>
+                        <!--reference component1 in component2 -->
+                        <loggercomp1></loggercomp1>
+                    </children>
+                </component>
+            `);
+
+            //the json module should be prefixed
+            fsEqual(`${hostDir}/source/roku_modules/json/jsonlib.brs`, `
+                sub json_parseJson(text)
+                    return {}
+                end sub
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/json/jsoncomp.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="json_jsoncomp">
+                </component>
+            `);
+        });
+
+        it('rewrites referenced components in module', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'components/loggercomp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="loggercomp">
+                                <children>
+                                    <l_SimpleList></l_SimpleList>
+                                </children>
+                            </component>
+                        `
+                    },
+                    dependencies: [{
+                        name: 'smartlist',
+                        alias: 'l'
+                    }]
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_loggercomp">
+                    <children>
+                        <smartlist_v1_SimpleList></smartlist_v1_SimpleList>
+                    </children>
+                </component>
+            `);
         });
     });
 });
