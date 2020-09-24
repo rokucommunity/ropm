@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { util } from '../util';
 import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelpers.spec';
+import * as fsExtra from 'fs-extra';
 
 const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
@@ -377,6 +378,23 @@ describe('ModuleManager', () => {
                     <script uri="pkg:/components/roku_modules/logger/common.brs" />
                 </component>
             `);
+        });
+
+        it('skips roku_modules folders found in module folders', async () => {
+            const promise = (await createDependencies([{
+                name: 'logger',
+                dependencies: [{
+                    name: 'promise'
+                }]
+            }]))[1];
+
+            // the jsonlib package forgot to exclude its roku_modules folder
+            file(`${promise.rootDir}/source/roku_modules/jsonlib/json.brs`, ``);
+
+            await process();
+
+            //ropm should have IGNORED the roku_modules folder from the promise package
+            expect(fsExtra.pathExistsSync(`${hostDir}/source/roku_modules/promise_v1/roku_modules/jsonlib/json.brs`)).to.be.false;
         });
 
         it('rewrites script references to dependency files', async () => {

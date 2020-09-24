@@ -298,7 +298,9 @@ These files will always be excluded (not copied):
  - LICENSE | LICENCE
  - NOTICE
 
-We recommend excluding extraneous files when you create your package using npm's [files](https://docs.npmjs.com/files/package.json#files) property. In certain situations, you may want to store your files in a subdirectory. In this situation, you should use the `ropm.rootDir` property to specify the relative path to the root of your module. This pattern is useful when you want to publish documentation or other extraneous files with your package, but don't want those files to be included when published to a Roku device. 
+All folders named `roku_modules` that are found in a ropm module will be ignored. This is due to the fact that modules should not be publishing their own copies of their ropm modules. ropm will handle this for them. So as a package author, be sure to exclude all folders named `roku_modules` during your publishing process.
+
+We recommend excluding extraneous files when you create your package using npm's [files](https://docs.npmjs.com/files/package.json#files) property. In certain situations, you may want to store your files in a subdirectory. In this situation, you should use the `ropm.packageRootDir` property to specify the relative path to the root of your module. This pattern is useful when you want to publish documentation or other extraneous files with your package, but don't want those files to be included when published to a Roku device. 
 
 Here's an example (**NOTE:** comments are included here for explanation purposes but are invalid within an `package.json`)
 
@@ -312,7 +314,11 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
     ],
     "ropm": {
         //tell ropm that the files for this module reside in the "./src" folder
-        "rootDir": "src"
+        "packageRootDir": "src"
     }
 }
 ```
+
+## rootDir versus packageRootDir
+ - `rootDir` - specifies where ropm_modules should be installed in your project. 
+ - `packageRootDir` is for package authors to specify where their package module code resides (like in `dist`, `out`, `build`, `src`, etc...). 

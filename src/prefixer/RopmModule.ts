@@ -40,7 +40,9 @@ export class RopmModule {
         '!**/node_modules',
         '!**/config.gypi',
         '!**/*.orig',
-        '!**/package-lock.json'
+        '!**/package-lock.json',
+        //package authors should exclude `roku_modules` during publishing, but things might slip through the cracks, so exclude those during ropm install
+        '!**/roku_modules/**/*'
     ];
 
     /**
