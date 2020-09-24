@@ -108,8 +108,6 @@ export class InstallCommand {
         } catch (e) {
             stdout = e.stdout.toString();
             const stderr: string = e.stderr.toString();
-            console.log('stdout', stdout);
-            console.log('stderr', stderr);
             //sometimes the unit tests absorb stderr...so as long as we have stdout, assume it's valid (and ignore the stderr)
             if (stderr.includes('npm ERR! extraneous:')) {
                 //ignore errors
