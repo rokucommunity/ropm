@@ -261,6 +261,10 @@ export interface RopmPackageJson {
          * NOTE: This should only be used by ropm package AUTHORS
          */
         packageRootDir?: string;
+        /**
+         * An array of module aliases that should not be prefixed when installed into `rootDir`. Use this with caution.
+         */
+        noprefix?: string[];
     };
 }
 

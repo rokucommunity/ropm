@@ -17,6 +17,12 @@ export class ModuleManager {
     public hostRootDir!: string;
 
     /**
+     * A list of modules that should not have their source code prefixed during ropm install.
+     * This is the npm alias name.
+     */
+    public noprefix = [] as string[];
+
+    /**
      * Add a new project to the prefixer
      * @param filePaths the list of absolute file paths for this project
      * @param prefix the prefix to give all of this module's own functions and components (and their internal usage)
@@ -47,7 +53,7 @@ export class ModuleManager {
 
         //have each module apply transforms (rename functions, components, file paths, etc...)
         await Promise.all(
-            this.modules.map(x => x.transform())
+            this.modules.map(x => x.transform(this.noprefix))
         );
     }
 
@@ -56,6 +62,9 @@ export class ModuleManager {
      * Then, remove unnecessary dependencies
      */
     public async reduceModulesAndCreatePrefixMaps() {
+        //remove non-valid dependencies
+        this.modules = this.modules.filter(x => x.isValid);
+
         const reducedDependencies = this.getReducedDependencies();
 
         //discard any modules that are not in the list
@@ -65,8 +74,9 @@ export class ModuleManager {
             const dep = reducedDependencies.find((dep) => {
                 return dep.version === module.version && dep.npmModuleName === module.npmModuleName;
             });
-            //if this is not an approved module, or the module is invalid, then remove it
-            if (!dep || module.isValid === false) {
+
+            //remove if not an approved module
+            if (!dep) {
                 this.modules.splice(i, 1);
             }
         }

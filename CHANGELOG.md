@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.0] - 2020-09-24
+### Added
+ - `ropm.noprefix` package.json option to prevent certain modules from having a prefix applied. 
+ - reject installing packages that have the `ropm.noprefix` setting present in `package.json`: this setting is only for use in client applications.
+### Fixed
+ - dependency component references were not being renamed according to their resolved prefix.
+
+
+
 ## [0.3.0] - 2020-09-23
 ### Added
  - `ropm.packageRootDir` for use by package authors to define where their package code resides. This deviates from the previous functionalith where both were handled by `rootDir`, now `rootDir` is exclusively for ropm INSTALL location.
@@ -51,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - initial placeholder release
 
 
-[0.1.0]:   https://github.com/rokucommunity/brighterscript/compare/v0.0.1...v0.1.0
-[0.1.1]:   https://github.com/rokucommunity/brighterscript/compare/v0.1.0...v0.1.1
-[0.2.0]:   https://github.com/rokucommunity/brighterscript/compare/v0.1.1...v0.2.0
-[0.3.0]:   https://github.com/rokucommunity/brighterscript/compare/v0.12.0...v0.3.0
+[0.1.0]:   https://github.com/rokucommunity/ropm/compare/v0.0.1...v0.1.0
+[0.1.1]:   https://github.com/rokucommunity/ropm/compare/v0.1.0...v0.1.1
+[0.2.0]:   https://github.com/rokucommunity/ropm/compare/v0.1.1...v0.2.0
+[0.3.0]:   https://github.com/rokucommunity/ropm/compare/v0.2.0...v0.3.0
+[0.4.0]:   https://github.com/rokucommunity/ropm/compare/v0.3.0...v0.4.0

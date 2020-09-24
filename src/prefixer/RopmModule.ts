@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import { Dependency } from './ModuleManager';
-import * as semver from 'semver';
 
 export class RopmModule {
     constructor(
@@ -121,6 +120,13 @@ export class RopmModule {
             return;
         }
 
+        //disallow using `noprefix` within dependencies
+        if (modulePackageJson.ropm?.noprefix) {
+            console.error(`ropm: using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
+            this.isValid = false;
+            return;
+        }
+
         //use the rootDir from packageJson, or default to the current module path
         this.packageRootDir = modulePackageJson.ropm?.packageRootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.packageRootDir) : this.moduleDir;
     }
@@ -183,21 +189,24 @@ export class RopmModule {
         await util.copyFiles(this.fileMaps);
     }
 
-    public async transform() {
+    /**
+     * @param noprefix a list of npm aliases of modules that should NOT be prefixed
+     */
+    public async transform(noprefix: string[]) {
         //load all files
         for (const obj of this.fileMaps) {
             this.files.push(
                 new File(obj.src, obj.dest, this.packageRootDir)
             );
-
         }
+
         //let all files discover all functions/components
         await Promise.all(
             this.files.map((file) => file.discover())
         );
 
         //create the edits for every file
-        this.createEdits();
+        this.createEdits(noprefix);
 
         //apply all of the edits
         for (const file of this.files) {
@@ -229,6 +238,7 @@ export class RopmModule {
         if (!ownDependency) {
             throw new Error(`Cannot find ${this.npmModuleName}@${this.dominantVersion} in programDependencies`);
         }
+        //rename the ropm module name based on the program dependency. (this could be postfixed with a _v1, _v2, etc. if there is dependency resolution in play)
         this.ropmModuleName = ownDependency.ropmModuleName;
 
         //compute all of the names of the dependencies within this module, and what prefixes we currently used for them.
@@ -249,67 +259,43 @@ export class RopmModule {
         }
     }
 
-    /**
-     * Create the prefix map for this module
-     * @param programDependencies - the full list of resolved dependencies from the program. This is created by ModuleManager based on all modules in the program.
-     */
-    public async createPrefixMap1(programDependencies: Dependency[]) {
-        //reassign own module name based on program dependencies
-        const ownDependency = programDependencies.find(
-            x => x.npmModuleName === this.npmModuleName && x.dominantVersion === this.dominantVersion
-        );
-        if (!ownDependency) {
-            throw new Error(`Cannot find ${this.npmModuleName}@${this.dominantVersion} in programDependencies`);
-        }
-        this.ropmModuleName = ownDependency.ropmModuleName;
-
-        //compute all of the names of the dependencies within this module, and what prefixes we currently used for them.
-        const deps = await util.getModuleDependencies(this.moduleDir);
-        this.prefixMap = {};
-        for (const dep of deps) {
-            const depMajorVersion = semver.major(dep.version).toString();
-            const programDependency = programDependencies.find(x => x.npmModuleName === dep.npmModuleName && x.dominantVersion === depMajorVersion);
-            if (programDependency) {
-                this.prefixMap[dep.ropmModuleName] = programDependency.ropmModuleName;
-            } else if (this.prefixMap[dep.npmModuleName]) {
-                throw new Error(`Alias "${dep.ropmModuleName}" already exists for ${this.moduleDir}`);
-            } else {
-                this.prefixMap[dep.ropmModuleName] = dep.ropmModuleName;
-            }
-        }
-    }
-
-
-    private createEdits() {
+    private createEdits(noprefix: string[]) {
         const prefix = this.ropmModuleName + '_';
+        const applyOwnPrefix = !noprefix.includes(this.ropmModuleName);
         const ownFunctionNames = this.getDistinctFunctionDeclarationNames();
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
         const prefixMapKeys = Object.keys(this.prefixMap);
         const prefixMapKeysLower = prefixMapKeys.map(x => x.toLowerCase());
 
         for (const file of this.files) {
-            //create an edit for each function definition
-            for (const func of file.functionDefinitions) {
-                //skip edits for special functions
-                if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
-                    continue;
+            //only apply prefixes if configured to do so
+            if (applyOwnPrefix) {
+                //create an edit for each this-module-owned function
+                for (const func of file.functionDefinitions) {
+                    //skip edits for special functions
+                    if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
+                        continue;
+                    }
+                    file.addEdit(func.offset, func.offset, prefix);
                 }
-                file.addEdit(func.offset, func.offset, prefix);
             }
 
             //prefix all function calls to our own function names
             for (const call of file.functionCalls) {
                 const lowerName = call.name.toLowerCase();
-                //if this function is owned by our project, rename it
-                if (ownFunctionNames.includes(lowerName)) {
-                    file.addEdit(call.offset, call.offset, prefix);
-                    continue;
+                //only apply prefixes if configured to do so
+                if (applyOwnPrefix) {
+                    //if this function is owned by our project, rename it
+                    if (ownFunctionNames.includes(lowerName)) {
+                        file.addEdit(call.offset, call.offset, prefix);
+                        continue;
+                    }
                 }
 
-                //rename all function calls for dependencies
+                //rename dependency function calls
                 const possiblePrefix = lowerName.split('_')[0];
                 const idx = prefixMapKeysLower.indexOf(possiblePrefix);
-                //if we have a prefix match, then convert the old previx to the new prefix
+                //if we have a prefix match, then convert the old prefix to the new prefix
                 if (idx > -1) {
                     const newPrefix = this.prefixMap[prefixMapKeys[idx]];
                     //begin position + the length of the original prefix + 1 for the underscore
@@ -318,16 +304,34 @@ export class RopmModule {
                 }
             }
 
-            //rename all component definitions
-            for (const comp of file.componentDeclarations) {
-                file.addEdit(comp.offset, comp.offset, prefix);
+            //only apply prefixes if configured to do so
+            if (applyOwnPrefix) {
+                //rename all this-file-defined component definitions
+                for (const comp of file.componentDeclarations) {
+                    file.addEdit(comp.offset, comp.offset, prefix);
+                }
             }
 
             //rename all component usage
             for (const comp of file.componentReferences) {
                 //if this component is owned by our module, rename it
                 if (ownComponentNames.includes(comp.name.toLowerCase())) {
-                    file.addEdit(comp.offset, comp.offset, prefix);
+                    //only apply the prefix if configured to do so
+                    if (applyOwnPrefix) {
+                        file.addEdit(comp.offset, comp.offset, prefix);
+                    }
+
+                    //rename dependency component usage
+                } else {
+                    const possiblePrefix = comp.name.toLowerCase().split('_')[0];
+                    const idx = prefixMapKeysLower.indexOf(possiblePrefix);
+                    //if we have a prefix match, then convert the old prefix to the new prefix
+                    if (idx > -1) {
+                        const newPrefix = this.prefixMap[prefixMapKeys[idx]];
+                        //begin position + the length of the original prefix + 1 for the underscore
+                        const offsetEnd = comp.offset + possiblePrefix.length + 1;
+                        file.addEdit(comp.offset, offsetEnd, newPrefix + '_');
+                    }
                 }
             }
 
