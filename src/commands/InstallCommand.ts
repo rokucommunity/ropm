@@ -111,7 +111,7 @@ export class InstallCommand {
             console.log('stdout', stdout);
             console.log('stderr', stderr);
             //sometimes the unit tests absorb stderr...so as long as we have stdout, assume it's valid (and ignore the stderr)
-            if (stderr.includes('npm ERR! extraneous:') || stdout.length > 0) {
+            if (stderr.includes('npm ERR! extraneous:')) {
                 //ignore errors
             } else {
                 throw new Error('Failed to compute prod dependencies: ' + e.message);
