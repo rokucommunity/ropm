@@ -246,6 +246,19 @@ describe('InstallCommand', () => {
                 path.join(projectDir, 'LICENSE')
             ), 'LICENSE should not exist').to.be.false;
         });
+
+        it.only('recovers from pesky "NPM ERR! extraneous" errors', async () => {
+            fsExtra.ensureDirSync(`${projectDir}/../annoying/node_modules/sub-annoying`);
+            fsExtra.writeFileSync(`${projectDir}/../annoying/package.json`, `{ "name": "annoying", "version": "1.0.0"}`);
+            //this is an extraneous node module
+            fsExtra.writeFileSync(`${projectDir}/../annoying/node_modules/sub-annoying/package.json`, `{ "name": "sub-annoying", "version": "1.0.0"}`);
+            writeProject(projectName, {}, {
+                dependencies: {
+                    'annoying': 'file:../annoying'
+                }
+            });
+            await command.run();
+        });
     });
 });
 
