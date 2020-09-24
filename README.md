@@ -196,7 +196,56 @@ The prefixes will be as follows:
  - complexlist_v3
 
 
+### Disabling module prefixing
+If you need to disable `ropm`'s module prefixing, you can do this on a per-module basis by adding the sanitized alias names of the desired modules to the `ropm.noprefix` key in `package.json`. Here's an example:
 
+```javascript
+{
+    "dependencies": {
+        "rokulogger": "1.0.0"
+    },
+    "ropm": {
+        "noprefix": [
+            "rokulogger"
+        ]
+    }
+}
+```
+
+Be sure you're using the [sanitized ropm alias](#Sanitizing-module-names) of the package, not the original package name. The alias is the string on the left-hand-side of the dependency. For example:
+```javascript
+{
+    "dependencies": {
+        "p": "npm:roku-promise@1.0.0"
+    },
+    "ropm": {
+        "noprefix": [
+            "p"
+        ]
+    }
+}
+```
+In this example, the actual name of the package is "roku-promise", but we are using the alias "p". So "p" is what you should add to `ropm.noprefix`.
+
+Here's another example showing a sanitized name:
+
+```javascript
+{
+    "dependencies": {
+        "roku-promise": "1.0.0"
+    },
+    "ropm": {
+        "noprefix": [
+            "rokupromise"
+        ]
+    }
+}
+```
+
+The sanitized alias in this example will be `"rokupromise"`. See the [sanitizing module names](#Sanitizing-module-names) section for more information.
+
+### Do not use `ropm.prefix` in published packages
+Ropm will reject installing any ropm package that has the `ropm.noprefix` key in its package.json, so package _authors_ should **NOT** use `ropm.noprefix`. 
 
 
 ## Do not change the code within roku_modules
@@ -288,8 +337,8 @@ Steps:
 4. publish your package to a registry using the instructions from your registry of choice ([npm](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages), [GitHub Packages](https://docs.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-npm-for-use-with-github-packages))
 
 
-## Changing module's `rootDir`
-By default, `ropm` will assume the root of your module is where all of your files reside, and will copy every file from your package, with a few exceptions: 
+## Changing where the module's files are copied from (As a package author)
+By default, `ropm` will copy every file from the root of your module (the folder where `package.json` resides), with a few exceptions: 
 
 These files will always be excluded (not copied):
  - `package.json`

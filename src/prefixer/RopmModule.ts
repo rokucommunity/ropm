@@ -120,6 +120,13 @@ export class RopmModule {
             return;
         }
 
+        //disallow using `noprefix` within dependencies
+        if (modulePackageJson.ropm?.noprefix) {
+            console.error(`ropm: using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
+            this.isValid = false;
+            return;
+        }
+
         //use the rootDir from packageJson, or default to the current module path
         this.packageRootDir = modulePackageJson.ropm?.packageRootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.packageRootDir) : this.moduleDir;
     }

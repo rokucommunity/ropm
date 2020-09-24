@@ -62,6 +62,9 @@ export class ModuleManager {
      * Then, remove unnecessary dependencies
      */
     public async reduceModulesAndCreatePrefixMaps() {
+        //remove non-valid dependencies
+        this.modules = this.modules.filter(x => x.isValid);
+
         const reducedDependencies = this.getReducedDependencies();
 
         //discard any modules that are not in the list
@@ -71,8 +74,9 @@ export class ModuleManager {
             const dep = reducedDependencies.find((dep) => {
                 return dep.version === module.version && dep.npmModuleName === module.npmModuleName;
             });
-            //if this is not an approved module, or the module is invalid, then remove it
-            if (!dep || module.isValid === false) {
+
+            //remove if not an approved module
+            if (!dep) {
                 this.modules.splice(i, 1);
             }
         }

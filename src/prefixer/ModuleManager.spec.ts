@@ -667,6 +667,23 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('rejects ropm module using `noprefix` when installed as a dependency', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    ropm: {
+                        noprefix: ['smartlist']
+                    },
+                    dependencies: [{
+                        name: 'smartlist'
+                    }]
+                }]
+            });
+            await process();
+            expect(manager.modules.map(x => x.npmModuleName)).to.eql(['smartlist']);
+        });
+
         it('rewrites referenced components in module', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
