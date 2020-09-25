@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.1] - 2020-09-25
+### Fixed
+ - bug that was using the unsanitized npm alias instead of the ropm package name in certain install situations for direct dependencies.
+
+
+
 ## [0.4.0] - 2020-09-24
 ### Added
  - `ropm.noprefix` package.json option to prevent certain modules from having a prefix applied. 
@@ -65,3 +71,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.2.0]:   https://github.com/rokucommunity/ropm/compare/v0.1.1...v0.2.0
 [0.3.0]:   https://github.com/rokucommunity/ropm/compare/v0.2.0...v0.3.0
 [0.4.0]:   https://github.com/rokucommunity/ropm/compare/v0.3.0...v0.4.0
+[0.4.1]:   https://github.com/rokucommunity/ropm/compare/v0.4.0...v0.4.1
