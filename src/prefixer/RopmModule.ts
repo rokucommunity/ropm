@@ -223,7 +223,8 @@ export class RopmModule {
         'runuserinterface',
         'main',
         'runscreensaver',
-        'init'
+        'init',
+        'onkeyevent'
     ];
 
     /**

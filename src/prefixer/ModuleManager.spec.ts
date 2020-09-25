@@ -268,6 +268,54 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('does not prefix special functions', async () => {
+            const [logger] = await createDependencies([{
+                name: 'logger'
+            }]);
+
+            file(`${logger.packageRootDir}/source/main.brs`, `
+                sub runuserinterface()
+                end sub
+                
+                sub main()
+                end sub
+
+                sub runscreensaver()
+                end sub
+                
+                sub init()
+                end sub
+
+                function onkeyevent()
+                end function
+
+                sub NonSpecialFunction()
+                end sub
+            `);
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
+                sub runuserinterface()
+                end sub
+                
+                sub main()
+                end sub
+
+                sub runscreensaver()
+                end sub
+                
+                sub init()
+                end sub
+
+                function onkeyevent()
+                end function
+
+                sub logger_NonSpecialFunction()
+                end sub
+            `);
+
+        });
+
         it('applies a prefix to components and their usage', async () => {
             const [logger] = await createDependencies([{
                 name: 'logger'
