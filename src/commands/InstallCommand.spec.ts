@@ -4,7 +4,7 @@ import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
-import { tempDir } from '../TestHelpers.spec';
+import { fsEqual, tempDir } from '../TestHelpers.spec';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
@@ -262,6 +262,27 @@ describe('InstallCommand', () => {
             await command.run();
         });
     });
+
+    it('uses ropm alias instead of npm alias for local dependencies', async () => {
+        writeProject('roku-logger', {
+            'source/main.brs': `
+                sub log()
+                end sub
+            `
+        });
+
+        writeProject(projectName, {}, {
+            dependencies: {
+                'roku-logger': `file:../roku-logger`
+            }
+        });
+
+        await command.run();
+        fsEqual(`${projectDir}/source/roku_modules/rokulogger/main.brs`, `
+            sub rokulogger_log()
+            end sub
+        `);
+    });
 });
 
 export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: Partial<RopmPackageJson>) {
@@ -281,6 +302,7 @@ export function writeProject(projectName: string, files: { [key: string]: string
         ],
         ...(additionalPackageJson ?? {})
     };
+    fsExtra.ensureDirSync(path.join(tempDir, projectName));
     //write the package.json
     fsExtra.writeFileSync(
         path.join(

@@ -155,7 +155,9 @@ export class ModuleManager {
                     dominantVersion: dominantVersion.toString(),
                     npmModuleName: moduleName,
                     //use the hosts's alias, or default to the module name
-                    ropmModuleName: hostDependency?.npmAlias ?? `${util.getRopmNameFromModuleName(moduleName)}_v${dominantVersionIdentifier}`,
+                    ropmModuleName: hostDependency?.npmAlias
+                        ? util.getRopmNameFromModuleName(hostDependency.npmAlias)
+                        : `${util.getRopmNameFromModuleName(moduleName)}_v${dominantVersionIdentifier}`,
                     version: version
                 });
             }
