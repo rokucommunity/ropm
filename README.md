@@ -134,6 +134,15 @@ Result:
  end sub
 ```
 
+
+### Never-prefixed functions
+Due to their special handling within the Roku architecture, the following functions  will never be prefixed:
+ - `RunUserInterface`
+ - `Main`
+ - `RunScreenSaver`
+ - `Init`
+ - `OnKeyEvent`
+
 ## Renaming modules
 By default, `ropm` will install modules with their default names from the registry. For example, if you run `ropm install roku-promise`, then the ropm package name will be `rokupromise`. But what if you wanted to reference it as `promise` in your project? You can accomplish this by leveraging the flexibility of the package.json `dependencies` section. Here's the command to install `roku-promise` with an alternate name:
 
