@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.4.2] - 2020-09-25
+### Fixed
+ - Prevent prefixing special function `onKeyEvent`
+
+
+
 ## [0.4.1] - 2020-09-25
 ### Fixed
  - bug that was using the unsanitized npm alias instead of the ropm package name in certain install situations for direct dependencies.
