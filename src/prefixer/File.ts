@@ -193,7 +193,7 @@ export class File {
     private findFunctionCalls() {
         //using negative lookbehind, so require node >=8.1.10
         //capture every identifier NOT preceeded by sub or function, that is not the exact text "sub" or "function"
-        const regexp = /(?<!(?:sub|function)\s+)(?!function|sub\b)\b([a-z0-9_]+)\s*\(/gi;
+        const regexp = /(?<!(?:sub|function)[ \t]+)(?!function|sub\b)\b(?<!\.|\])([a-z0-9_]+)\s*\(/gi;
 
         let match: RegExpExecArray | null;
         while (match = regexp.exec(this.fileContents)) {

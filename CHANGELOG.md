@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
  - prevent prefixing calls to variable functions
+ - prevent prefixing function calls found on objects (i.e. `person.doSomething()`)
 
 
 

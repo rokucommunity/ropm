@@ -393,6 +393,54 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('does not prefix object function calls with same name as scope function', async () => {
+            await createDependencies([{
+                name: 'logger',
+                _files: {
+                    'source/lib.brs': `
+                        sub getPerson()
+                            person = {
+                                speak: sub(message)
+                                    print message
+                                end sub,
+                                sayHello: sub()
+                                    m.speak("Hello")
+                                    speak("Person said hello")
+                                end sub
+                            }
+                            person.speak("I'm a person")
+                            person["speak"]("I'm a person")
+                            speak("Made person speak")
+                        end sub
+                        sub speak(message)
+                            print message
+                        end sub
+                    `
+                }
+            }]);
+
+            await process();
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_getPerson()
+                    person = {
+                        speak: sub(message)
+                            print message
+                        end sub,
+                        sayHello: sub()
+                            m.speak("Hello")
+                            logger_speak("Person said hello")
+                        end sub
+                    }
+                    person.speak("I'm a person")
+                    person["speak"]("I'm a person")
+                    logger_speak("Made person speak")
+                end sub
+                sub logger_speak(message)
+                    print message
+                end sub
+            `);
+        });
+
         it('only prefixes calls to known own functions', async () => {
             await createDependencies([{
                 name: 'logger',

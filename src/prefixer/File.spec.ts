@@ -157,6 +157,35 @@ describe('prefixer/File', () => {
                 offset: getOffset(5, 28)
             }]);
         });
+
+        it('does not match object function calls', async () => {
+            setFile(`
+                sub getPerson()
+                    person = {
+                        speak: sub(message)
+                            print message
+                        end sub,
+                        sayHello: sub()
+                            m.speak("Hello")
+                            speak("Person said hello")
+                        end sub
+                    }
+                    person.speak("I'm a person")
+                    speak("Made person speak")
+                end sub
+                sub speak(message)
+                    print message
+                end sub
+            `, 'brs');
+            await file.discover();
+            expect(f.functionCalls).to.eql([{
+                name: 'speak',
+                offset: getOffset(8, 28)
+            }, {
+                name: 'speak',
+                offset: getOffset(12, 20)
+            }]);
+        });
     });
 
     describe('findComponentDefinitions', () => {
