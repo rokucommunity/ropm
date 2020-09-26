@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+ - `ropm copy` command that speeds up local development by skipping the registry check (i.e. internal `npm install` call)
 ### Fixed
  - prevent prefixing calls to variable functions
  - prevent prefixing function calls found on objects (i.e. `person.doSomething()`)
