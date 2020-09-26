@@ -175,7 +175,7 @@ export class File {
     }
 
     private findFunctionDefinitions() {
-        const regexp = /((?:function|sub)\s+)([a-z0-9_]+)\s*\(/gi;
+        const regexp = /((?:function|sub)[ \t]+)([a-z0-9_]+)[ \t]*\(/gi;
 
         let match: RegExpExecArray | null;
         while (match = regexp.exec(this.fileContents)) {

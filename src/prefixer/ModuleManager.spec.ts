@@ -393,6 +393,62 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('only prefixes calls to known own functions', async () => {
+            await createDependencies([{
+                name: 'logger',
+                _files: {
+                    'source/lib.brs': `
+                        sub logWarning(message)
+                            log(message, "warning")
+                            'should not get prefixed
+                            notMyModuleFunction()
+                        end sub
+                        sub log(message, errorLevel)
+                            print errorLevel + ": " + message
+                        end sub
+                    `
+                }
+            }]);
+
+            await process();
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_logWarning(message)
+                    logger_log(message, "warning")
+                    'should not get prefixed
+                    notMyModuleFunction()
+                end sub
+                sub logger_log(message, errorLevel)
+                    print errorLevel + ": " + message
+                end sub
+            `);
+        });
+
+        it('does not prefix inner-function function calls', async () => {
+            await createDependencies([{
+                name: 'logger',
+                _files: {
+                    'source/lib.brs': `
+                        sub logWarning(message)
+                            doSomething = sub()
+                            end sub
+
+                            doSomething()
+                        end sub
+                    `
+                }
+            }]);
+
+            await process();
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_logWarning(message)
+                    doSomething = sub()
+                    end sub
+
+                    doSomething()
+                end sub
+            `);
+        });
+
         it('rewrites script paths for own package', async () => {
             const [logger] = await createDependencies([{
                 name: 'logger'
