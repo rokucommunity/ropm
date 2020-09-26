@@ -316,6 +316,13 @@ Example:
 ropm clean
 ```
 
+### copy
+Similar to [install](#install), but does not fetch missing dependencies from the registry. This command should be faster than [install](#install) as long as all the necessary dependencies are already downloaded.
+Example:
+```bash
+ropm copy
+```
+
 ### uninstall
 Uninstall one or more packages from both `node_modules` and `roku_modules`. This also updates the local `package.json` `dependencies` section
 

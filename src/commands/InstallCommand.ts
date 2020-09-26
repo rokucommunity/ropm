@@ -34,10 +34,12 @@ export class InstallCommand {
         }
     }
 
-    public async run(): Promise<void> {
+    public async run(runNpmInstall = true): Promise<void> {
         await this.loadHostPackageJson();
         await this.deleteAllRokuModulesFolders();
-        await this.npmInstall();
+        if (runNpmInstall) {
+            await this.npmInstall();
+        }
         await this.processModules();
     }
 
