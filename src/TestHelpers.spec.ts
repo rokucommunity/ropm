@@ -3,6 +3,7 @@ import * as fsExtra from 'fs-extra';
 import { createSandbox } from 'sinon';
 import { expect } from 'chai';
 import { RopmModule } from './prefixer/RopmModule';
+import { RopmOptions } from './util';
 
 export const sinon = createSandbox();
 
@@ -100,11 +101,7 @@ export interface DepGraphNode {
     version?: string;
     dependencies?: Array<DepGraphNode>;
     _files?: { [relativePath: string]: string };
-    ropm?: {
-        rootDir?: string;
-        packageRootDir?: string;
-        noprefix?: string[];
-    };
+    ropm?: RopmOptions;
 }
 
 

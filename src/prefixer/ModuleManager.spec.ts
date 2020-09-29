@@ -441,6 +441,36 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('applies prefix when in expanded mode', async () => {
+            await createDependencies([{
+                name: 'logger',
+                ropm: {
+                    prefixMatching: 'expanded'
+                },
+                _files: {
+                    'source/lib.brs': `
+                        sub writeToLog(message)
+                            logFunc = logWarning
+                            logFunc(message)
+                        end sub
+                        sub logWarning(message)
+                            print message
+                        end sub
+                    `
+                }
+            }]);
+            await process();
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_writeToLog(message)
+                    logFunc = logger_logWarning
+                    logFunc(message)
+                end sub
+                sub logger_logWarning(message)
+                    print message
+                end sub
+            `);
+        });
+
         it('only prefixes calls to known own functions', async () => {
             await createDependencies([{
                 name: 'logger',

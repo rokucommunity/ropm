@@ -251,21 +251,28 @@ export interface RopmPackageJson {
     files?: string[];
     keywords?: string[];
     version: string;
-    ropm?: {
-        /**
-         * The path to the rootDir of the project where `ropm` should install all ropm modules
-         */
-        rootDir?: string;
-        /**
-         * The path to the rootDir of the a ropm module's package files. Use this if your module stores files in a subdirectory.
-         * NOTE: This should only be used by ropm package AUTHORS
-         */
-        packageRootDir?: string;
-        /**
-         * An array of module aliases that should not be prefixed when installed into `rootDir`. Use this with caution.
-         */
-        noprefix?: string[];
-    };
+    ropm?: RopmOptions;
+}
+export interface RopmOptions {
+    /**
+     * The path to the rootDir of the project where `ropm` should install all ropm modules
+     */
+    rootDir?: string;
+    /**
+     * The path to the rootDir of the a ropm module's package files. Use this if your module stores files in a subdirectory.
+     * NOTE: This should only be used by ropm package AUTHORS
+     */
+    packageRootDir?: string;
+    /**
+     * An array of module aliases that should not be prefixed when installed into `rootDir`. Use this with caution.
+     */
+    noprefix?: string[];
+    /**
+     * If "strict", then only function calls and function declarations will be prefixed.
+     * If "expanded", in addition to the "strict" actions, ropm will also prefix any variable names that match known function names. =
+     * This slows down ropm, which is why it's hidden behind an option
+     */
+    prefixMatching?: 'strict' | 'expanded';
 }
 
 export interface ModuleDependency {

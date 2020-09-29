@@ -1,5 +1,5 @@
 import { File } from './File';
-import { util } from '../util';
+import { RopmPackageJson, util } from '../util';
 import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
@@ -87,6 +87,11 @@ export class RopmModule {
     public prefixMap = {} as { [oldPrefix: string]: string };
 
     /**
+     * The contents of the package.json
+     */
+    public packageJson!: RopmPackageJson;
+
+    /**
      * The dominant version of the dependency. This will be the major version in most cases, will be the full version string for pre-release versions
      */
     public dominantVersion!: string;
@@ -101,34 +106,34 @@ export class RopmModule {
             return;
         }
 
-        const modulePackageJson = await util.getPackageJson(this.moduleDir);
-        this.version = modulePackageJson.version;
-        this.dominantVersion = util.getDominantVersion(modulePackageJson.version);
+        this.packageJson = await util.getPackageJson(this.moduleDir);
+        this.version = this.packageJson.version;
+        this.dominantVersion = util.getDominantVersion(this.packageJson.version);
 
-        if (!modulePackageJson.name) {
+        if (!this.packageJson.name) {
             console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
             this.isValid = false;
             return;
         }
 
-        this.npmModuleName = modulePackageJson.name;
+        this.npmModuleName = this.packageJson.name;
 
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
-        if ((modulePackageJson.keywords ?? []).includes('ropm') === false) {
+        if ((this.packageJson.keywords ?? []).includes('ropm') === false) {
             console.error(`ropm: skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
             this.isValid = false;
             return;
         }
 
         //disallow using `noprefix` within dependencies
-        if (modulePackageJson.ropm?.noprefix) {
+        if (this.packageJson.ropm?.noprefix) {
             console.error(`ropm: using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
             this.isValid = false;
             return;
         }
 
         //use the rootDir from packageJson, or default to the current module path
-        this.packageRootDir = modulePackageJson.ropm?.packageRootDir ? path.resolve(this.moduleDir, modulePackageJson.ropm.packageRootDir) : this.moduleDir;
+        this.packageRootDir = this.packageJson.ropm?.packageRootDir ? path.resolve(this.moduleDir, this.packageJson.ropm.packageRootDir) : this.moduleDir;
     }
 
     public async copyFiles() {
@@ -196,7 +201,7 @@ export class RopmModule {
         //load all files
         for (const obj of this.fileMaps) {
             this.files.push(
-                new File(obj.src, obj.dest, this.packageRootDir)
+                new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm ?? { prefixMatching: 'strict' })
             );
         }
 
@@ -263,7 +268,7 @@ export class RopmModule {
     private createEdits(noprefix: string[]) {
         const prefix = this.ropmModuleName + '_';
         const applyOwnPrefix = !noprefix.includes(this.ropmModuleName);
-        const ownFunctionNames = this.getDistinctFunctionDeclarationNames();
+        const ownFunctionMap = this.getDistinctFunctionDeclarationMap();
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
         const prefixMapKeys = Object.keys(this.prefixMap);
         const prefixMapKeysLower = prefixMapKeys.map(x => x.toLowerCase());
@@ -287,7 +292,7 @@ export class RopmModule {
                 //only apply prefixes if configured to do so
                 if (applyOwnPrefix) {
                     //if this function is owned by our project, rename it
-                    if (ownFunctionNames.includes(lowerName)) {
+                    if (ownFunctionMap[lowerName]) {
                         file.addEdit(call.offset, call.offset, prefix);
                         continue;
                     }
@@ -302,6 +307,16 @@ export class RopmModule {
                     //begin position + the length of the original prefix + 1 for the underscore
                     const offsetEnd = call.offset + possiblePrefix.length + 1;
                     file.addEdit(call.offset, offsetEnd, newPrefix + '_');
+                }
+            }
+
+            //if expanded mode, prefix all identifiers that have the same name as a function
+            if (applyOwnPrefix && this.packageJson.ropm?.prefixMatching === 'expanded') {
+                for (const identifier of file.identifiers) {
+                    //if this identifier has the same name as a function, then prefix the identifier
+                    if (ownFunctionMap[identifier.name.toLowerCase()]) {
+                        file.addEdit(identifier.offset, identifier.offset, prefix);
+                    }
                 }
             }
 
@@ -382,8 +397,8 @@ export class RopmModule {
     /**
      * Scan every file and compute the list of function declaration names.
      */
-    public getDistinctFunctionDeclarationNames() {
-        const result = {};
+    public getDistinctFunctionDeclarationMap() {
+        const result = {} as { [functionName: string]: boolean };
         for (const file of this.files) {
             for (const func of file.functionDefinitions) {
                 //skip the special function names
@@ -393,7 +408,7 @@ export class RopmModule {
                 result[func.name.toLowerCase()] = true;
             }
         }
-        return Object.keys(result);
+        return result;
     }
 
     /**

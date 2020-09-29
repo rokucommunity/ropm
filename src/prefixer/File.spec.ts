@@ -49,7 +49,7 @@ describe('prefixer/File', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath, srcRootDir);
+        file = new File(srcPath, destPath, srcRootDir, { prefixMatching: 'strict' });
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
@@ -96,25 +96,6 @@ describe('prefixer/File', () => {
                 offset: getOffset(1, 41)
             }]);
         });
-
-        it('works for xml files', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
-                <component name="CustomComponent" extends="Task" >
-                <script type="text/brightscript">
-                    <![CDATA[
-                        sub DoSomething()
-                        
-                        end sub
-                    ]]>
-                </script>
-                </component>
-            `, 'xml');
-            await file.discover();
-            expect(f.functionDefinitions).to.eql([{
-                name: 'DoSomething',
-                offset: getOffset(4, 28)
-            }]);
-        });
     });
 
     describe('findFunctionCalls', () => {
@@ -136,25 +117,6 @@ describe('prefixer/File', () => {
             }, {
                 name: 'doSomethingInner',
                 offset: getOffset(6, 24)
-            }]);
-        });
-
-        it('finds function calls in xml files', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
-                <component name="CustomComponent" extends="Task" >
-                <script type="text/brightscript">
-                    <![CDATA[
-                        sub init()
-                            DoSomething()
-                        end sub
-                    ]]>
-                </script>
-                </component>
-            `, 'xml');
-            await file.discover();
-            expect(f.functionCalls).to.eql([{
-                name: 'DoSomething',
-                offset: getOffset(5, 28)
             }]);
         });
 
@@ -185,6 +147,76 @@ describe('prefixer/File', () => {
                 name: 'speak',
                 offset: getOffset(12, 20)
             }]);
+        });
+    });
+
+    describe('findStrings', () => {
+        it('finds all strings in the file', async () => {
+            setFile(`
+                sub main()
+                    name = "bob"
+                    print "hello" + " world " + name
+                end sub
+            `, 'brs');
+            file.options.prefixMatching = 'expanded';
+            await file.discover();
+            expect(file.strings).to.eql([{
+                startOffset: getOffset(2, 27),
+                endOffset: getOffset(2, 32)
+            }, {
+                startOffset: getOffset(3, 26),
+                endOffset: getOffset(3, 33)
+            }, {
+                startOffset: getOffset(3, 36),
+                endOffset: getOffset(3, 45)
+            }]);
+        });
+
+        it('only scans brightscript files', async () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent">
+                </component>
+            `, 'xml');
+            await file.discover();
+            expect(file.strings).to.be.empty;
+        });
+    });
+
+    describe('findIdentifiers', () => {
+        it('finds various identifiers', async () => {
+            setFile(`
+                function main()
+                    logVar = log
+                    logVar("logVar")
+                    log("log")
+                end function
+                sub log(message)
+                end sub
+            `, 'brs');
+            file.options.prefixMatching = 'expanded';
+            await file.discover();
+            expect(file.identifiers).to.eql([{
+                name: 'logVar',
+                offset: getOffset(2, 20)
+            }, {
+                name: 'log',
+                offset: getOffset(2, 29)
+            }, {
+                name: 'message',
+                offset: getOffset(6, 24)
+            }]);
+        });
+
+        it('skips identifiers in strings and keyword identifiers', async () => {
+            setFile(`
+                function main()
+                    print "main function"
+                end function
+            `, 'brs');
+            file.options.prefixMatching = 'expanded';
+
+            await file.discover();
+            expect(file.identifiers).to.be.empty;
         });
     });
 
