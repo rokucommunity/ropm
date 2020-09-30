@@ -68,6 +68,9 @@ export class InstallCommand {
     }
 
     private async npmInstall() {
+        if (await fsExtra.pathExists(this.cwd) === false) {
+            throw new Error(`"${this.cwd}" does not exist`);
+        }
         await util.spawnNpmAsync([
             'i',
             ...(this.args.packages ?? [])
@@ -102,7 +105,10 @@ export class InstallCommand {
      * This is run sync because it should run as fast as possible
      * and won't be run in ~parallel.
      */
-    getProdDependencies() {
+    public getProdDependencies() {
+        if (fsExtra.pathExistsSync(this.cwd) === false) {
+            throw new Error(`"${this.cwd}" does not exist`);
+        }
         let stdout: string;
         try {
             stdout = childProcess.execSync('npm ls --parseable --prod', {
