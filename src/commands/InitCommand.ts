@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { util } from '../util';
+import * as fsExtra from 'fs-extra';
 
 export class InitCommand {
     constructor(
@@ -9,6 +10,9 @@ export class InitCommand {
     }
 
     public async run() {
+        if (await fsExtra.pathExists(this.cwd) === false) {
+            throw new Error(`"${this.cwd}" does not exist`);
+        }
         await util.spawnNpmAsync([
             'init',
             this.args.force === true ? '--force' : undefined
