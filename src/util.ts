@@ -269,10 +269,10 @@ export interface RopmOptions {
     noprefix?: string[];
     /**
      * If "strict", then only function calls and function declarations will be prefixed.
-     * If "expanded", in addition to the "strict" actions, ropm will also prefix any variable names that match known function names. =
+     * If "expanded", in addition to the "strict" actions, ropm will also prefix any variable names that match known function names.
      * This slows down ropm, which is why it's hidden behind an option
      */
-    prefixMatching?: 'strict' | 'expanded';
+    functionReferenceMatching?: 'strict' | 'expanded';
 }
 
 export interface ModuleDependency {

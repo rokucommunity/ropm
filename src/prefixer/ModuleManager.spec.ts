@@ -445,7 +445,7 @@ describe('ModuleManager', () => {
             await createDependencies([{
                 name: 'logger',
                 ropm: {
-                    prefixMatching: 'expanded'
+                    functionReferenceMatching: 'expanded'
                 },
                 _files: {
                     'source/lib.brs': `

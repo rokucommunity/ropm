@@ -49,7 +49,7 @@ describe('prefixer/File', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath, srcRootDir, { prefixMatching: 'strict' });
+        file = new File(srcPath, destPath, srcRootDir, { functionReferenceMatching: 'strict' });
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
@@ -158,7 +158,7 @@ describe('prefixer/File', () => {
                     print "hello" + " world " + name
                 end sub
             `, 'brs');
-            file.options.prefixMatching = 'expanded';
+            file.options.functionReferenceMatching = 'expanded';
             await file.discover();
             expect(file.strings).to.eql([{
                 startOffset: getOffset(2, 27),
@@ -193,7 +193,7 @@ describe('prefixer/File', () => {
                 sub log(message)
                 end sub
             `, 'brs');
-            file.options.prefixMatching = 'expanded';
+            file.options.functionReferenceMatching = 'expanded';
             await file.discover();
             expect(file.identifiers).to.eql([{
                 name: 'logVar',
@@ -213,7 +213,7 @@ describe('prefixer/File', () => {
                     print "main function"
                 end function
             `, 'brs');
-            file.options.prefixMatching = 'expanded';
+            file.options.functionReferenceMatching = 'expanded';
 
             await file.discover();
             expect(file.identifiers).to.be.empty;

@@ -149,8 +149,8 @@ export class File {
             this.findFunctionDefinitions();
             this.findFunctionCalls();
 
-            //only search for strings and identifiers if prefixMatching is set to "expanded"
-            if (this.options.prefixMatching === 'expanded') {
+            //only search for strings and identifiers if functionReferenceMatching is set to "expanded"
+            if (this.options.functionReferenceMatching === 'expanded') {
                 this.findStrings();
                 this.findIdentifiers();
             }

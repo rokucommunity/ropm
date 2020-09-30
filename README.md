@@ -390,7 +390,7 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 }
 ```
 
-## prefixMatching
+## Finding function references
 ropm is very efficient at at finding function definitions and function calls. However, there are valid patterns in BrightScript where a function reference is used without calling it. For example: 
 ```BrightScript
 sub writeToLog(message)
@@ -403,19 +403,19 @@ sub logWarning(message)
 end sub
 ```
 
-In this situation, the `logWarning` function is being assigned by its name. `ropm`'s default operating mode will not detect these usages, so `logWarning` will not be properly prefixed.
+In this situation, the `logWarning` function is being assigned by its name reference. `ropm`'s default operating mode will not detect these usages, so `logWarning` will not be properly prefixed.
 
-Detecting these usages is fairly resource-intensive, so we advise you avoid coding with these patterns whenever possible. However, if you absolutely need to support this pattern, then `ropm` has a configuration option called `prefixMatching` that enables discovery and prefixing of these identifiers. 
+Detecting these usages is fairly resource-intensive, so we advise you avoid coding with these patterns whenever possible. However, if you absolutely need to support this pattern, then `ropm` has a configuration option called `functionReferenceMatching` that enables discovery and prefixing of these identifiers. 
 
 ```js
 {
     "ropm": {
-        "prefixMatching": "expanded" //default is "strict"
+        "functionReferenceMatching": "expanded" //default is "strict"
     }
 }
 ```
 
-When `prefixMatching` is set to `"expanded"`, ropm will scan all of your package's BrightScript files for words that appear to be identifiers. Then, ropm will add prefixes to all identifiers that have the same name as functions in your package. 
+When `functionReferenceMatching` is set to `"expanded"`, ropm will scan all of your package's BrightScript files for words that appear to be identifiers. Then, ropm will add prefixes to all identifiers that have the same name as functions in your package. 
 
 Downsides to this approach:
  1. This operation is package-wide and does not operate on a per-scope basis, so it will prefix any local variable that shares a name with a function in your package.
@@ -431,4 +431,4 @@ Downsides to this approach:
 In order to keep `ropm` transformations fast and effective, there are several restrictions that you need to follow as a ropm package author:
 
 1. Using brs within CDATA blocks in xml files is not supported. Please keep all of your BrightScript code in `.brs` files
-2. Avoid using `ropm.prefixMode: "expanded"` unless absolutely necessary.
+2. Avoid using `ropm.functionReferenceMatching: "expanded"` unless absolutely necessary.
