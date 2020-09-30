@@ -242,6 +242,21 @@ export class Util {
         return semver.prerelease(version) ? version : semver.major(version).toString();
     }
 
+    /**
+     * Determine if a string has the same number of open parens as it does close parens
+     */
+    public hasMatchingParenCount(text: string) {
+        let count = 0;
+        for (const char of text) {
+            if (char === '(') {
+                count++;
+            } else if (char === ')') {
+                count--;
+            }
+        }
+        return count === 0;
+    }
+
 }
 export const util = new Util();
 
