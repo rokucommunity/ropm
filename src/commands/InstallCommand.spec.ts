@@ -141,6 +141,33 @@ describe('InstallCommand', () => {
             )).to.be.true;
         });
 
+        it('uses module directory when `packageRootDir` is omitted', async () => {
+            writeProject('logger', {
+                'source/logger.brs': '',
+                'source/temp.brs': ''
+            });
+
+            writeProject(projectName, {
+                'src/source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                },
+                ropm: {
+                    rootDir: 'src'
+                }
+            });
+
+            await command.run();
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'logger.brs')
+            )).to.be.true;
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'temp.brs')
+            )).to.be.true;
+        });
+
         it('works when not passing in any packages', async () => {
             //remove packages
             delete args.packages;
