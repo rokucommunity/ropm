@@ -18,6 +18,9 @@ Click [here](https://www.npmjs.com/search?q=keywords%3Aropm%20) to search npm fo
 
 You can also search GitHub for `ropm` packages, but since GitHub doesn't support searching by keyword, you'll need to know what you're looking for.
 
+## Creating a package
+See the [Creating ropm Packages](#creating-ropm-packages) section for guidance about creating `ropm` packages.
+
 ## How it works
 `ropm` leverages NodeJS's `npm` module system behind the scenes. This means when you create packages, they should be pushed to an `npm` registry such as [npm](https://www.npmjs.com/), [GitHub packages](https://github.com/features/packages), or even an on-premise registry. 
 
@@ -30,32 +33,33 @@ The Roku project structure is fairly strict. There are a few rules:
 
 This provides unique challenges for a Roku package manager, because file paths alone are not enough to prevent symbol collisions. `ropm` solves the naming collision problem by rewriting the names of all functions and components in an ropm module.
 
-ropm will create a `roku_modules/<ropm module name>` folder into each corresponding folder of your project. For example, if a ropm module named `FancyWidget` has the following folders:
+ropm will create a `roku_modules/<ropm module name>` folder into each corresponding folder of your project. For example, if a ropm module named `"logger"` has the following folders:
  - source/
  - components/
  - images/
  - fonts/
 
 then `ropm install` will create the following folders in your project
- - source/roku_modules/FancyWidget
- - components/roku_modules/FancyWidget
- - images/roku_modules/FancyWidget
- - fonts/roku_modules/FancyWidget
+ - source/roku_modules/logger
+ - components/roku_modules/logger
+ - images/roku_modules/logger
+ - fonts/roku_modules/logger
 
 ## Sanitizing module names
-Most `npm`-style package registries allow many characters in package names that are not valid identifiers within a Roku application. As such, these names need to be sanitized. The following transformations will be applied to every module name. 
- - registry namespaces will have the `@` symbol removed and the `/` replaced with an underscore. (i.e. `@roku/sgdex` becomes `roku_sgdex`)
- - All characters except for numbers, letters, and underscore will be removed. (i.e. `cool-package` becomes `coolpackage`)
+Most `npm`-style package registries allow many characters in package names that are not valid [identifiers](http://developer.roku.com/docs/references/brightscript/language/expressions-variables-types.md#identifiers) within a Roku application. As such, these names need to be sanitized. The following transformations will be applied to every module name. 
+ - registry namespaces will have the `@` symbol removed and the `/` replaced with an underscore. (i.e. `@roku/sgdex` would become `roku_sgdex`)
+ - All characters except for numbers, letters, and underscore will be removed. (i.e. `cool-package` would become `coolpackage`)
 
 While extremely unlikely, this does have the potential for name collisions. If collisions occur, you will need to define a custom prefix for one of the dependencies in question.
 
 
 ## Prefixes
-When module authors publish their modules, they should not include any type of prefix to their components or functions. The prefixing will be handled by `ropm` itself. 
+When module authors publish their modules, they should not include any baseline prefix or namespace in front of their component or function names. The prefixing will be handled by `ropm` itself. 
 
 `ropm` will scan every module for:
- - function declaractions
- - function calls
+ - function declaractions (i.e. `function LogInfo(message)...end function` )
+ - function calls (i.e. `LogInfo("do something")` )
+ - function references (i.e. `log = LogInfo` )
  - component declarations
  - component usage:
    - component names in XML `extends` attribute
@@ -336,7 +340,18 @@ ropm uninstall module1 module2 module3
 ```
 
 
-# For Package Creators
+# Creating ropm Packages
+## Overview
+Here is some overview information to help `ropm` package authors get started:
+
+ - `ropm` modules are simply [npm](https://www.npmjs.com/) packages with the `ropm` keyword (see [How to create a ropm package](#how-to-create-a-ropm-package))
+ - `ropm` rewrites every `pkg:/` path, so use string concatenation if you need to bypass this logic (see [File paths](#file-paths))
+ - Don't give local variables the same names as functions in your package. (See [Finding function references](#finding-function-references))
+ - Don't write BrightScript in XML `CDATA` blocks (See [BrightScript in XML CDATA blocks is unsupported](#brightScript-in-xml-cdata-blocks-is-unsupported))
+ -  use the `ropm` options in `package.json` to customize various settings in your package
+     - `ropm.rootDir` - where you want `roku_modules` installed within your package
+     - `ropm.packageRootDir` where your package's files reside (i.e. `dist`, `build`, `./`, etc...)
+
 
 ## How to create a ropm package
 The `ropm` package system leverages the [npm](https://www.npmjs.com/) package system from Node.js. Simply follow [these instructions](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages) from npm on how to create a package. 
@@ -403,23 +418,9 @@ sub logWarning(message)
 end sub
 ```
 
-In this situation, the `logWarning` function is being assigned by its name reference. `ropm`'s default operating mode will not detect these usages, so `logWarning` will not be properly prefixed.
+In this situation, the `logWarning` function is being assigned by its name reference. ropm will scan all of your package's BrightScript files for all [identifiers](http://developer.roku.com/docs/references/brightscript/language/expressions-variables-types.md#identifiers). Then, ropm will add prefixes to all identifiers that have the same name as functions in your package. 
 
-Detecting these usages is fairly resource-intensive, so we advise you avoid coding with these patterns whenever possible. However, if you absolutely need to support this pattern, then `ropm` has a configuration option called `functionReferenceMatching` that enables discovery and prefixing of these identifiers. 
-
-```js
-{
-    "ropm": {
-        "functionReferenceMatching": "expanded" //default is "strict"
-    }
-}
-```
-
-When `functionReferenceMatching` is set to `"expanded"`, ropm will scan all of your package's BrightScript files for words that appear to be identifiers. Then, ropm will add prefixes to all identifiers that have the same name as functions in your package. 
-
-Downsides to this approach:
- 1. This operation is package-wide and does not operate on a per-scope basis, so it will prefix any local variable that shares a name with a function in your package.
- 2. This will slow down ropm considerably when your package installs. In local benchmarks, as much as 300% slower install times for packages that use this option.
+**NOTE:** This operation is package-wide and does not operate on a per-scope basis, so it will prefix any local variable that shares a name with any function across your entire package. While the code will still run, it might appear strange to see `ropm`-specific prefixes on local variables, so we recommend that you do not give local variables the same name as any function your package.
 
 
 ## rootDir versus packageRootDir
@@ -427,8 +428,7 @@ Downsides to this approach:
  - `packageRootDir` is exclusively for package authors to specify where their package module code resides (like in `dist`, `out`, `build`, `src`, etc...). 
 
 
-### ropm module restrictions
-In order to keep `ropm` transformations fast and effective, there are several restrictions that you need to follow as a ropm package author:
+### BrightScript in XML CDATA blocks is unsupported
+It is considered bad practice to insert BrightScript code into `<![CDATA[` xml script blocks, and as such, `ropm` does not support `CDATA` blocks. 
 
-1. Using brs within CDATA blocks in xml files is not supported. Please keep all of your BrightScript code in `.brs` files
-2. Avoid using `ropm.functionReferenceMatching: "expanded"` unless absolutely necessary.
+Any BrightScript code found in `CDATA` blocks will be ignored by the `ropm` prefixing logic, so use at your own risk (or peril!). 
