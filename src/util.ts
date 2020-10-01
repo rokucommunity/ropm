@@ -267,12 +267,6 @@ export interface RopmOptions {
      * An array of module aliases that should not be prefixed when installed into `rootDir`. Use this with caution.
      */
     noprefix?: string[];
-    /**
-     * If "strict", then only function calls and function declarations will be prefixed.
-     * If "expanded", in addition to the "strict" actions, ropm will also prefix any variable names that match known function names.
-     * This slows down ropm, which is why it's hidden behind an option
-     */
-    functionReferenceMatching?: 'strict' | 'expanded';
 }
 
 export interface ModuleDependency {

@@ -345,12 +345,16 @@ ropm uninstall module1 module2 module3
 Here is some overview information to help `ropm` package authors get started:
 
  - `ropm` modules are simply [npm](https://www.npmjs.com/) packages with the `ropm` keyword (see [How to create a ropm package](#how-to-create-a-ropm-package))
+ - Follow semantic versioning **strictly**. Make major breaking changes as infrequently as possible. (see [Semantic Versioning](#semantic-versioning))
  - `ropm` rewrites every `pkg:/` path, so use string concatenation if you need to bypass this logic (see [File paths](#file-paths))
  - Don't give local variables the same names as functions in your package. (See [Finding function references](#finding-function-references))
+ - Wrap function references in parentheses to help `ropm` find them in your code (See [Finding function references: Caveats](#caveats))
  - Don't write BrightScript in XML `CDATA` blocks (See [BrightScript in XML CDATA blocks is unsupported](#brightScript-in-xml-cdata-blocks-is-unsupported))
+ - Don't define a baseline namespace. On install, `ropm` will prefix your package for you. (See [Prefixes](#prefixes))
  -  use the `ropm` options in `package.json` to customize various settings in your package
      - `ropm.rootDir` - where you want `roku_modules` installed within your package
      - `ropm.packageRootDir` where your package's files reside (i.e. `dist`, `build`, `./`, etc...)
+     - Don't use `ropm.noprefix`, as can not be used within published `ropm` packages.
 
 
 ## How to create a ropm package
@@ -406,21 +410,69 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 ```
 
 ## Finding function references
-ropm is very efficient at at finding function definitions and function calls. However, there are valid patterns in BrightScript where a function reference is used without calling it. For example: 
+`ropm` is very efficient at at finding function definitions and function calls. However, it's more difficult to find function references when the function is not part of a function call. For example, the `logWarning` function is being assigned by its name reference on line #2`: 
 ```BrightScript
-sub writeToLog(message)
-    log = logWarning
-    log(message);
-end sub
-
-sub logWarning(message)
-    print "warning: " + message
-end sub
+1 | sub writeToLog(message)
+2 |     log = logWarning
+3 |     log(message);
+4 | end sub
+5 | 
+6 | sub logWarning(message)
+7 |     print "warning: " + message
+8 | end sub
 ```
 
-In this situation, the `logWarning` function is being assigned by its name reference. ropm will scan all of your package's BrightScript files for all [identifiers](http://developer.roku.com/docs/references/brightscript/language/expressions-variables-types.md#identifiers). Then, ropm will add prefixes to all identifiers that have the same name as functions in your package. 
+`ropm` will smartly scan all of your package's BrightScript files for [identifiers](http://developer.roku.com/docs/references/brightscript/language/expressions-variables-types.md#identifiers) that might be function references. Then, ropm will add prefixes to all identifiers that have the same name as functions in your package. 
 
-**NOTE:** This operation is package-wide and does not operate on a per-scope basis, so it will prefix any local variable that shares a name with any function across your entire package. While the code will still run, it might appear strange to see `ropm`-specific prefixes on local variables, so we recommend that you do not give local variables the same name as any function your package.
+Here is the current logic. Find all identifiers that:
+ - are to the right of an equal sign.
+     - `log = logWarning`
+ - are to the right of an open parentheses.
+     - `setCallback(logWarning)`
+ - are to the right of a `print` statement
+     - `print logWarning`
+ - are to the right or left of a square brace.
+     - `someObject[logWarning]`
+ - are surrounded by commas
+     - `doSomething("param1", logWarning, "param3")`
+ - are to the left of a closing parentheses
+     - `performActionWithCallback("actionName", logWarning)`
+ - are surrounded by parentheses
+     - `log = (logWarning)`
+
+
+### Caveats to finding function references
+Due to ambiguities in the Roku language, there is still one situation that is difficult to correctly identify without a full parser. Consider this statement:
+```BrightScript
+person = {
+    getName: getName,
+    getAge: getAge
+}
+```
+
+We want `ropm` to match on the the right-hand-side of both property assignments (`getName` and `getAge`). However, we can also write that statement like this:
+```BrightScript
+person = {
+    getName: getName : getAge : getAge
+}
+```
+
+This is valid BrightScript, but without a parser it's impossible for `ropm` to pick the right identifiers. We could very easily pick the object key, which would cause runtime errors on a Roku device. 
+
+For this reason, `ropm` will _NOT_ prefix function references preceed with a colon. Instead, we provide a workaround: 
+ > `ropm` will match on any identifier wrapped with parenthese. 
+
+Here's how you can safely use function references with this situation:
+```BrightScript
+person = {
+    getName: (getNameFunc),
+    getAge: (getAgeFunc)
+}
+```
+### Finding function references is a package-wide operation
+> *HINT:* do not give local variables the same name as any function in your package
+
+Identifier replacement is package-wide and does not operate on a per-scope basis, meaning `ropm` will prefix any local variable that shares a name with any function across your entire package. While the code will still run, it might appear strange to see `ropm`-specific prefixes on local variables, so we recommend that you do not give local variables the same name as any function your package.
 
 
 ## rootDir versus packageRootDir

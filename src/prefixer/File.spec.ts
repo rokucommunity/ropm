@@ -44,12 +44,34 @@ describe('prefixer/File', () => {
                 currentColumnIndex++;
             }
         }
+        return -1;
+    }
+    /**
+     * Given an offset in the current file contents, compute the Position (line and column)
+     */
+    function getPositionFromOffset(targetOffset: number): { line: number; character: number } | undefined {
+        let currentLineIndex = 0;
+        let currentColumnIndex = 0;
+        for (let offset = 0; offset < fileContents.length; offset++) {
+            if (targetOffset === offset) {
+                return {
+                    line: currentLineIndex,
+                    character: currentColumnIndex
+                };
+            }
+            if (fileContents[offset] === '\n') {
+                currentLineIndex++;
+                currentColumnIndex = 0;
+            } else {
+                currentColumnIndex++;
+            }
+        }
     }
 
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath, srcRootDir, { functionReferenceMatching: 'strict' });
+        file = new File(srcPath, destPath, srcRootDir);
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
@@ -158,7 +180,6 @@ describe('prefixer/File', () => {
                     print "hello" + " world " + name
                 end sub
             `, 'brs');
-            file.options.functionReferenceMatching = 'expanded';
             await file.discover();
             expect(file.strings).to.eql([{
                 startOffset: getOffset(2, 27),
@@ -183,6 +204,72 @@ describe('prefixer/File', () => {
     });
 
     describe('findIdentifiers', () => {
+        it('works for regex test case', async () => {
+            async function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
+                setFile(text);
+                file = new File(srcPath, destPath, srcRootDir);
+                await file.discover();
+
+                const identifiers = [] as { name: string; line: number; character: number }[];
+                for (const identifier of expectedIdentifiers) {
+                    identifiers.push({
+                        name: identifier[0],
+                        line: identifier[1],
+                        character: identifier[2]
+                    });
+                }
+                expect(file.identifiers.map(x => ({
+                    name: x.name,
+                    ...getPositionFromOffset(x.offset)
+                }))).to.eql(identifiers);
+            }
+            //regex test: https://regex101.com/r/LUuU8X/1
+            await verifyIdentifier(`someVar = logInfo1`, ['logInfo1', 0, 10]);
+            await verifyIdentifier(`object.var = logInfo2`, ['logInfo2', 0, 13]);
+            await verifyIdentifier(`object["1"] = logInfo3`, ['logInfo3', 0, 14]);
+            await verifyIdentifier(`object[logInfo4] = "1"`, ['logInfo4', 0, 7]);
+            await verifyIdentifier(`callAFunction(logInfo5)`, ['logInfo5', 0, 14]);
+            // await verifyIdentifier(`doSomething()`, 'logInfo1', 0, 13);
+            await verifyIdentifier(`callAFunction(logInfo6, "asdf")`, ['logInfo6', 0, 14]);
+            await verifyIdentifier(`callAFunction("asdf", logInfo7)`, ['logInfo7', 0, 22]);
+            await verifyIdentifier(`someObject[logInfo8]`, ['logInfo8', 0, 11]);
+            await verifyIdentifier(`someObject[logInfo9 ]`, ['logInfo9', 0, 11]);
+            await verifyIdentifier(`someObject[ logInfo10 ]`, ['logInfo10', 0, 12]);
+
+            await verifyIdentifier(`
+                someObject[
+                    logInfo11
+                ]
+            `, ['logInfo11', 2, 20]);
+
+            await verifyIdentifier(`
+                someFunction(
+                    logInfo12
+                )
+            `, ['logInfo12', 2, 20]);
+
+            await verifyIdentifier(`print logInfo13 : print logInfo14`, ['logInfo13', 0, 6], ['logInfo14', 0, 24]);
+
+            await verifyIdentifier(`
+                person = {
+                    name: logInfo15
+                }
+            `, ['logInfo15', 2, 26]);
+
+            //any expression where the function name is wrapped in parens
+            await verifyIdentifier(`print "1" + (logInfo16)`, ['logInfo16', 0, 13]);
+
+            await verifyIdentifier(`
+                function firstName(logInfo17, logInfo18, logInfo19)
+                end function
+            `, ['logInfo17', 1, 35], ['logInfo18', 1, 46], ['logInfo19', 1, 57]);
+
+            await verifyIdentifier(`
+                (function (logInfo20, logInfo21, logInfo22)
+                end function)()
+            `, ['logInfo20', 1, 27], ['logInfo21', 1, 38], ['logInfo22', 1, 49]);
+        });
+
         it('finds various identifiers', async () => {
             setFile(`
                 function main()
@@ -193,12 +280,8 @@ describe('prefixer/File', () => {
                 sub log(message)
                 end sub
             `, 'brs');
-            file.options.functionReferenceMatching = 'expanded';
             await file.discover();
             expect(file.identifiers).to.eql([{
-                name: 'logVar',
-                offset: getOffset(2, 20)
-            }, {
                 name: 'log',
                 offset: getOffset(2, 29)
             }, {
@@ -213,7 +296,6 @@ describe('prefixer/File', () => {
                     print "main function"
                 end function
             `, 'brs');
-            file.options.functionReferenceMatching = 'expanded';
 
             await file.discover();
             expect(file.identifiers).to.be.empty;

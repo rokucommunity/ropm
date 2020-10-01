@@ -19,7 +19,7 @@ export class File {
          * The absolute path to the rootDir for this file
          */
         public readonly rootDir: string,
-        public options: RopmOptions
+        public options: RopmOptions = {}
     ) {
         this.pkgPath = path.posix.normalize(
             util.removeLeadingSlash(
@@ -148,12 +148,8 @@ export class File {
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
             this.findFunctionCalls();
-
-            //only search for strings and identifiers if functionReferenceMatching is set to "expanded"
-            if (this.options.functionReferenceMatching === 'expanded') {
-                this.findStrings();
-                this.findIdentifiers();
-            }
+            this.findStrings();
+            this.findIdentifiers();
         } else if (this.isXmlFile) {
             this.findXmlChildrenComponentReferences();
             this.findFilePathsFromXmlScriptElements();
@@ -194,24 +190,78 @@ export class File {
     }
 
     /**
+     * A map of all the keywords in brighterscript that may not be identifiers or function names
+     */
+    private static keywordMap = {
+        and: true,
+        box: true,
+        createobject: true,
+        dim: true,
+        each: true,
+        else: true,
+        elseif: true,
+        end: true,
+        endfunction: true,
+        endif: true,
+        endsub: true,
+        endwhile: true,
+        eval: true,
+        exit: true,
+        exitwhile: true,
+        false: true,
+        for: true,
+        function: true,
+        goto: true,
+        if: true,
+        invalid: true,
+        let: true,
+        next: true,
+        not: true,
+        objfun: true,
+        or: true,
+        pos: true,
+        print: true,
+        rem: true,
+        return: true,
+        step: true,
+        sub: true,
+        tab: true,
+        then: true,
+        to: true,
+        true: true,
+        type: true,
+        while: true,
+        boolean: true,
+        string: true,
+        object: true,
+        void: true,
+        as: true,
+        in: true
+    };
+
+    /**
      * find all identifiers in this file. This will definitely find keywords and reserved words,
      * but we only use this list to replace known function names, so it's ok to be a little greedy here.
      */
     public findIdentifiers() {
         //using negative lookbehind, so require node >=8.1.10
-        //find identifiers in the file that do not match keywords (which are not allowed as function names).
-        //excludes identifiers preceeded with a dot, "function, or sub
-        //excludes identifiers followed by a dot or open paren (those are handled elsewhere)
-        const regexp = /\b(?<!\.|\-|(?:function|sub)\s+)((?!\b(?:And|Box|CreateObject|Dim|Each|Else|ElseIf|End|EndFunction|EndIf|EndSub|EndWhile|Eval|Exit|ExitWhile|False|For|Function|Goto|If|Invalid|Let|Next|Not|ObjFun|Or|Pos|Print|Rem|Return|Step|Sub|Tab|Then|To|True|Type|While|boolean|function|string|object|void|as|in)\b)[a-z0-9_]+\b(?!\.|\())/gi;
+        //find identifiers in the file.
+        //see the unit test for all scenarios this covers, but basically it tries to find assignments, print statements,
+        //identifiers being passed as function parameters, or identifiers wrapped in left and right parens
+        //regex test: https://regex101.com/r/LUuU8X/1
+        const regexp = /(?:(?<=(?:=|\(|\[|:|print)\s*)([a-z0-9_]+\b)(?!\.))|(?:([a-z0-9_]+)(?=\s*(?:\]|\))))|(?:(?<=,\s*)([a-z0-9_]+)(?=\s*,))/gim;
+
         let match: RegExpExecArray | null;
 
         while (match = regexp.exec(this.fileContents)) {
-            //don't keep this identifier if it exists within a string
-            if (this.isOffsetWithinString(match.index)) {
+            //the regex had to use multiple capture groups, so check if any of them have the identifier
+            const identifier = match[1] || match[2] || match[3] || match[4];
+            //don't keep this identifier if it exists within a string, or if it's a keyword
+            if (this.isOffsetWithinString(match.index) || File.keywordMap[identifier.toLowerCase()]) {
                 continue;
             }
             this.identifiers.push({
-                name: match[1],
+                name: identifier,
                 offset: match.index
             });
         }

@@ -201,7 +201,7 @@ export class RopmModule {
         //load all files
         for (const obj of this.fileMaps) {
             this.files.push(
-                new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm ?? { functionReferenceMatching: 'strict' })
+                new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm)
             );
         }
 
@@ -310,13 +310,11 @@ export class RopmModule {
                 }
             }
 
-            //if expanded mode, prefix all identifiers that have the same name as a function
-            if (applyOwnPrefix && this.packageJson.ropm?.functionReferenceMatching === 'expanded') {
-                for (const identifier of file.identifiers) {
-                    //if this identifier has the same name as a function, then prefix the identifier
-                    if (ownFunctionMap[identifier.name.toLowerCase()]) {
-                        file.addEdit(identifier.offset, identifier.offset, prefix);
-                    }
+            //prefix all identifiers that have the same name as a function
+            for (const identifier of file.identifiers) {
+                //if this identifier has the same name as a function, then prefix the identifier
+                if (ownFunctionMap[identifier.name.toLowerCase()]) {
+                    file.addEdit(identifier.offset, identifier.offset, prefix);
                 }
             }
 

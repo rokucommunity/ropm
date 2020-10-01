@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0]
 ### Added
- - `ropm.functionReferenceMatching` option that allows for expanded function name searching and prefixing. 
+ - Find and prefix all function identifiers across the entire package.
 
 
 

@@ -444,9 +444,6 @@ describe('ModuleManager', () => {
         it('applies prefix when in expanded mode', async () => {
             await createDependencies([{
                 name: 'logger',
-                ropm: {
-                    functionReferenceMatching: 'expanded'
-                },
                 _files: {
                     'source/lib.brs': `
                         sub writeToLog(message)
