@@ -437,7 +437,7 @@ Here is the current logic. Find all identifiers that:
      - `doSomething("param1", logWarning, "param3")`
  - are to the left of a closing parentheses
      - `performActionWithCallback("actionName", logWarning)`
- - are surrounded by parentheses
+ - are surrounded by parentheses (more on this below)
      - `log = (logWarning)`
 
 
@@ -465,8 +465,8 @@ For this reason, `ropm` will _NOT_ prefix function references preceed with a col
 Here's how you can safely use function references with this situation:
 ```BrightScript
 person = {
-    getName: (getNameFunc),
-    getAge: (getAgeFunc)
+    getName: (getName),
+    getAge: (getAge)
 }
 ```
 ### Finding function references is a package-wide operation
