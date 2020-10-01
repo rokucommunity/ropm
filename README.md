@@ -442,7 +442,7 @@ Here is the current logic. Find all identifiers that:
 
 
 ### Caveats to finding function references
-Due to ambiguities in the Roku language, there is still one situation that is difficult to correctly identify without a full parser. Consider this statement:
+Due to ambiguities in the BrightScript language, there is still one situation that is difficult to correctly identify without a full parser. Consider this statement:
 ```BrightScript
 person = {
     getName: getName,
