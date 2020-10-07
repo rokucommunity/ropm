@@ -4,7 +4,7 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
-import { BrsFile, Program, Range, XmlFile } from 'brighterscript';
+import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Program, Range, WalkMode, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
@@ -83,23 +83,11 @@ export class File {
     }>;
 
     /**
-     * All identifiers in this file. This will definitely include more than just the actual identifiers,
-     * but we only use this list to replace known function names, so it's ok to be a little greedy here.
+     * Identifiers found in this file. We use this list to replace known function names, so it's ok to be a little greedy in our matching.
      */
     public identifiers = [] as Array<{
         name: string;
         offset: number;
-    }>;
-
-    /**
-     * An array of string offsetBegin and offsetEnd pairs that indicate where
-     * strings are located in this file.
-     *
-     * Useful when performing blanket text replacement so we don't replace inside of strings
-     */
-    public strings = [] as Array<{
-        startOffset: number;
-        endOffset: number;
     }>;
 
     private edits = [] as Edit[];
@@ -163,8 +151,6 @@ export class File {
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
-            this.findFunctionCalls();
-            this.findStrings();
             this.findIdentifiers();
             this.findObserveFieldFunctionNames();
         } else if (this.isXmlFile) {
@@ -177,136 +163,40 @@ export class File {
     }
 
     /**
-     * A binary search through the strings in this file to determine if this offset is found within the string range
-     */
-    private isOffsetWithinString(offset: number) {
-        let start = 0;
-        let end = this.strings.length - 1;
-
-        // Iterate while start not meets end
-        while (start <= end) {
-
-            // Find the mid index
-            const mid = Math.floor((start + end) / 2);
-
-            const range = this.strings[mid];
-
-            // If element is present at mid, return True
-            if (offset > range.startOffset && offset < range.endOffset) {
-                return true;
-
-                // Else look in left or right half accordingly
-            } else if (range.startOffset < offset) {
-                start = mid + 1;
-
-            } else {
-                end = mid - 1;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * A map of all the keywords in brighterscript that may not be identifiers or function names
-     */
-    private static keywordMap = {
-        and: true,
-        box: true,
-        createobject: true,
-        dim: true,
-        each: true,
-        else: true,
-        elseif: true,
-        end: true,
-        endfunction: true,
-        endif: true,
-        endsub: true,
-        endwhile: true,
-        eval: true,
-        exit: true,
-        exitwhile: true,
-        false: true,
-        for: true,
-        function: true,
-        goto: true,
-        if: true,
-        invalid: true,
-        let: true,
-        next: true,
-        not: true,
-        objfun: true,
-        or: true,
-        pos: true,
-        print: true,
-        rem: true,
-        return: true,
-        step: true,
-        sub: true,
-        tab: true,
-        then: true,
-        to: true,
-        true: true,
-        type: true,
-        while: true,
-        boolean: true,
-        string: true,
-        object: true,
-        void: true,
-        as: true,
-        in: true
-    };
-
-    /**
      * find all identifiers in this file. This will definitely find keywords and reserved words,
      * but we only use this list to replace known function names, so it's ok to be a little greedy here.
      */
     public findIdentifiers() {
-        //using negative lookbehind, so require node >=8.1.10
-        //find identifiers in the file.
-        //see the unit test for all scenarios this covers, but basically it tries to find assignments, print statements,
-        //identifiers being passed as function parameters, or identifiers wrapped in left and right parens
-        //regex test: https://regex101.com/r/LUuU8X/1
-        const regexp = /(?:(?<=(?:=|\(|\[|:|print)\s*)([a-z0-9_]+\b)(?!\.))|(?:([a-z0-9_]+)(?=\s*(?:\]|\))))|(?:(?<=,\s*)([a-z0-9_]+)(?=\s*,))/gim;
+        this.bscFile.parser.ast.walk(createVisitor({
+            /* eslint-disable @typescript-eslint/naming-convention */
+            VariableExpression: (variable, parent) => {
+                //skip objects to left of dotted/indexed expressions
+                if ((
+                    isDottedSetStatement(parent) ||
+                    isDottedGetExpression(parent) ||
+                    isIndexedSetStatement(parent) ||
+                    isIndexedGetExpression(parent)
+                ) && parent.obj === variable) {
+                    return;
+                }
 
-        let match: RegExpExecArray | null;
-
-        while (match = regexp.exec(this.bscFile.fileContents)) {
-            //the regex had to use multiple capture groups, so check if any of them have the identifier
-            const identifier = match[1] || match[2] || match[3] || match[4];
-            //don't keep this identifier if it exists within a string, or if it's a keyword
-            if (this.isOffsetWithinString(match.index) || File.keywordMap[identifier.toLowerCase()]) {
-                continue;
+                //track function calls
+                if (isCallExpression(parent) && variable === parent.callee) {
+                    this.functionCalls.push({
+                        name: variable.name.text,
+                        offset: this.rangeToOffset(variable.name.range)
+                    });
+                } else {
+                    this.identifiers.push({
+                        name: variable.name.text,
+                        offset: this.rangeToOffset(variable.name.range)
+                    });
+                }
             }
-            this.identifiers.push({
-                name: identifier,
-                offset: match.index
-            });
-        }
-    }
-
-    /**
-     * Find all of the strings in the file. Since BrightScript doesn't have an escape character,
-     * this is as simple as even-odd matching to track the string locations.
-     * Using a regexp is surprisingly faster than looping the characters directly.
-     */
-    public findStrings() {
-        this.strings = [];
-
-        const regexp = /"/g;
-        let start = null as number | null;
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
-            if (start) {
-                this.strings.push({
-                    startOffset: start,
-                    endOffset: match.index + 1
-                });
-                start = null;
-            } else {
-                start = match.index;
-            }
-        }
+            /* eslint-enable @typescript-eslint/naming-convention */
+        }), {
+            walkMode: WalkMode.visitAllRecursive
+        });
     }
 
     /**
@@ -371,22 +261,6 @@ export class File {
             this.functionDefinitions.push({
                 name: func.name.text,
                 offset: this.rangeToOffset(func.name.range)
-            });
-        }
-    }
-
-    private findFunctionCalls() {
-        //using negative lookbehind, so require node >=8.1.10
-        //capture every identifier NOT preceeded by sub or function, that is not the exact text "sub" or "function"
-        const regexp = /(?<!(?:sub|function)[ \t]+)(?!function|sub\b)\b(?<!\.|\])([a-z0-9_]+)\s*\(/gi;
-
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
-            const functionName = match[1];
-
-            this.functionCalls.push({
-                name: functionName,
-                offset: match.index
             });
         }
     }

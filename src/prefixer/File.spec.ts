@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import { expect } from 'chai';
 import { createSandbox } from 'sinon';
-import { Program } from 'brighterscript';
+import { Position, Program } from 'brighterscript';
 const sinon = createSandbox();
 
 const tmpDir = path.join(process.cwd(), '.tmp');
@@ -27,15 +27,18 @@ describe('prefixer/File', () => {
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
         });
-        program = new Program({
-            rootDir: rootDir
-        });
+        initProgram();
     });
 
     afterEach(() => {
         sinon.restore();
     });
 
+    function initProgram() {
+        program = new Program({
+            rootDir: rootDir
+        });
+    }
 
     /**
      * Set the contents of the file right before a test.
@@ -165,133 +168,126 @@ describe('prefixer/File', () => {
         });
     });
 
-    describe('findStrings', () => {
-        it('finds all strings in the file', async () => {
-            await setFile(`
-                sub main()
-                    name = "bob"
-                    print "hello" + " world " + name
-                end sub
-            `, 'brs');
-            file.discover(program);
-            expect(file.strings).to.eql([{
-                startOffset: getOffset(2, 27),
-                endOffset: getOffset(2, 32)
-            }, {
-                startOffset: getOffset(3, 26),
-                endOffset: getOffset(3, 33)
-            }, {
-                startOffset: getOffset(3, 36),
-                endOffset: getOffset(3, 45)
-            }]);
-        });
-
-        it('only scans brightscript files', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
-                <component name="CustomComponent">
-                </component>
-            `, 'xml');
-            file.discover(program);
-            expect(file.strings).to.be.empty;
-        });
-    });
-
     describe('findIdentifiers', () => {
-        it('works for regex test case', async () => {
-            async function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
-                await setFile(text);
-                file = new File(srcPath, destPath, rootDir);
-                file.discover(program);
+        async function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
+            file = new File(srcPath, destPath, rootDir);
+            f = file;
+            initProgram();
+            await setFile(`
+                sub main()\n${text}
+                end sub`
+            );
+            file.discover(program);
 
-                const identifiers = [] as { name: string; line: number; character: number }[];
-                for (const identifier of expectedIdentifiers) {
-                    identifiers.push({
-                        name: identifier[0],
-                        line: identifier[1],
-                        character: identifier[2]
-                    });
-                }
-                expect(file.identifiers.map(x => ({
-                    name: x.name,
-                    ...getPositionFromOffset(x.offset)
-                }))).to.eql(identifiers);
+            const identifiers = [] as { name: string; line: number; character: number }[];
+            for (const identifier of expectedIdentifiers) {
+                identifiers.push({
+                    name: identifier[0],
+                    line: identifier[1],
+                    character: identifier[2]
+                });
             }
-            //regex test: https://regex101.com/r/LUuU8X/1
-            await verifyIdentifier(`someVar = logInfo1`, ['logInfo1', 0, 10]);
-            await verifyIdentifier(`object.var = logInfo2`, ['logInfo2', 0, 13]);
-            await verifyIdentifier(`object["1"] = logInfo3`, ['logInfo3', 0, 14]);
-            await verifyIdentifier(`object[logInfo4] = "1"`, ['logInfo4', 0, 7]);
-            await verifyIdentifier(`callAFunction(logInfo5)`, ['logInfo5', 0, 14]);
-            // await verifyIdentifier(`doSomething()`, 'logInfo1', 0, 13);
-            await verifyIdentifier(`callAFunction(logInfo6, "asdf")`, ['logInfo6', 0, 14]);
-            await verifyIdentifier(`callAFunction("asdf", logInfo7)`, ['logInfo7', 0, 22]);
-            await verifyIdentifier(`someObject[logInfo8]`, ['logInfo8', 0, 11]);
-            await verifyIdentifier(`someObject[logInfo9 ]`, ['logInfo9', 0, 11]);
-            await verifyIdentifier(`someObject[ logInfo10 ]`, ['logInfo10', 0, 12]);
+            expect(file.identifiers.map(x => {
+                const position = getPositionFromOffset(x.offset) as Position;
+                //subtract 2 lines from the position since we inject the text into an existing function
+                position.line -= 2;
+                return {
+                    name: x.name,
+                    ...position
+                };
+            })).to.eql(identifiers);
+        }
 
+        it('finds simple assignment', async () => {
+            await verifyIdentifier(`someVar = logInfo`, ['logInfo', 0, 10]);
+        });
+
+        it('finds dotted set', async () => {
+            await verifyIdentifier(`object.var = logInfo`, ['logInfo', 0, 13]);
+        });
+
+        it('finds indexed set', async () => {
+            await verifyIdentifier(`object["1"] = logInfo`, ['logInfo', 0, 14]);
+        });
+
+        it('finds key for indexed set', async () => {
+            await verifyIdentifier(`object[logInfo] = "1"`, ['logInfo', 0, 7]);
+        });
+
+        it('function argument', async () => {
+            await verifyIdentifier(`callAFunction(logInfo)`, ['logInfo', 0, 14]);
+        });
+
+        it('does not match function call name', async () => {
+            await verifyIdentifier(`doSomething()`);
+        });
+
+        it('matches first of two function arguments', async () => {
+            await verifyIdentifier(`callAFunction(logInfo, "asdf")`, ['logInfo', 0, 14]);
+        });
+
+        it('matches second of two function arguments', async () => {
+            await verifyIdentifier(`callAFunction("asdf", logInfo)`, ['logInfo', 0, 22]);
+        });
+
+        it('does not match parameter name ', async () => {
             await verifyIdentifier(`
-                someObject[
-                    logInfo11
-                ]
-            `, ['logInfo11', 2, 20]);
+                innerSub = sub (logInfo)
+                end sub
+            `);
+        });
 
-            await verifyIdentifier(`
-                someFunction(
-                    logInfo12
-                )
-            `, ['logInfo12', 2, 20]);
-
-            await verifyIdentifier(`print logInfo13 : print logInfo14`, ['logInfo13', 0, 6], ['logInfo14', 0, 24]);
-
+        it('matches quirky AA multi-item-same-line syntax', async () => {
             await verifyIdentifier(`
                 person = {
-                    name: logInfo15
+                    log: logInfo1 : log2: logInfo2
                 }
-            `, ['logInfo15', 2, 26]);
-
-            //any expression where the function name is wrapped in parens
-            await verifyIdentifier(`print "1" + (logInfo16)`, ['logInfo16', 0, 13]);
-
-            await verifyIdentifier(`
-                function firstName(logInfo17, logInfo18, logInfo19)
-                end function
-            `, ['logInfo17', 1, 35], ['logInfo18', 1, 46], ['logInfo19', 1, 57]);
-
-            await verifyIdentifier(`
-                (function (logInfo20, logInfo21, logInfo22)
-                end function)()
-            `, ['logInfo20', 1, 27], ['logInfo21', 1, 38], ['logInfo22', 1, 49]);
+            `, ['logInfo1', 2, 25], ['logInfo2', 2, 42]);
         });
 
-        it('finds various identifiers', async () => {
-            await setFile(`
-                function main()
-                    logVar = log
-                    logVar("logVar")
-                    log("log")
-                end function
-                sub log(message)
-                end sub
-            `, 'brs');
-            file.discover(program);
-            expect(file.identifiers).to.eql([{
-                name: 'log',
-                offset: getOffset(2, 29)
-            }, {
-                name: 'message',
-                offset: getOffset(6, 24)
-            }]);
+        it('matches within array', async () => {
+            await verifyIdentifier(`
+                arr = [
+                    logInfo
+                ]
+            `, ['logInfo', 2, 20]);
+        });
+
+        it('matches multi-line function argument', async () => {
+            await verifyIdentifier(`
+                someFunction(
+                    logInfo
+                )
+            `, ['logInfo', 2, 20]);
+        });
+
+        it('matches multiple statements on same line', async () => {
+            await verifyIdentifier(
+                `print logInfo1 : print logInfo2`,
+                ['logInfo1', 0, 6],
+                ['logInfo2', 0, 23]
+            );
+        });
+
+        it('matches standard AA member value', async () => {
+            await verifyIdentifier(`
+                person = {
+                    name: logInfo
+                }
+            `, ['logInfo', 2, 26]);
+        });
+
+        //any expression where the function name is wrapped in parens
+        it('matches wrapped in parens', async () => {
+            await verifyIdentifier(`print "1" + (logInfo)`, ['logInfo', 0, 13]);
         });
 
         it('skips identifiers in strings and keyword identifiers', async () => {
-            await setFile(`
+            await verifyIdentifier(`
                 function main()
                     print "main function"
                 end function
-            `, 'brs');
-
-            file.discover(program);
-            expect(file.identifiers).to.be.empty;
+            `);
         });
     });
 
