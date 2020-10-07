@@ -60,6 +60,7 @@ When module authors publish their modules, they should not include any baseline 
  - function declaractions (i.e. `function LogInfo(message)...end function` )
  - function calls (i.e. `LogInfo("do something")` )
  - function references (i.e. `log = LogInfo` )
+ - string function name in every object's `observeField` calls
  - component declarations
  - component usage:
    - component names in XML `extends` attribute
@@ -483,4 +484,16 @@ Identifier replacement is package-wide and does not operate on a per-scope basis
 ### BrightScript in XML CDATA blocks is unsupported
 It is considered bad practice to insert BrightScript code into `<![CDATA[` xml script blocks, and as such, `ropm` does not support `CDATA` blocks. 
 
-Any BrightScript code found in `CDATA` blocks will be ignored by the `ropm` prefixing logic, so use at your own risk (or peril!). 
+Any BrightScript code found in `CDATA` blocks will be ignored by the `ropm` prefixing logic, so use at your own risk (or peril!).
+ 
+## Handling observeField
+`ropm` will auto-detect most common `observeField` function calls. In order to prevent naming conflicts, please do not use the name `observeField` for custom object functions. 
+
+Here are the requirements for having `ropm` prefix your `observeField` string function names.
+1. Use a single string literal for the function name. For example, `m.top.observeField(fieldName, "callbackFunction")`
+2. The `observeField` call must be on a single line. For example, this call would remain unprefixed:
+    ```BrightScript
+    m.top.observeField(getFieldName({
+        componentName: "something"
+    }, "callbackFunction")
+    ```

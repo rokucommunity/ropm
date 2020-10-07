@@ -150,6 +150,7 @@ export class File {
             this.findFunctionCalls();
             this.findStrings();
             this.findIdentifiers();
+            this.findObserveFieldFunctionNames();
         } else if (this.isXmlFile) {
             this.findXmlChildrenComponentReferences();
             this.findFilePathsFromXmlScriptElements();
@@ -373,6 +374,28 @@ export class File {
             this.functionCalls.push({
                 name: functionName,
                 offset: match.index
+            });
+        }
+    }
+
+    /**
+     * Find all occurances of *.observeField function calls that have a string literal as the second parameter
+     */
+    private findObserveFieldFunctionNames() {
+        //capture function names as a string literal in `observeField` functions.
+        const regexp = /(\.observeField[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
+
+        let match: RegExpExecArray | null;
+        while (match = regexp.exec(this.fileContents)) {
+            //skip multi-line observeField calls (because they are way too hard to parse with regex :D )
+            if (util.hasMatchingParenCount(match[0]) === false) {
+                continue;
+            }
+
+            //just add this to function calls, since there's no difference in terms of how they get replaced
+            this.functionCalls.push({
+                name: match[2],
+                offset: match.index + match[1].length
             });
         }
     }

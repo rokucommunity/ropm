@@ -498,6 +498,72 @@ describe('ModuleManager', () => {
             `);
         });
 
+        describe('prefixing observeField', () => {
+            async function testObserveField(testLine: string, expectedLine = testLine) {
+                await createDependencies([{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.brs': trim`
+                            sub init()
+                                ${testLine}
+                            end sub
+                            sub logInfo()
+                            end sub
+                        `
+                    }
+                }]);
+                await process();
+                fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, trim`
+                    sub init()
+                        ${expectedLine}
+                    end sub
+                    sub logger_logInfo()
+                    end sub
+                `);
+            }
+
+            it('does not prefix because not an object call', async () => {
+                //no change because it's not on an object
+                await testObserveField(`observeField("field", "logInfo")`);
+            });
+
+            it('does not prefix because not a string literal', async () => {
+                //no change because the second parameter is not a string
+                await testObserveField(`m.top.observeField("field", callbackName)`);
+            });
+
+            it('does not prefix because references unknown function name', async () => {
+                //no change because the second parameter is not a string
+                await testObserveField(`m.top.observeField("field", "unknownFunctionName")`);
+            });
+
+            it('does not prefix multi-line first param', async () => {
+                //no change because the second parameter is not a string
+                await testObserveField(`m.top.observeField(getField({
+                    name: "something"
+                }, "unknownFunctionName")`);
+            });
+
+            it('does not prefix multi-line with function call at end of first line', async () => {
+                await testObserveField(`m.top.observeField({name: getName("bob")
+                        age: 12
+                    }, "logInfo")
+                `);
+            });
+
+            it('prefixes object call with string literal', async () => {
+                await testObserveField(`m.top.observeField("field", "logInfo")`, `m.top.observeField("field", "logger_logInfo")`);
+            });
+
+            it('prefixes even with complex ', async () => {
+                await testObserveField(`m.top.observeField("field", "logInfo")`, `m.top.observeField("field", "logger_logInfo")`);
+            });
+
+            it('prefixes with trailing comment', async () => {
+                await testObserveField(`m.top.observeField("field", "logInfo") 'comment`, `m.top.observeField("field", "logger_logInfo") 'comment`);
+            });
+        });
+
         it('does not prefix inner-function function calls', async () => {
             await createDependencies([{
                 name: 'logger',
