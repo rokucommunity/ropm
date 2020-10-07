@@ -6,13 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.6.0]
-### Added
- - Find and prefix all function identifiers across the entire package.
+## [0.6.0] - 2020-10-07
+### Fixed
+ - fix missing prefixes on function references not used as a function call
+ - find and prefix function names in `observeField` calls
+### Known issues
+ - still no support for bypassing prefixing for functions referenced in component `interface` fields. That will be coming in a future release.
 
 
 
-## [0.5.0]
+## [0.5.0] - 2020-09-26
 ### Added
  - `ropm copy` command that speeds up local development by skipping the registry check (i.e. internal `npm install` call)
 ### Fixed
