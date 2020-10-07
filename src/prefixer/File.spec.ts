@@ -4,11 +4,12 @@ import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import { expect } from 'chai';
 import { createSandbox } from 'sinon';
+import { Program } from 'brighterscript';
 const sinon = createSandbox();
 
 const tmpDir = path.join(process.cwd(), '.tmp');
-const srcRootDir = path.join(tmpDir, 'srcRootDir');
-const srcPath = path.join(srcRootDir, 'source', 'file.brs');
+const rootDir = path.join(tmpDir, 'srcRootDir');
+const srcPath = path.join(rootDir, 'components', 'file.brs');
 const destPath = path.join(tmpDir, 'dest', 'file.brs');
 
 describe('prefixer/File', () => {
@@ -16,15 +17,40 @@ describe('prefixer/File', () => {
     let file: File;
     let f: any;
     let fileContents = '';
+    let program: Program;
+
+    beforeEach(() => {
+        fsExtra.ensureDirSync(tmpDir);
+        fsExtra.emptyDirSync(tmpDir);
+        file = new File(srcPath, destPath, rootDir);
+        f = file;
+        sinon.stub(fsExtra, 'readFile').callsFake(() => {
+            return Promise.resolve(Buffer.from(fileContents));
+        });
+        program = new Program({
+            rootDir: rootDir
+        });
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
 
     /**
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    function setFile(value: string, extension = 'brs') {
+    async function setFile(value: string, extension: 'brs' | 'xml' = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
-        f.src = f.src.replace('.brs', '.' + extension);
-        f.dest = f.dest.replace('.brs', '.' + extension);
+        file.srcPath = f.srcPath.replace('.brs', '.' + extension);
+        file.destPath = f.destPath.replace('.brs', '.' + extension);
+        const relativeSrcPath = f.srcPath
+            //make path relative
+            .replace(rootDir, '')
+            //remove leading slashes
+            .replace(/^(\/|\\)*/, '');
+        await program.addOrReplaceFile(relativeSrcPath, fileContents);
     }
 
     /**
@@ -68,61 +94,28 @@ describe('prefixer/File', () => {
         }
     }
 
-    beforeEach(() => {
-        fsExtra.ensureDirSync(tmpDir);
-        fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath, srcRootDir);
-        f = file;
-        sinon.stub(fsExtra, 'readFile').callsFake(() => {
-            return Promise.resolve(Buffer.from(fileContents));
-        });
-    });
-    afterEach(() => {
-        sinon.restore();
-    });
-
-    it('loads file from disk', async () => {
-        sinon.restore();
-        fsExtra.ensureDirSync(path.dirname(destPath));
-        fsExtra.writeFileSync(destPath, 'asdf');
-        await file.discover();
-        expect((f.fileContents)).to.eql('asdf');
-    });
-
     describe('findFunctionDefinitions', () => {
         it('finds functions in multiple lines', async () => {
-            setFile(`
+            await setFile(`
                 function Main()
+                end function
                 function Main2()
+                end function
             `);
-            await file.discover();
+            file.discover(program);
             expect(f.functionDefinitions).to.eql([{
                 name: 'Main',
                 offset: getOffset(1, 25)
             }, {
                 name: 'Main2',
-                offset: getOffset(2, 25)
-            }]);
-        });
-
-        it('finds multiple functions on a line (probably not possible, but why not...)', async () => {
-            setFile(`
-                function Main() function Main2()
-            `);
-            await file.discover();
-            expect(f.functionDefinitions).to.eql([{
-                name: 'Main',
-                offset: getOffset(1, 25)
-            }, {
-                name: 'Main2',
-                offset: getOffset(1, 41)
+                offset: getOffset(3, 25)
             }]);
         });
     });
 
     describe('findFunctionCalls', () => {
         it('works for brs files', async () => {
-            setFile(`
+            await setFile(`
                 'should not match on "main"
                 sub main()
                     doSomething()
@@ -132,7 +125,7 @@ describe('prefixer/File', () => {
                     end function
                 end sub
             `);
-            await file.discover();
+            file.discover(program);
             expect(f.functionCalls).to.eql([{
                 name: 'doSomething',
                 offset: getOffset(3, 20)
@@ -143,7 +136,7 @@ describe('prefixer/File', () => {
         });
 
         it('does not match object function calls', async () => {
-            setFile(`
+            await setFile(`
                 sub getPerson()
                     person = {
                         speak: sub(message)
@@ -161,7 +154,7 @@ describe('prefixer/File', () => {
                     print message
                 end sub
             `, 'brs');
-            await file.discover();
+            file.discover(program);
             expect(f.functionCalls).to.eql([{
                 name: 'speak',
                 offset: getOffset(8, 28)
@@ -174,13 +167,13 @@ describe('prefixer/File', () => {
 
     describe('findStrings', () => {
         it('finds all strings in the file', async () => {
-            setFile(`
+            await setFile(`
                 sub main()
                     name = "bob"
                     print "hello" + " world " + name
                 end sub
             `, 'brs');
-            await file.discover();
+            file.discover(program);
             expect(file.strings).to.eql([{
                 startOffset: getOffset(2, 27),
                 endOffset: getOffset(2, 32)
@@ -194,11 +187,11 @@ describe('prefixer/File', () => {
         });
 
         it('only scans brightscript files', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                 </component>
             `, 'xml');
-            await file.discover();
+            file.discover(program);
             expect(file.strings).to.be.empty;
         });
     });
@@ -206,9 +199,9 @@ describe('prefixer/File', () => {
     describe('findIdentifiers', () => {
         it('works for regex test case', async () => {
             async function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
-                setFile(text);
-                file = new File(srcPath, destPath, srcRootDir);
-                await file.discover();
+                await setFile(text);
+                file = new File(srcPath, destPath, rootDir);
+                file.discover(program);
 
                 const identifiers = [] as { name: string; line: number; character: number }[];
                 for (const identifier of expectedIdentifiers) {
@@ -271,7 +264,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds various identifiers', async () => {
-            setFile(`
+            await setFile(`
                 function main()
                     logVar = log
                     logVar("logVar")
@@ -280,7 +273,7 @@ describe('prefixer/File', () => {
                 sub log(message)
                 end sub
             `, 'brs');
-            await file.discover();
+            file.discover(program);
             expect(file.identifiers).to.eql([{
                 name: 'log',
                 offset: getOffset(2, 29)
@@ -291,24 +284,24 @@ describe('prefixer/File', () => {
         });
 
         it('skips identifiers in strings and keyword identifiers', async () => {
-            setFile(`
+            await setFile(`
                 function main()
                     print "main function"
                 end function
             `, 'brs');
 
-            await file.discover();
+            file.discover(program);
             expect(file.identifiers).to.be.empty;
         });
     });
 
     describe('findComponentDefinitions', () => {
         it('finds component name', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                 </component>
             `, 'xml');
-            await file.discover();
+            file.discover(program);
             expect(f.componentDeclarations).to.eql([{
                 name: 'CustomComponent',
                 offset: getOffset(1, 33)
@@ -318,11 +311,11 @@ describe('prefixer/File', () => {
 
     describe('findComponentReferences', () => {
         it('finds component name from `extends` attribute', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent" extends="ParentComponent" >
                 </component>
             `, 'xml');
-            await file.discover();
+            file.discover(program);
             expect(f.componentReferences).to.eql([{
                 name: 'ParentComponent',
                 offset: getOffset(1, 59)
@@ -330,7 +323,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds component name in `createObject`', async () => {
-            setFile(`
+            await setFile(`
                 sub main()
                     'normal
                     createObject("RoSGNode", "Component1")
@@ -340,7 +333,7 @@ describe('prefixer/File', () => {
                     createObject("rosgnode","Component3")
                 end sub
             `);
-            await file.discover();
+            file.discover(program);
             expect(f.componentReferences).to.eql([{
                 name: 'Component1',
                 offset: getOffset(3, 46)
@@ -354,7 +347,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds component name in `node.createChild`', async () => {
-            setFile(`
+            await setFile(`
                 sub main()
                     'normal
                     node.CreateChild("Component1")
@@ -374,7 +367,7 @@ describe('prefixer/File', () => {
                     node.CreateChild(getNodeName())
                 end sub
             `);
-            await file.discover();
+            file.discover(program);
             expect(f.componentReferences).to.eql([{
                 name: 'Component1',
                 offset: getOffset(3, 38)
@@ -391,7 +384,7 @@ describe('prefixer/File', () => {
         });
 
         it('finds component name in xml usage', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <children>
                         <CustomComponent2></CustomComponent2>
@@ -400,7 +393,7 @@ describe('prefixer/File', () => {
                     </children>
                 </component>
             `, 'xml');
-            await file.discover();
+            file.discover(program);
             expect(
                 file.componentReferences.sort((a, b) => {
                     if (a.offset > b.offset) {
@@ -428,14 +421,14 @@ describe('prefixer/File', () => {
 
     describe('findFileReferences', () => {
         it('finds absolute script paths in xml tags', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <script uri="pkg:/source/lib.brs" />
                     <script uri="pkg:/components/folder1/somelib.brs" />
                     <Poster uri="pkg:/images/CoolPhoto.png" />
                 </component>
             `, 'xml');
-            await file.discover();
+            file.discover(program);
             expect(file.fileReferences).to.eql([{
                 path: 'pkg:/source/lib.brs',
                 offset: getOffset(2, 33)
@@ -449,13 +442,13 @@ describe('prefixer/File', () => {
         });
 
         it('finds relative file paths in xml script tags', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <script uri="../lib.brs" />
                     <script uri="comp.brs" />
                 </component>
-            `, 'file.xml');
-            await file.discover();
+            `, 'xml');
+            file.discover(program);
             expect(file.fileReferences).to.eql([{
                 path: '../lib.brs',
                 offset: getOffset(2, 33)
@@ -465,32 +458,13 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds absolute file paths in CDATA xml block', async () => {
-            setFile(`<?xml version="1.0" encoding="utf-8" ?>
-                <component name="CustomComponent"> 
-                    <script type="text/brightscript">
-                        <![CDATA[
-                            sub DoSomething()
-                                thePath = "pkg:/source/lib.brs"
-                            end sub
-                        ]]>
-                    </script>
-                </component>
-            `, 'xml');
-            await file.discover();
-            expect(file.fileReferences).to.eql([{
-                path: 'pkg:/source/lib.brs',
-                offset: getOffset(5, 43)
-            }]);
-        });
-
         it('finds pkg paths in brs files', async () => {
-            setFile(`
+            await setFile(`
                 sub main()
                     filePath = "pkg:/images/CoolPhoto.brs"
                 end sub
             `);
-            await file.discover();
+            file.discover(program);
             expect(file.fileReferences).to.eql([{
                 path: 'pkg:/images/CoolPhoto.brs',
                 offset: getOffset(2, 32)
@@ -498,42 +472,48 @@ describe('prefixer/File', () => {
         });
     });
     describe('applyEdits', () => {
-        it('leaves file intact with no edits', () => {
-            file.fileContents = 'hello world';
+        it('leaves file intact with no edits', async () => {
+            await setFile('hello world', 'brs');
+            file.discover(program);
             file.applyEdits();
-            expect(file.fileContents).to.equal('hello world');
+            expect(file.bscFile.fileContents).to.equal('hello world');
         });
 
-        it('applies zero-length edit as an insert', () => {
-            file.fileContents = 'hello world';
+        it('applies zero-length edit as an insert', async () => {
+            await setFile('hello world', 'brs');
+            file.discover(program);
             file.addEdit(5, 5, ' my');
             file.applyEdits();
-            expect(file.fileContents).to.equal('hello my world');
+            expect(file.bscFile.fileContents).to.equal('hello my world');
         });
 
-        it('removes text with zero-length edit', () => {
-            file.fileContents = 'hello world';
+        it('removes text with zero-length edit', async () => {
+            await setFile('hello world', 'brs');
+            file.discover(program);
             file.addEdit(5, 11, '');
             file.applyEdits();
-            expect(file.fileContents).to.equal('hello');
+            expect(file.bscFile.fileContents).to.equal('hello');
         });
 
-        it('replaces text', () => {
-            file.fileContents = 'hello Jim, how are you';
+        it('replaces text', async () => {
+            await setFile('hello Jim, how are you', 'brs');
+            file.discover(program);
             file.addEdit(6, 9, 'Michael');
             file.applyEdits();
-            expect(file.fileContents).to.equal('hello Michael, how are you');
+            expect(file.bscFile.fileContents).to.equal('hello Michael, how are you');
         });
 
-        it('works at beginning of string', () => {
-            file.fileContents = 'hello world';
+        it('works at beginning of string', async () => {
+            await setFile('hello world', 'brs');
+            file.discover(program);
             file.addEdit(0, 5, 'goodbye');
             file.applyEdits();
-            expect(file.fileContents).to.equal('goodbye world');
+            expect(file.bscFile.fileContents).to.equal('goodbye world');
         });
 
-        it('works with out-of-order edits', () => {
-            file.fileContents = 'one two three';
+        it('works with out-of-order edits', async () => {
+            await setFile('one two three', 'brs');
+            file.discover(program);
             //middle
             file.addEdit(4, 7, 'twelve');
             //last
@@ -542,7 +522,7 @@ describe('prefixer/File', () => {
             file.addEdit(0, 3, 'eleven');
 
             file.applyEdits();
-            expect(file.fileContents).to.equal('eleven twelve thirteen');
+            expect(file.bscFile.fileContents).to.equal('eleven twelve thirteen');
         });
     });
 });

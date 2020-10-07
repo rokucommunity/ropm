@@ -4,26 +4,27 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
+import { BrsFile, Program, Range, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
         /**
          * The path to the file's original location
          */
-        public readonly src: string,
+        public srcPath: string,
         /**
          * The path to the file's new location
          */
-        public readonly dest: string,
+        public destPath: string,
         /**
          * The absolute path to the rootDir for this file
          */
-        public readonly rootDir: string,
+        public rootDir: string,
         public options: RopmOptions = {}
     ) {
         this.pkgPath = path.posix.normalize(
             util.removeLeadingSlash(
-                util.replaceCaseInsensitive(rootDir, src, '').replace(/\\/g, '/')
+                util.replaceCaseInsensitive(rootDir, srcPath, '').replace(/\\/g, '/')
             )
         );
     }
@@ -32,25 +33,20 @@ export class File {
      * Is this file a `.brs` file?
      */
     public get isBrsFile() {
-        return this.src.toLowerCase().endsWith('.brs');
+        return this.srcPath.toLowerCase().endsWith('.brs');
     }
 
     /**
      * Is this a .xml file
      */
     public get isXmlFile() {
-        return this.src.toLowerCase().endsWith('.xml');
+        return this.srcPath.toLowerCase().endsWith('.xml');
     }
 
     /**
      * The full pkg path to the file (minus the `pkg:/` protocol since we never actually need that part
      */
     public pkgPath: string;
-
-    /**
-     * The in-memory copy of the file contents
-     */
-    public fileContents!: string;
 
     public functionDefinitions = [] as Array<{
         name: string;
@@ -113,37 +109,57 @@ export class File {
      */
     private xmlAst!: XMLDocument;
 
-    private async loadFile() {
-        if (!this.fileContents) {
-            this.fileContents = (await fsExtra.readFile(this.dest)).toString();
-            if (!this.xmlAst && this.dest.toLowerCase().endsWith('.xml')) {
-                const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.fileContents);
-                //print every lex and parse error to the console
-                for (const lexError of lexErrors) {
-                    console.error(`XML parse error "${lexError.message}" at ${this.dest}:${lexError.line}:${lexError.column}`);
-                }
-                for (const parseError of parseErrors) {
-                    console.error(`XML parse error "${parseError.message}" at ${this.dest}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
-                }
-                this.xmlAst = buildAst(cst as any, tokenVector);
+    private loadFile() {
+        if (!this.xmlAst && this.destPath.toLowerCase().endsWith('.xml')) {
+            const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.bscFile.fileContents);
+            //print every lex and parse error to the console
+            for (const lexError of lexErrors) {
+                console.error(`XML parse error "${lexError.message}" at ${this.destPath}:${lexError.line}:${lexError.column}`);
             }
+            for (const parseError of parseErrors) {
+                console.error(`XML parse error "${parseError.message}" at ${this.destPath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
+            }
+            this.xmlAst = buildAst(cst as any, tokenVector);
         }
     }
+
+    private lineOffsetMap!: { [lineNumber: number]: number };
+
+    /**
+     * Convert a range into an offset from the start of the file
+     */
+    private rangeToOffset(range: Range) {
+        //create the line/offset map if not yet created
+        if (!this.lineOffsetMap) {
+            this.lineOffsetMap = {};
+            this.lineOffsetMap[0] = 0;
+            const regexp = /(\r?\n)/g;
+            let lineIndex = 1;
+            let match: RegExpExecArray | null;
+            while (match = regexp.exec(this.bscFile.fileContents)) {
+                this.lineOffsetMap[lineIndex++] = match.index + match[1].length;
+            }
+        }
+        return this.lineOffsetMap[range.start.line] + range.start.character;
+    }
+
+    public bscFile!: BrsFile | XmlFile;
 
     /**
      * Scan the file for all important information
      */
-    public async discover() {
-        await this.loadFile();
+    public discover(program: Program) {
+        this.bscFile = program.getFileByPathAbsolute(this.srcPath);
+        this.loadFile();
         this.functionDefinitions = [];
         this.functionCalls = [];
         this.componentDeclarations = [];
         this.componentReferences = [];
         this.fileReferences = [];
 
-        this.findFilePathStrings();
 
         if (this.isBrsFile) {
+            this.findFilePathStrings();
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
@@ -152,6 +168,7 @@ export class File {
             this.findIdentifiers();
             this.findObserveFieldFunctionNames();
         } else if (this.isXmlFile) {
+            this.findFilePathStrings();
             this.findXmlChildrenComponentReferences();
             this.findFilePathsFromXmlScriptElements();
             this.findComponentDefinitions();
@@ -254,7 +271,7 @@ export class File {
 
         let match: RegExpExecArray | null;
 
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             //the regex had to use multiple capture groups, so check if any of them have the identifier
             const identifier = match[1] || match[2] || match[3] || match[4];
             //don't keep this identifier if it exists within a string, or if it's a keyword
@@ -279,7 +296,7 @@ export class File {
         const regexp = /"/g;
         let start = null as number | null;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             if (start) {
                 this.strings.push({
                     startOffset: start,
@@ -322,7 +339,7 @@ export class File {
                 return 0;
             }
         });
-        let contents = this.fileContents;
+        let contents = this.bscFile.fileContents;
         const chunks = [] as string[];
         for (const edit of edits) {
             //store the traling part of the string
@@ -336,28 +353,24 @@ export class File {
             contents = contents.substring(0, edit.offsetBegin);
         }
         chunks.push(contents);
-        this.fileContents = chunks.reverse().join('');
+        this.bscFile.fileContents = chunks.reverse().join('');
     }
 
     /**
      * Write the new file contents back to disk
      */
     public async write() {
-        await fsExtra.writeFile(this.dest, this.fileContents);
+        await fsExtra.writeFile(this.destPath, this.bscFile.fileContents);
     }
 
+    /**
+     * Find every top-level function defined in this file
+     */
     private findFunctionDefinitions() {
-        const regexp = /((?:function|sub)[ \t]+)([a-z0-9_]+)[ \t]*\(/gi;
-
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
-            const functionName = match[2];
-
-            const startOffset = match.index + match[1].length;
-
+        for (const func of this.bscFile.parser.references.functionStatements) {
             this.functionDefinitions.push({
-                name: functionName,
-                offset: startOffset
+                name: func.name.text,
+                offset: this.rangeToOffset(func.name.range)
             });
         }
     }
@@ -368,7 +381,7 @@ export class File {
         const regexp = /(?<!(?:sub|function)[ \t]+)(?!function|sub\b)\b(?<!\.|\])([a-z0-9_]+)\s*\(/gi;
 
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             const functionName = match[1];
 
             this.functionCalls.push({
@@ -386,7 +399,7 @@ export class File {
         const regexp = /(\.observeField[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
 
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             //skip multi-line observeField calls (because they are way too hard to parse with regex :D )
             if (util.hasMatchingParenCount(match[0]) === false) {
                 continue;
@@ -435,7 +448,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -457,7 +470,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -509,7 +522,7 @@ export class File {
         //look for any string containing `pkg:/`
         const regexp = /"(pkg:\/[^"]+)"/gi;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             this.fileReferences.push({
                 //+1 to step past opening quote
                 offset: match.index + 1,

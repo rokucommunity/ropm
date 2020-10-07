@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import { Dependency } from './ModuleManager';
+import { Program, ProgramBuilder } from 'brighterscript';
 
 export class RopmModule {
     constructor(
@@ -194,21 +195,40 @@ export class RopmModule {
         await util.copyFiles(this.fileMaps);
     }
 
+    private program!: Program;
+
     /**
      * @param noprefix a list of npm aliases of modules that should NOT be prefixed
      */
     public async transform(noprefix: string[]) {
+        const builder = new ProgramBuilder();
+
+        //disable the Program.validate function to improve performance (we don't care about the validity of the code...that should be handled by the package publisher)
+        util.mockProgramValidate();
+
+        await builder.run({
+            copyToStaging: false,
+            createPackage: false,
+            rootDir: this.packageRootDir,
+            //hide all diagnostics, the package author should be responsible for ensuring their package is valid
+            diagnosticFilters: ['**/*']
+        });
+        this.program = builder.program;
+
         //load all files
         for (const obj of this.fileMaps) {
-            this.files.push(
-                new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm)
-            );
+            //only load source code files
+            if (['.xml', '.brs', '.bs'].includes(path.extname(obj.dest).toLowerCase())) {
+                this.files.push(
+                    new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm)
+                );
+            }
         }
 
         //let all files discover all functions/components
-        await Promise.all(
-            this.files.map((file) => file.discover())
-        );
+        for (const file of this.files) {
+            file.discover(this.program);
+        }
 
         //create the edits for every file
         this.createEdits(noprefix);
