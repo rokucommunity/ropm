@@ -4,7 +4,7 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
-import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Program, Range, WalkMode, XmlFile } from 'brighterscript';
+import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, isXmlFile, Program, Range, WalkMode, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
@@ -288,12 +288,12 @@ export class File {
     }
 
     private findComponentDefinitions() {
-        const nameAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'name');
-        if (nameAttribute?.value && nameAttribute?.syntax?.value) {
+        //find the name of the component
+        if (isXmlFile(this.bscFile) && this.bscFile.componentName) {
             this.componentDeclarations.push({
-                name: nameAttribute.value,
+                name: this.bscFile.componentName,
                 //plus one to step past the opening "
-                offset: nameAttribute.syntax.value.startOffset + 1
+                offset: this.rangeToOffset(this.bscFile.componentNameRange)
             });
         }
     }
@@ -302,13 +302,11 @@ export class File {
      * Find component names from the `extends` attribute of the `<component` element
      */
     private findExtendsComponentReferences() {
-        //get any "extends" attribute from the xml
-        const extendsAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'extends');
-        if (extendsAttribute?.value && extendsAttribute?.syntax?.value) {
+        //find the name of the parent component
+        if (isXmlFile(this.bscFile) && this.bscFile.parentComponentName) {
             this.componentReferences.push({
-                name: extendsAttribute.value,
-                //plus one to step past the opening "
-                offset: extendsAttribute.syntax.value.startOffset + 1
+                name: this.bscFile.parentComponentName,
+                offset: this.rangeToOffset(this.bscFile.parentNameRange)
             });
         }
     }
