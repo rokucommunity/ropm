@@ -219,13 +219,13 @@ export class RopmModule {
         );
     }
 
-    private readonly nonPrefixedFunctions = [
-        'runuserinterface',
-        'main',
-        'runscreensaver',
-        'init',
-        'onkeyevent'
-    ];
+    private readonly nonPrefixedFunctionMap = {
+        'runuserinterface': true,
+        'main': true,
+        'runscreensaver': true,
+        'init': true,
+        'onkeyevent': true
+    };
 
     /**
      * Create the prefix map for this module
@@ -274,7 +274,7 @@ export class RopmModule {
                 //create an edit for each this-module-owned function
                 for (const func of file.functionDefinitions) {
                     //skip edits for special functions
-                    if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
+                    if (this.nonPrefixedFunctionMap[func.name.toLowerCase()]) {
                         continue;
                     }
                     file.addEdit(func.offset, func.offset, prefix);
@@ -387,7 +387,7 @@ export class RopmModule {
         for (const file of this.files) {
             for (const func of file.functionDefinitions) {
                 //skip the special function names
-                if (this.nonPrefixedFunctions.includes(func.name.toLowerCase())) {
+                if (this.nonPrefixedFunctionMap[func.name.toLowerCase()]) {
                     continue;
                 }
                 result[func.name.toLowerCase()] = true;

@@ -56,6 +56,7 @@ When module authors publish their modules, they should not include any type of p
 `ropm` will scan every module for:
  - function declaractions
  - function calls
+ - string function name in every object's `observeField` calls
  - component declarations
  - component usage:
    - component names in XML `extends` attribute
@@ -393,3 +394,15 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 ## rootDir versus packageRootDir
  - `rootDir` - specifies where ropm_modules should be installed in your project. 
  - `packageRootDir` is exclusively for package authors to specify where their package module code resides (like in `dist`, `out`, `build`, `src`, etc...). 
+
+## Handling observeField
+`ropm` will auto-detect most common `observeField` function calls. In order to prevent naming conflicts, please do not use the name `observeField` for custom object functions. 
+
+Here are the requirements for having `ropm` prefix your `observeField` string function names.
+1. Use a single string literal for the function name. For example, `m.top.observeField(fieldName, "callbackFunction")`
+2. The `observeField` call must be on a single line. For example, this call would remain unprefixed:
+    ```BrightScript
+    m.top.observeField(getFieldName({
+        componentName: "something"
+    }, "callbackFunction")
+    ```
