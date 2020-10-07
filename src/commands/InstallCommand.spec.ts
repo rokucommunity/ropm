@@ -4,7 +4,7 @@ import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
-import { fsEqual, tempDir } from '../TestHelpers.spec';
+import { createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
@@ -115,6 +115,33 @@ describe('InstallCommand', () => {
 
         it('honors host package.json `ropm.rootDir` property', async () => {
 
+            writeProject('logger', {
+                'source/logger.brs': '',
+                'source/temp.brs': ''
+            });
+
+            writeProject(projectName, {
+                'src/source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                },
+                ropm: {
+                    rootDir: 'src'
+                }
+            });
+
+            await command.run();
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'logger.brs')
+            )).to.be.true;
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'temp.brs')
+            )).to.be.true;
+        });
+
+        it('uses module directory when `packageRootDir` is omitted', async () => {
             writeProject('logger', {
                 'source/logger.brs': '',
                 'source/temp.brs': ''
@@ -282,6 +309,81 @@ describe('InstallCommand', () => {
             sub rokulogger_log()
             end sub
         `);
+    });
+
+    describe('getProdDependencies', () => {
+        it('excludes dependencies in folders above cwd for command', () => {
+            const [level1, level2, level3] = createProjects(projectDir, projectDir, {
+                name: projectName,
+                dependencies: [{
+                    name: 'level1',
+                    dependencies: [{
+                        name: 'level2',
+                        dependencies: [{
+                            name: 'level3'
+                        }]
+                    }]
+                }]
+            });
+
+            expect(command.getProdDependencies().sort()).to.eql([
+                projectDir,
+                s`${projectDir}/node_modules/level1`,
+                s`${projectDir}/node_modules/level1/node_modules/level2`,
+                s`${projectDir}/node_modules/level1/node_modules/level2/node_modules/level3`
+            ]);
+
+            command = new InstallCommand({ cwd: level1.moduleDir });
+            expect(command.getProdDependencies().sort()).to.eql([
+                s`${projectDir}/node_modules/level1`,
+                s`${projectDir}/node_modules/level1/node_modules/level2`,
+                s`${projectDir}/node_modules/level1/node_modules/level2/node_modules/level3`
+            ]);
+
+            command = new InstallCommand({ cwd: level2.moduleDir });
+            expect(command.getProdDependencies().sort()).to.eql([
+                s`${projectDir}/node_modules/level1/node_modules/level2`,
+                s`${projectDir}/node_modules/level1/node_modules/level2/node_modules/level3`
+            ]);
+
+            command = new InstallCommand({ cwd: level3.moduleDir });
+            expect(command.getProdDependencies().sort()).to.eql([
+                s`${projectDir}/node_modules/level1/node_modules/level2/node_modules/level3`
+            ]);
+        });
+
+        it('excludes dependencies in folders above cwd for command', async () => {
+            //create a root project, with a dependency
+            createProjects(s`${tempDir}/outerProject`, s`${tempDir}/outerProject`, {
+                name: 'outerProject',
+                dependencies: [{
+                    name: 'outerProjectDependency'
+                }]
+            });
+
+            //create a folder inside of root project
+            createProjects(s`${tempDir}/outerProject/innerProject`, s`${tempDir}/outerProject/innerProject`, {
+                name: 'innerProject',
+                dependencies: [{
+                    name: 'innerProjectDependency'
+                }]
+            });
+
+            //install outer project
+            command.args.cwd = s`${tempDir}/outerProject`;
+            await command.run();
+
+            const innerCommand = new InstallCommand({
+                cwd: s`${tempDir}/outerProject/innerProject`
+            });
+            await innerCommand.run();
+
+            //innerProject should not list outerProject dependencies
+            expect(innerCommand.getProdDependencies().sort()).to.eql([
+                s`${tempDir}/outerProject/innerProject`,
+                s`${tempDir}/outerProject/innerProject/node_modules/innerProjectDependency`
+            ]);
+        });
     });
 });
 

@@ -3,7 +3,8 @@ import * as fsExtra from 'fs-extra';
 import { createSandbox } from 'sinon';
 import { expect } from 'chai';
 import { RopmModule } from './prefixer/RopmModule';
-
+import { RopmOptions } from './util';
+import * as rokuDeploy from 'roku-deploy';
 export const sinon = createSandbox();
 
 export const tempDir = path.join(process.cwd(), '.tmp');
@@ -100,11 +101,7 @@ export interface DepGraphNode {
     version?: string;
     dependencies?: Array<DepGraphNode>;
     _files?: { [relativePath: string]: string };
-    ropm?: {
-        rootDir?: string;
-        packageRootDir?: string;
-        noprefix?: string[];
-    };
+    ropm?: RopmOptions;
 }
 
 
@@ -159,3 +156,17 @@ export async function expectThrowsAsync(func, startingText?: string) {
         throw new Error(`Expected error message '${ex.message}' to start with '${startingText}'`);
     }
 }
+
+/**
+ * A tagged template literal function for standardizing the path.
+ */
+export function standardizePath(stringParts, ...expressions: any[]) {
+    const result = [] as string[];
+    for (let i = 0; i < stringParts.length; i++) {
+        result.push(stringParts[i], expressions[i]);
+    }
+    return rokuDeploy.standardizePath(
+        result.join('')
+    );
+}
+

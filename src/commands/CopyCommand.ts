@@ -2,7 +2,7 @@ import { InstallCommand } from './InstallCommand';
 
 export class CopyCommand {
     constructor(
-        public args: InitCommandArgs
+        public args: CopyCommandArgs
     ) {
 
     }
@@ -13,7 +13,7 @@ export class CopyCommand {
     }
 }
 
-export interface InitCommandArgs {
+export interface CopyCommandArgs {
     /**
      * The current working directory for the command.
      */
