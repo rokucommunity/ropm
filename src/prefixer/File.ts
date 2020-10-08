@@ -288,12 +288,12 @@ export class File {
     }
 
     private findComponentDefinitions() {
-        //find the name of the component
-        if (isXmlFile(this.bscFile) && this.bscFile.componentName) {
+        const nameAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'name');
+        if (nameAttribute?.value && nameAttribute?.syntax?.value) {
             this.componentDeclarations.push({
-                name: this.bscFile.componentName,
+                name: nameAttribute.value,
                 //plus one to step past the opening "
-                offset: this.rangeToOffset(this.bscFile.componentNameRange)
+                offset: nameAttribute.syntax.value.startOffset + 1
             });
         }
     }
@@ -302,11 +302,13 @@ export class File {
      * Find component names from the `extends` attribute of the `<component` element
      */
     private findExtendsComponentReferences() {
-        //find the name of the parent component
-        if (isXmlFile(this.bscFile) && this.bscFile.parentComponentName) {
+        //get any "extends" attribute from the xml
+        const extendsAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'extends');
+        if (extendsAttribute?.value && extendsAttribute?.syntax?.value) {
             this.componentReferences.push({
-                name: this.bscFile.parentComponentName,
-                offset: this.rangeToOffset(this.bscFile.parentNameRange)
+                name: extendsAttribute.value,
+                //plus one to step past the opening "
+                offset: extendsAttribute.syntax.value.startOffset + 1
             });
         }
     }

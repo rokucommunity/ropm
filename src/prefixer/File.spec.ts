@@ -303,6 +303,19 @@ describe('prefixer/File', () => {
                 offset: getOffset(1, 33)
             }]);
         });
+
+        it('finds component name on separate line', async () => {
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+                <component 
+                    name="CustomComponent">
+                </component>
+            `, 'xml');
+            file.discover(program);
+            expect(f.componentDeclarations).to.eql([{
+                name: 'CustomComponent',
+                offset: getOffset(2, 26)
+            }]);
+        });
     });
 
     describe('findComponentReferences', () => {
@@ -315,6 +328,19 @@ describe('prefixer/File', () => {
             expect(f.componentReferences).to.eql([{
                 name: 'ParentComponent',
                 offset: getOffset(1, 59)
+            }]);
+        });
+
+        it('finds component name from `extends` attribute on different line', async () => {
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent" 
+                    extends="ParentComponent" >
+                </component>
+            `, 'xml');
+            file.discover(program);
+            expect(f.componentReferences).to.eql([{
+                name: 'ParentComponent',
+                offset: getOffset(2, 29)
             }]);
         });
 
