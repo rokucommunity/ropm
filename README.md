@@ -432,8 +432,9 @@ SceneGraph components can declare interface functions which will be callable via
 </component>
 ```
 
-`ropm` will not rename functions referenced by component interfaces because that changes the public API of declared components. This does introduce a small risk for function name collisions, but those risks can be avoided if you adhere to the following guidelines:
- - do not reference `ropm` dependency functions as component interface functions.
+`ropm` will _not_ rename functions referenced by component interfaces because prefixing those functions would change the public API of declared components. This does introduce a small risk for function name collisions, but those risks can be avoided if you adhere to the following guidelines:
+ - do not reference `ropm` dependency functions as component interface functions. 
+     - for example, if your package depends on `roku-logger`, do not add a function interface to `<function name="rokulogger_writeToLog" />`. 
  - create a "codebehind" file for each component, which is only imported into that component, and keep all interface exported functions in that codebehind file
  - do not reference functions from common/shared files as component interface functions
 
