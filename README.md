@@ -209,6 +209,7 @@ For example, consider the following dependency graph:
     - fileLogger@`2.0.0`
  - simple-list@`1.2.0`
     - complex-list@`3.0.0`
+
 The prefixes will be as follows:
  - logger
  - fileLogger_v2
@@ -272,7 +273,7 @@ Ropm will reject installing any ropm package that has the `ropm.noprefix` key in
 The files and folders within the `roku_modules` folders should not be altered at all, as these changes could be erased by future `ropm install` commands. If there are issues with a ropm module you are using, consider reaching out to the module publisher to have them fix and release a new version.
 
 ## Don't commit roku_modules
-The `roku_modules` folders that ropm creates should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. Here's how to ignore roku_modules in your `.gitignore file:
+The `roku_modules` folders that ropm creates should not be commited to your project repository. Instead, developers should follow the practice of running `ropm install` anytime they fetch code from a repository. Here's how to ignore roku_modules in your `.gitignore` file:
 
 **.gitignore**
 ```gitignore
@@ -351,6 +352,7 @@ Here is some overview information to help `ropm` package authors get started:
  - Don't give local variables the same names as functions in your package. (See [Finding function references](#finding-function-references-is-a-package-wide-operation))
  - Don't write BrightScript in XML `CDATA` blocks (See [BrightScript in XML CDATA blocks is unsupported](#brightScript-in-xml-cdata-blocks-is-unsupported))
  - Don't define a baseline namespace. On install, `ropm` will prefix your package for you. (See [Prefixes](#prefixes))
+ - Don't reference dependency functions in component interfaces. (see [Component interface handling](#component-interface-handling))
  - use the `ropm` options in `package.json` to customize various settings in your package
      - `ropm.rootDir` - where you want `roku_modules` installed within your package
      - `ropm.packageRootDir` where your package's files reside (i.e. `dist`, `build`, `./`, etc...)
@@ -417,6 +419,24 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 
 Function reference replacement is package-wide and does not operate on a per-scope basis, meaning `ropm` could add prefixes to local variables that share a name with any function across your entire package. We recommend that you do not give local variables the same name as any function your package.
 
+
+### Component interface handling
+SceneGraph components can declare interface functions which will be callable via the `callFunc` function on a node. For example, the following LoggerComponent exposes a function called `doSomething`:
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LoggerComponent">
+    <script uri="LoggerComponent.brs" />
+    <interface>
+        <function name="doSomething"/>
+    </interface>
+</component>
+```
+
+`ropm` will _not_ rename functions referenced by component interfaces because prefixing those functions would change the public API of declared components. This does introduce a small risk for function name collisions, but those risks can be avoided if you adhere to the following guidelines:
+ - do not reference `ropm` dependency functions as component interface functions. 
+     - for example, if your package depends on `roku-logger`, do not add a function interface to `<function name="rokulogger_writeToLog" />`. 
+ - create a "codebehind" file for each component, which is only imported into that component, and keep all interface exported functions in that codebehind file
+ - do not reference functions from common/shared files as component interface functions
 
 ## rootDir versus packageRootDir
  - `rootDir` - specifies where ropm_modules should be installed in your project. 

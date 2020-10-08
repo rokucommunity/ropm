@@ -546,5 +546,26 @@ describe('prefixer/File', () => {
             file.applyEdits();
             expect(file.bscFile.fileContents).to.equal('eleven twelve thirteen');
         });
+
+        it('finds component interface function names', async () => {
+            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="LoggerComponent">
+                    <interface>
+                        <function name="doSomething"/>
+                        <function 
+                            name="doSomethingElse" />
+                    </interface>
+                </component>
+            `, 'xml');
+            file.discover(program);
+
+            expect(file.componentInterfaceFunctions).to.eql([{
+                name: 'doSomething',
+                offset: getOffset(3, 40)
+            }, {
+                name: 'doSomethingElse',
+                offset: getOffset(5, 34)
+            }]);
+        });
     });
 });

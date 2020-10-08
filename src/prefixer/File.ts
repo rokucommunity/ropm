@@ -75,6 +75,14 @@ export class File {
     }>;
 
     /**
+     * List of functions referenced by a component's <interface> element
+     */
+    public componentInterfaceFunctions = [] as Array<{
+        name: string;
+        offset: number;
+    }>;
+
+    /**
      * A list of file paths found in this file
      */
     public fileReferences = [] as Array<{
@@ -159,6 +167,7 @@ export class File {
             this.findFilePathsFromXmlScriptElements();
             this.findComponentDefinitions();
             this.findExtendsComponentReferences();
+            this.findComponentInterfaceFunctions();
         }
     }
 
@@ -310,6 +319,23 @@ export class File {
                 //plus one to step past the opening "
                 offset: extendsAttribute.syntax.value.startOffset + 1
             });
+        }
+    }
+
+    /**
+     * Find all function names referenced by a component's <interface> element
+     */
+    private findComponentInterfaceFunctions() {
+        const interfaceEntries = this.xmlAst?.rootElement?.subElements.find(x => x.name?.toLowerCase() === 'interface')?.subElements ?? [];
+        for (const interfaceEntry of interfaceEntries) {
+            const nameAttribute = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'name');
+            if (interfaceEntry.name?.toLowerCase() === 'function' && nameAttribute) {
+                this.componentInterfaceFunctions.push({
+                    name: nameAttribute.value!,
+                    //plus one to step past the opening "
+                    offset: nameAttribute.syntax.value!.startOffset + 1
+                });
+            }
         }
     }
 

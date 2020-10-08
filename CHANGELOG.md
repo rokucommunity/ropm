@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.2] - 2020-10-08
+### Fixed
+ - `ropm` now disables prefixing functions that are referenced in component interfaces. 
+
+
+
 ## [0.6.1] - 2020-10-08
 ### Changed
  - use the (BrighterScript)[https://github.com/rokucommunity/brighterscript] parser to simplify prefixing.
@@ -105,3 +111,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.5.0]:   https://github.com/rokucommunity/ropm/compare/v0.4.1...v0.5.0
 [0.6.0]:   https://github.com/rokucommunity/ropm/compare/v0.5.0...v0.6.0
 [0.6.1]:   https://github.com/rokucommunity/ropm/compare/v0.6.0...v0.6.1
+[0.6.2]:   https://github.com/rokucommunity/ropm/compare/v0.6.1...v0.6.2
