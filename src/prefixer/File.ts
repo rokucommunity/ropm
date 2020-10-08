@@ -4,26 +4,27 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
+import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Program, Range, WalkMode, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
         /**
          * The path to the file's original location
          */
-        public readonly src: string,
+        public srcPath: string,
         /**
          * The path to the file's new location
          */
-        public readonly dest: string,
+        public destPath: string,
         /**
          * The absolute path to the rootDir for this file
          */
-        public readonly rootDir: string,
+        public rootDir: string,
         public options: RopmOptions = {}
     ) {
         this.pkgPath = path.posix.normalize(
             util.removeLeadingSlash(
-                util.replaceCaseInsensitive(rootDir, src, '').replace(/\\/g, '/')
+                util.replaceCaseInsensitive(rootDir, srcPath, '').replace(/\\/g, '/')
             )
         );
     }
@@ -32,25 +33,20 @@ export class File {
      * Is this file a `.brs` file?
      */
     public get isBrsFile() {
-        return this.src.toLowerCase().endsWith('.brs');
+        return this.srcPath.toLowerCase().endsWith('.brs');
     }
 
     /**
      * Is this a .xml file
      */
     public get isXmlFile() {
-        return this.src.toLowerCase().endsWith('.xml');
+        return this.srcPath.toLowerCase().endsWith('.xml');
     }
 
     /**
      * The full pkg path to the file (minus the `pkg:/` protocol since we never actually need that part
      */
     public pkgPath: string;
-
-    /**
-     * The in-memory copy of the file contents
-     */
-    public fileContents!: string;
 
     public functionDefinitions = [] as Array<{
         name: string;
@@ -87,23 +83,11 @@ export class File {
     }>;
 
     /**
-     * All identifiers in this file. This will definitely include more than just the actual identifiers,
-     * but we only use this list to replace known function names, so it's ok to be a little greedy here.
+     * Identifiers found in this file. We use this list to replace known function names, so it's ok to be a little greedy in our matching.
      */
     public identifiers = [] as Array<{
         name: string;
         offset: number;
-    }>;
-
-    /**
-     * An array of string offsetBegin and offsetEnd pairs that indicate where
-     * strings are located in this file.
-     *
-     * Useful when performing blanket text replacement so we don't replace inside of strings
-     */
-    public strings = [] as Array<{
-        startOffset: number;
-        endOffset: number;
     }>;
 
     private edits = [] as Edit[];
@@ -113,45 +97,64 @@ export class File {
      */
     private xmlAst!: XMLDocument;
 
-    private async loadFile() {
-        if (!this.fileContents) {
-            this.fileContents = (await fsExtra.readFile(this.dest)).toString();
-            if (!this.xmlAst && this.dest.toLowerCase().endsWith('.xml')) {
-                const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.fileContents);
-                //print every lex and parse error to the console
-                for (const lexError of lexErrors) {
-                    console.error(`XML parse error "${lexError.message}" at ${this.dest}:${lexError.line}:${lexError.column}`);
-                }
-                for (const parseError of parseErrors) {
-                    console.error(`XML parse error "${parseError.message}" at ${this.dest}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
-                }
-                this.xmlAst = buildAst(cst as any, tokenVector);
+    private loadFile() {
+        if (!this.xmlAst && this.destPath.toLowerCase().endsWith('.xml')) {
+            const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.bscFile.fileContents);
+            //print every lex and parse error to the console
+            for (const lexError of lexErrors) {
+                console.error(`XML parse error "${lexError.message}" at ${this.destPath}:${lexError.line}:${lexError.column}`);
             }
+            for (const parseError of parseErrors) {
+                console.error(`XML parse error "${parseError.message}" at ${this.destPath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
+            }
+            this.xmlAst = buildAst(cst as any, tokenVector);
         }
     }
+
+    private lineOffsetMap!: { [lineNumber: number]: number };
+
+    /**
+     * Convert a range into an offset from the start of the file
+     */
+    private rangeToOffset(range: Range) {
+        //create the line/offset map if not yet created
+        if (!this.lineOffsetMap) {
+            this.lineOffsetMap = {};
+            this.lineOffsetMap[0] = 0;
+            const regexp = /(\r?\n)/g;
+            let lineIndex = 1;
+            let match: RegExpExecArray | null;
+            while (match = regexp.exec(this.bscFile.fileContents)) {
+                this.lineOffsetMap[lineIndex++] = match.index + match[1].length;
+            }
+        }
+        return this.lineOffsetMap[range.start.line] + range.start.character;
+    }
+
+    public bscFile!: BrsFile | XmlFile;
 
     /**
      * Scan the file for all important information
      */
-    public async discover() {
-        await this.loadFile();
+    public discover(program: Program) {
+        this.bscFile = program.getFileByPathAbsolute(this.srcPath);
+        this.loadFile();
         this.functionDefinitions = [];
         this.functionCalls = [];
         this.componentDeclarations = [];
         this.componentReferences = [];
         this.fileReferences = [];
 
-        this.findFilePathStrings();
 
         if (this.isBrsFile) {
+            this.findFilePathStrings();
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
-            this.findFunctionCalls();
-            this.findStrings();
             this.findIdentifiers();
             this.findObserveFieldFunctionNames();
         } else if (this.isXmlFile) {
+            this.findFilePathStrings();
             this.findXmlChildrenComponentReferences();
             this.findFilePathsFromXmlScriptElements();
             this.findComponentDefinitions();
@@ -160,136 +163,40 @@ export class File {
     }
 
     /**
-     * A binary search through the strings in this file to determine if this offset is found within the string range
-     */
-    private isOffsetWithinString(offset: number) {
-        let start = 0;
-        let end = this.strings.length - 1;
-
-        // Iterate while start not meets end
-        while (start <= end) {
-
-            // Find the mid index
-            const mid = Math.floor((start + end) / 2);
-
-            const range = this.strings[mid];
-
-            // If element is present at mid, return True
-            if (offset > range.startOffset && offset < range.endOffset) {
-                return true;
-
-                // Else look in left or right half accordingly
-            } else if (range.startOffset < offset) {
-                start = mid + 1;
-
-            } else {
-                end = mid - 1;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * A map of all the keywords in brighterscript that may not be identifiers or function names
-     */
-    private static keywordMap = {
-        and: true,
-        box: true,
-        createobject: true,
-        dim: true,
-        each: true,
-        else: true,
-        elseif: true,
-        end: true,
-        endfunction: true,
-        endif: true,
-        endsub: true,
-        endwhile: true,
-        eval: true,
-        exit: true,
-        exitwhile: true,
-        false: true,
-        for: true,
-        function: true,
-        goto: true,
-        if: true,
-        invalid: true,
-        let: true,
-        next: true,
-        not: true,
-        objfun: true,
-        or: true,
-        pos: true,
-        print: true,
-        rem: true,
-        return: true,
-        step: true,
-        sub: true,
-        tab: true,
-        then: true,
-        to: true,
-        true: true,
-        type: true,
-        while: true,
-        boolean: true,
-        string: true,
-        object: true,
-        void: true,
-        as: true,
-        in: true
-    };
-
-    /**
      * find all identifiers in this file. This will definitely find keywords and reserved words,
      * but we only use this list to replace known function names, so it's ok to be a little greedy here.
      */
     public findIdentifiers() {
-        //using negative lookbehind, so require node >=8.1.10
-        //find identifiers in the file.
-        //see the unit test for all scenarios this covers, but basically it tries to find assignments, print statements,
-        //identifiers being passed as function parameters, or identifiers wrapped in left and right parens
-        //regex test: https://regex101.com/r/LUuU8X/1
-        const regexp = /(?:(?<=(?:=|\(|\[|:|print)\s*)([a-z0-9_]+\b)(?!\.))|(?:([a-z0-9_]+)(?=\s*(?:\]|\))))|(?:(?<=,\s*)([a-z0-9_]+)(?=\s*,))/gim;
+        this.bscFile.parser.ast.walk(createVisitor({
+            /* eslint-disable @typescript-eslint/naming-convention */
+            VariableExpression: (variable, parent) => {
+                //skip objects to left of dotted/indexed expressions
+                if ((
+                    isDottedSetStatement(parent) ||
+                    isDottedGetExpression(parent) ||
+                    isIndexedSetStatement(parent) ||
+                    isIndexedGetExpression(parent)
+                ) && parent.obj === variable) {
+                    return;
+                }
 
-        let match: RegExpExecArray | null;
-
-        while (match = regexp.exec(this.fileContents)) {
-            //the regex had to use multiple capture groups, so check if any of them have the identifier
-            const identifier = match[1] || match[2] || match[3] || match[4];
-            //don't keep this identifier if it exists within a string, or if it's a keyword
-            if (this.isOffsetWithinString(match.index) || File.keywordMap[identifier.toLowerCase()]) {
-                continue;
+                //track function calls
+                if (isCallExpression(parent) && variable === parent.callee) {
+                    this.functionCalls.push({
+                        name: variable.name.text,
+                        offset: this.rangeToOffset(variable.name.range)
+                    });
+                } else {
+                    this.identifiers.push({
+                        name: variable.name.text,
+                        offset: this.rangeToOffset(variable.name.range)
+                    });
+                }
             }
-            this.identifiers.push({
-                name: identifier,
-                offset: match.index
-            });
-        }
-    }
-
-    /**
-     * Find all of the strings in the file. Since BrightScript doesn't have an escape character,
-     * this is as simple as even-odd matching to track the string locations.
-     * Using a regexp is surprisingly faster than looping the characters directly.
-     */
-    public findStrings() {
-        this.strings = [];
-
-        const regexp = /"/g;
-        let start = null as number | null;
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
-            if (start) {
-                this.strings.push({
-                    startOffset: start,
-                    endOffset: match.index + 1
-                });
-                start = null;
-            } else {
-                start = match.index;
-            }
-        }
+            /* eslint-enable @typescript-eslint/naming-convention */
+        }), {
+            walkMode: WalkMode.visitAllRecursive
+        });
     }
 
     /**
@@ -322,7 +229,7 @@ export class File {
                 return 0;
             }
         });
-        let contents = this.fileContents;
+        let contents = this.bscFile.fileContents;
         const chunks = [] as string[];
         for (const edit of edits) {
             //store the traling part of the string
@@ -336,44 +243,24 @@ export class File {
             contents = contents.substring(0, edit.offsetBegin);
         }
         chunks.push(contents);
-        this.fileContents = chunks.reverse().join('');
+        this.bscFile.fileContents = chunks.reverse().join('');
     }
 
     /**
      * Write the new file contents back to disk
      */
     public async write() {
-        await fsExtra.writeFile(this.dest, this.fileContents);
+        await fsExtra.writeFile(this.destPath, this.bscFile.fileContents);
     }
 
+    /**
+     * Find every top-level function defined in this file
+     */
     private findFunctionDefinitions() {
-        const regexp = /((?:function|sub)[ \t]+)([a-z0-9_]+)[ \t]*\(/gi;
-
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
-            const functionName = match[2];
-
-            const startOffset = match.index + match[1].length;
-
+        for (const func of this.bscFile.parser.references.functionStatements) {
             this.functionDefinitions.push({
-                name: functionName,
-                offset: startOffset
-            });
-        }
-    }
-
-    private findFunctionCalls() {
-        //using negative lookbehind, so require node >=8.1.10
-        //capture every identifier NOT preceeded by sub or function, that is not the exact text "sub" or "function"
-        const regexp = /(?<!(?:sub|function)[ \t]+)(?!function|sub\b)\b(?<!\.|\])([a-z0-9_]+)\s*\(/gi;
-
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
-            const functionName = match[1];
-
-            this.functionCalls.push({
-                name: functionName,
-                offset: match.index
+                name: func.name.text,
+                offset: this.rangeToOffset(func.name.range)
             });
         }
     }
@@ -386,7 +273,7 @@ export class File {
         const regexp = /(\.observeField[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
 
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             //skip multi-line observeField calls (because they are way too hard to parse with regex :D )
             if (util.hasMatchingParenCount(match[0]) === false) {
                 continue;
@@ -435,7 +322,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -457,7 +344,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -509,7 +396,7 @@ export class File {
         //look for any string containing `pkg:/`
         const regexp = /"(pkg:\/[^"]+)"/gi;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.fileContents)) {
+        while (match = regexp.exec(this.bscFile.fileContents)) {
             this.fileReferences.push({
                 //+1 to step past opening quote
                 offset: match.index + 1,

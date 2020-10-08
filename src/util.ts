@@ -5,6 +5,7 @@ import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
 import * as semver from 'semver';
 import { IOptions } from 'glob';
+import { Program } from 'brighterscript';
 
 export class Util {
 
@@ -257,6 +258,20 @@ export class Util {
         return count === 0;
     }
 
+    /**
+     * Replaces the Program.validate call with an empty function.
+     * This allows us to bypass BrighterScript's validation cycle, which speeds up performace
+     */
+    public mockProgramValidate() {
+        if (Program.prototype.validate !== mockProgramValidate) {
+            Program.prototype.validate = mockProgramValidate;
+        }
+    }
+
+}
+
+function mockProgramValidate() {
+    return Promise.resolve();
 }
 export const util = new Util();
 
