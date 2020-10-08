@@ -344,14 +344,14 @@ ropm uninstall module1 module2 module3
 # Creating ropm Packages
 ## Overview
 Here is some overview information to help `ropm` package authors get started:
-
  - `ropm` modules are simply [npm](https://www.npmjs.com/) packages with the `ropm` keyword (see [How to create a ropm package](#how-to-create-a-ropm-package))
+ - `ropm` uses the [BrighterScript parser](https://github.com/rokucommunity/brighterscript) to assist with prefixing. (see [Syntax parsing](#syntax-parsing-using-brighterscript))
  - Follow semantic versioning **strictly**. Make major breaking changes as infrequently as possible. (see [Semantic Versioning](#semantic-versioning))
- - `ropm` rewrites every `pkg:/` path, so use string concatenation if you need to bypass this logic (see [File paths](#file-paths))
+ - `ropm` rewrites every `pkg:/` path, so use string concatenation if you need to bypass this logic. (see [File paths](#file-paths))
  - Don't give local variables the same names as functions in your package. (See [Finding function references](#finding-function-references-is-a-package-wide-operation))
  - Don't write BrightScript in XML `CDATA` blocks (See [BrightScript in XML CDATA blocks is unsupported](#brightScript-in-xml-cdata-blocks-is-unsupported))
  - Don't define a baseline namespace. On install, `ropm` will prefix your package for you. (See [Prefixes](#prefixes))
- -  use the `ropm` options in `package.json` to customize various settings in your package
+ - use the `ropm` options in `package.json` to customize various settings in your package
      - `ropm.rootDir` - where you want `roku_modules` installed within your package
      - `ropm.packageRootDir` where your package's files reside (i.e. `dist`, `build`, `./`, etc...)
      - Don't use `ropm.noprefix`, as can not be used within published `ropm` packages.
@@ -408,6 +408,9 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
     }
 }
 ```
+
+### Syntax parsing using BrighterScript
+`ropm` uses the [BrighterScript parser](https://github.com/rokucommunity/brighterscript) to find and apply the prefixes to `ropm` modules. While fairly comprehensive, there are still a BrightScript syntax bugs that `BrighterScript` does not yet support, and will therefore cause your package to fail during install. Please open an [issue](https://github.com/rokucommunity/brighterscript/issues) if you encounter any syntax issues that prevent your package from working properly.
 
 ### Finding function references is a package-wide operation
 > *HINT:* do not give local variables the same name as any function in your package
