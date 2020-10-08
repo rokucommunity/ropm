@@ -4,7 +4,7 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
-import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, isXmlFile, Program, Range, WalkMode, XmlFile } from 'brighterscript';
+import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Program, Range, WalkMode, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
