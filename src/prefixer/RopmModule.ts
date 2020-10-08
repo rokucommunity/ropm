@@ -285,6 +285,16 @@ export class RopmModule {
         }
     }
 
+    private getInterfaceFunctions() {
+        const names = {} as { [name: string]: boolean };
+        for (const file of this.files) {
+            for (const func of file.componentInterfaceFunctions) {
+                names[func.name.toLowerCase()] = true;
+            }
+        }
+        return names;
+    }
+
     private createEdits(noprefix: string[]) {
         const prefix = this.ropmModuleName + '_';
         const applyOwnPrefix = !noprefix.includes(this.ropmModuleName);
@@ -292,6 +302,10 @@ export class RopmModule {
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
         const prefixMapKeys = Object.keys(this.prefixMap);
         const prefixMapKeysLower = prefixMapKeys.map(x => x.toLowerCase());
+        const nonPrefixedFunctionMap = {
+            ...this.nonPrefixedFunctionMap,
+            ...this.getInterfaceFunctions()
+        };
 
         for (const file of this.files) {
             //only apply prefixes if configured to do so
@@ -299,7 +313,7 @@ export class RopmModule {
                 //create an edit for each this-module-owned function
                 for (const func of file.functionDefinitions) {
                     //skip edits for special functions
-                    if (this.nonPrefixedFunctionMap[func.name.toLowerCase()]) {
+                    if (nonPrefixedFunctionMap[func.name.toLowerCase()]) {
                         continue;
                     }
                     file.addEdit(func.offset, func.offset, prefix);
