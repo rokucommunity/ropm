@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## Unreleased
+### Fixed
+ - force delete during `ropm clean`
+
+
+
 ## [0.6.2] - 2020-10-08
 ### Fixed
  - `ropm` now disables prefixing functions that are referenced in component interfaces. 
