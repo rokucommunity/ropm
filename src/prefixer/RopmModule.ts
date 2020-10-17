@@ -325,6 +325,10 @@ export class RopmModule {
                 const lowerName = call.name.toLowerCase();
                 //only apply prefixes if configured to do so
                 if (applyOwnPrefix) {
+                    //skip edits for special functions
+                    if (nonPrefixedFunctionMap[lowerName]) {
+                        continue;
+                    }
                     //if this function is owned by our project, rename it
                     if (ownFunctionMap[lowerName]) {
                         file.addEdit(call.offset, call.offset, prefix);

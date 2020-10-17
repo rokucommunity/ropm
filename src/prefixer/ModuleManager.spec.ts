@@ -313,7 +313,6 @@ describe('ModuleManager', () => {
                 sub logger_NonSpecialFunction()
                 end sub
             `);
-
         });
 
         it('applies a prefix to components and their usage', async () => {
@@ -1013,6 +1012,52 @@ describe('ModuleManager', () => {
                 sub doSomethingElse()
                 end sub
                 sub logger_writeToLog()
+                end sub
+            `);
+        });
+
+        it('does not prefix function calls to interface-referenced functions', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'components/LoggerComponent.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="LoggerComponent">
+                                <script uri="LoggerComponent.brs" />
+                                <interface>
+                                    <function name="doSomething"/>
+                                </interface>
+                            </component>
+                        `,
+                        'components/LoggerComponent.brs': trim`
+                            sub init()
+                                doSomething()
+                            end sub
+                            sub doSomething()
+                            end sub
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_LoggerComponent">
+                    <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
+                    <interface>
+                        <function name="doSomething"/>
+                    </interface>
+                </component>
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
+                sub init()
+                    doSomething()
+                end sub
+                sub doSomething()
                 end sub
             `);
         });

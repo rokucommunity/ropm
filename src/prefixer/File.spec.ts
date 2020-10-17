@@ -75,6 +75,7 @@ describe('prefixer/File', () => {
         }
         return -1;
     }
+
     /**
      * Given an offset in the current file contents, compute the Position (line and column)
      */
