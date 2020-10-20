@@ -90,7 +90,7 @@ export class InstallCommand {
         this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath);
 
         this.moduleManager.hostRootDir = this.hostRootDir;
-        this.moduleManager.noprefix = this.hostPackageJson?.ropm?.noprefix ?? [];
+        this.moduleManager.noprefixNpmAliases = this.hostPackageJson?.ropm?.noprefix ?? [];
 
         //copy all of them at once, wait for them all to complete
         for (const modulePath of modulePaths) {

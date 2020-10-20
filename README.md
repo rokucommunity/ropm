@@ -218,22 +218,22 @@ The prefixes will be as follows:
 
 
 ### Disabling module prefixing
-If you need to disable `ropm`'s module prefixing, you can do this on a per-module basis by adding the sanitized alias names of the desired modules to the `ropm.noprefix` key in `package.json`. Here's an example:
+If you need to disable `ropm`'s module prefixing, you can do this on a per-module basis by adding the names of of the desired modules to the `ropm.noprefix` key in `package.json`. Here's an example:
 
 ```javascript
 {
     "dependencies": {
-        "rokulogger": "1.0.0"
+        "roku-logger": "1.0.0"
     },
     "ropm": {
         "noprefix": [
-            "rokulogger"
+            "roku-logger"
         ]
     }
 }
 ```
 
-Be sure you're using the [sanitized ropm alias](#Sanitizing-module-names) of the package, not the original package name. The alias is the string on the left-hand-side of the dependency. For example:
+Be sure you're using the [npm alias](https://github.com/npm/rfcs/blob/latest/implemented/0001-package-aliases.md) of the package, not the original package name. The alias is the string on the left-hand-side of the dependency. For example:
 ```javascript
 {
     "dependencies": {
@@ -246,24 +246,26 @@ Be sure you're using the [sanitized ropm alias](#Sanitizing-module-names) of the
     }
 }
 ```
-In this example, the actual name of the package is "roku-promise", but we are using the alias "p". So "p" is what you should add to `ropm.noprefix`.
+In this example, the actual name of the package is `"roku-promise"`, but we are using the npm alias "p". So `"p"` is what you should add to `ropm.noprefix`.
 
-Here's another example showing a sanitized name:
+Here's another example:
 
 ```javascript
 {
     "dependencies": {
-        "roku-promise": "1.0.0"
+        "roku-promise": "1.0.0",
+        "r": "npm:roku-requests@1.0.0"
     },
     "ropm": {
         "noprefix": [
-            "rokupromise"
+            "roku-promise",
+            "r"
         ]
     }
 }
 ```
 
-The sanitized alias in this example will be `"rokupromise"`. See the [sanitizing module names](#Sanitizing-module-names) section for more information.
+The npm aliases in this example is `"roku-promise"` and `"r"`. 
 
 ### Do not use `ropm.prefix` in published packages
 Ropm will reject installing any ropm package that has the `ropm.noprefix` key in its package.json, so package _authors_ should **NOT** use `ropm.noprefix`. 

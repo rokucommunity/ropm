@@ -11,16 +11,16 @@ const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
 
 describe('ModuleManager', () => {
     let manager: ModuleManager;
-    let noprefix: string[];
+    let noprefixNpmAliases: string[];
 
     beforeEach(() => {
         manager = new ModuleManager();
-        noprefix = [];
+        noprefixNpmAliases = [];
     });
 
     async function process() {
         manager.hostDependencies = await util.getModuleDependencies(hostDir);
-        manager.noprefix = noprefix;
+        manager.noprefixNpmAliases = noprefixNpmAliases;
         await manager.process();
     }
 
@@ -773,7 +773,7 @@ describe('ModuleManager', () => {
         });
 
         it('keeps custom prefix for one module when using noprefix for another', async () => {
-            noprefix = ['json'];
+            noprefixNpmAliases = ['json-lib'];
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
@@ -787,7 +787,7 @@ describe('ModuleManager', () => {
                         `
                     }
                 }, {
-                    name: 'json',
+                    name: 'json-lib',
                     _files: {
                         'source/jsonlib.brs': `
                             sub parseJson(text)
@@ -807,16 +807,15 @@ describe('ModuleManager', () => {
                 end sub
             `);
             //the json lib should NOT be prefixed
-            fsEqual(`${hostDir}/source/roku_modules/json/jsonlib.brs`, `
+            fsEqual(`${hostDir}/source/roku_modules/jsonlib/jsonlib.brs`, `
                 sub parseJson(text)
                     return {}
                 end sub
             `);
-
         });
 
         it('supports a package using both rootDir and packageRootDir', async () => {
-            noprefix = ['logger'];
+            noprefixNpmAliases = ['logger'];
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
@@ -876,7 +875,7 @@ describe('ModuleManager', () => {
         });
 
         it('supports a package using both rootDir and packageRootDir', async () => {
-            noprefix = ['logger'];
+            noprefixNpmAliases = ['logger'];
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{
@@ -936,7 +935,7 @@ describe('ModuleManager', () => {
         });
 
         it('supports a package using both rootDir and packageRootDir', async () => {
-            noprefix = ['logger'];
+            noprefixNpmAliases = ['logger'];
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
                 dependencies: [{

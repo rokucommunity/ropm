@@ -200,7 +200,7 @@ export class RopmModule {
     /**
      * @param noprefix a list of npm aliases of modules that should NOT be prefixed
      */
-    public async transform(noprefix: string[]) {
+    public async transform(noprefixRopmAliases: string[]) {
         const builder = new ProgramBuilder();
 
         //disable the Program.validate function to improve performance (we don't care about the validity of the code...that should be handled by the package publisher)
@@ -231,7 +231,7 @@ export class RopmModule {
         }
 
         //create the edits for every file
-        this.createEdits(noprefix);
+        this.createEdits(noprefixRopmAliases);
 
         //apply all of the edits
         for (const file of this.files) {
@@ -295,9 +295,9 @@ export class RopmModule {
         return names;
     }
 
-    private createEdits(noprefix: string[]) {
+    private createEdits(noprefixRopmAliases: string[]) {
         const prefix = this.ropmModuleName + '_';
-        const applyOwnPrefix = !noprefix.includes(this.ropmModuleName);
+        const applyOwnPrefix = !noprefixRopmAliases.includes(this.ropmModuleName);
         const ownFunctionMap = this.getDistinctFunctionDeclarationMap();
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
         const prefixMapKeys = Object.keys(this.prefixMap);
