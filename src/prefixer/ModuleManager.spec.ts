@@ -772,6 +772,109 @@ describe('ModuleManager', () => {
 
         });
 
+        it('keeps custom prefix for one module when using noprefix for another', async () => {
+            noprefix = ['json'];
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    alias: 'l',
+                    _files: {
+                        'source/loggerlib.brs': `
+                            sub logInfo(message)
+                                print message
+                            end sub
+                        `
+                    }
+                }, {
+                    name: 'json',
+                    _files: {
+                        'source/jsonlib.brs': `
+                            sub parseJson(text)
+                                return {}
+                            end sub
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            //the logger module should use the "l" prefix
+            fsEqual(`${hostDir}/source/roku_modules/l/loggerlib.brs`, `
+                sub l_logInfo(message)
+                    print message
+                end sub
+            `);
+            //the json lib should NOT be prefixed
+            fsEqual(`${hostDir}/source/roku_modules/json/jsonlib.brs`, `
+                sub parseJson(text)
+                    return {}
+                end sub
+            `);
+
+        });
+
+        it('supports a package using both rootDir and packageRootDir', async () => {
+            noprefix = ['logger'];
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/loggerlib.brs': `
+                            sub logInfo(message)
+                                print message
+                            end sub
+                        `,
+                        'components/loggercomp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="loggercomp"></component>
+                        `
+                    }
+                }, {
+                    name: 'json',
+                    _files: {
+                        'source/jsonlib.brs': `
+                            sub parseJson(text)
+                                return {}
+                            end sub
+                        `,
+                        'components/jsoncomp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="jsoncomp">
+                            </component>
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            //the logger module should have no prefixes applied to its functions or components
+            fsEqual(`${hostDir}/source/roku_modules/logger/loggerlib.brs`, `
+                sub logInfo(message)
+                    print message
+                end sub
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="loggercomp"></component>
+            `);
+
+            //the json module should be prefixed
+            fsEqual(`${hostDir}/source/roku_modules/json/jsonlib.brs`, `
+                sub json_parseJson(text)
+                    return {}
+                end sub
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/json/jsoncomp.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="json_jsoncomp">
+                </component>
+            `);
+        });
+
         it('supports a package using both rootDir and packageRootDir', async () => {
             noprefix = ['logger'];
             manager.modules = createProjects(hostDir, hostDir, {
