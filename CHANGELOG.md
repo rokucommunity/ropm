@@ -6,9 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [Unreleased]
+## [0.6.4]
 ### Added
  - `rootDir` prompt during first install or init
+### Changed
+ - `ropm.noprefix` now requires the npm alias name, **NOT** the ropm alias name (how it was previously).
 
 
 
