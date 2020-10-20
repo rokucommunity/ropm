@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `rootDir` prompt during first install or init
 ### Changed
  - `ropm.noprefix` now requires the npm alias name, **NOT** the ropm alias name (how it was previously).
-
+ - updated to [brighterscript@0.16.11](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#01611---2020-10-20)
 
 
 ## [0.6.3] - 2020-10-16
@@ -128,3 +128,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.1]:   https://github.com/rokucommunity/ropm/compare/v0.6.0...v0.6.1
 [0.6.2]:   https://github.com/rokucommunity/ropm/compare/v0.6.1...v0.6.2
 [0.6.3]:   https://github.com/rokucommunity/ropm/compare/v0.6.2...v0.6.3
+[0.6.4]:   https://github.com/rokucommunity/ropm/compare/v0.6.3...v0.6.4
