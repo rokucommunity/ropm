@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [Unreleased]
+### Added
+ - `rootDir` prompt during first install or init
+
+
+
 ## [0.6.3] - 2020-10-16
 ### Fixed
  - force delete during `ropm clean`

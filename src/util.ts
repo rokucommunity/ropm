@@ -6,6 +6,7 @@ import * as latinize from 'latinize';
 import * as semver from 'semver';
 import { IOptions } from 'glob';
 import { Program } from 'brighterscript';
+import * as readline from 'readline';
 
 export class Util {
 
@@ -43,6 +44,20 @@ export class Util {
             args as string[],
             options
         );
+    }
+
+    public getUserInput(question: string) {
+        return new Promise<string>((resolve) => {
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+            //prompt the user for a rootDir
+            rl.question(`What is the rootDir for your project (./):`, (answer) => {
+                resolve(answer);
+                rl.close();
+            });
+        });
     }
 
     /**

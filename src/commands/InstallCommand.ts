@@ -62,7 +62,7 @@ export class InstallCommand {
         if (await fsExtra.pathExists(path.resolve(this.cwd, 'package.json')) === false) {
             console.log('Creating package.json');
             //init package.json for the host
-            await new InitCommand({ cwd: this.cwd, force: true }).run();
+            await new InitCommand({ cwd: this.cwd, force: true, promptForRootDir: true }).run();
         }
         this.hostPackageJson = await util.getPackageJson(this.cwd);
     }
