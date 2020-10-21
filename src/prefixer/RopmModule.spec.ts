@@ -1,11 +1,18 @@
 import { RopmModule } from './RopmModule';
 import { tempDir, mergePackageJson, createProjects, expectThrowsAsync } from '../TestHelpers.spec';
 import { expect } from 'chai';
-
+import { Dependency } from './ModuleManager';
+import { createSandbox } from 'sinon';
+import { util } from '../util';
+const sinon = createSandbox();
 
 const hostDir = `${tempDir}/host`;
 
 describe('RopmModule', () => {
+    afterEach(() => {
+        sinon.restore();
+    });
+
     describe('init', () => {
         it('invalidates with missing alias name', async () => {
             const [logger] = createProjects(hostDir, hostDir, {
@@ -121,5 +128,64 @@ describe('RopmModule', () => {
                 dominantVersion: '2.0.0-beta.1'
             }]);
         });
+
+        it('error includes npm alias and original module name', async () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'real-name',
+                    alias: 'alias'
+                }]
+            });
+            logger.npmModuleName = 'logger';
+            let error!: Error;
+            try {
+                sinon.stub(util, 'getModuleDependencies').returns(Promise.resolve([{ npmAlias: 'alias', npmModuleName: 'real-name', version: '1.0.0' } as any]));
+                await logger.createPrefixMap([{ npmModuleName: 'logger' } as Dependency]);
+            } catch (e) {
+                error = e;
+            }
+            expect(error?.message).to.include('alias(real-name)');
+        });
+    });
+
+    describe('getDistinctFunctionCallNames', () => {
+        it('works', () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger'
+                }]
+            });
+            logger.files = [{
+                functionCalls: [{
+                    name: 'Main'
+                }]
+            }, {
+                functionCalls: [{
+                    name: 'Main'
+                }]
+            }] as any[];
+            expect(logger.getDistinctFunctionCallNames()).to.eql(['main']);
+        });
+    });
+
+    describe('getDistinctComponentReferenceNames', () => {
+        const [logger] = createProjects(hostDir, hostDir, {
+            name: 'host',
+            dependencies: [{
+                name: 'logger'
+            }]
+        });
+        logger.files = [{
+            componentReferences: [{
+                name: 'Component1'
+            }]
+        }, {
+            componentReferences: [{
+                name: 'Component1'
+            }]
+        }] as any[];
+        expect(logger.getDistinctComponentReferenceNames()).to.eql(['component1']);
     });
 });
