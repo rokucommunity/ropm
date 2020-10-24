@@ -5,6 +5,7 @@ import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import { Dependency } from './ModuleManager';
 import { Program, ProgramBuilder } from 'brighterscript';
+import { LogLevel } from 'brighterscript/dist/Logger';
 
 export class RopmModule {
     constructor(
@@ -211,7 +212,9 @@ export class RopmModule {
             createPackage: false,
             rootDir: this.packageRootDir,
             //hide all diagnostics, the package author should be responsible for ensuring their package is valid
-            diagnosticFilters: ['**/*']
+            diagnosticFilters: ['**/*'],
+            //hide log statements
+            logLevel: LogLevel.error
         });
         this.program = builder.program;
 

@@ -37,6 +37,13 @@ export class File {
     }
 
     /**
+     * Is this a .d.bs file?
+     */
+    public get isTypdefFile() {
+        return this.srcPath.toLowerCase().endsWith('.d.bs');
+    }
+
+    /**
      * Is this a .xml file
      */
     public get isXmlFile() {
@@ -98,6 +105,14 @@ export class File {
         offset: number;
     }>;
 
+    /**
+     * Namespaces found in this file (only applies to typedefs)
+     */
+    public namespaces = [] as Array<{
+        name: string;
+        offset: number;
+    }>;
+
     private edits = [] as Edit[];
 
     /**
@@ -154,13 +169,14 @@ export class File {
         this.fileReferences = [];
 
 
-        if (this.isBrsFile) {
+        if (this.isBrsFile || this.isTypdefFile) {
             this.findFilePathStrings();
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
             this.findIdentifiers();
             this.findObserveFieldFunctionNames();
+            this.findNamespaces();
         } else if (this.isXmlFile) {
             this.findFilePathStrings();
             this.findXmlChildrenComponentReferences();
@@ -290,6 +306,18 @@ export class File {
 
             //just add this to function calls, since there's no difference in terms of how they get replaced
             this.functionCalls.push({
+                name: match[2],
+                offset: match.index + match[1].length
+            });
+        }
+    }
+
+    private findNamespaces() {
+        const regexp = /^([ \t]*namespace[ \t]+)([a-z0-9_]+)/gi;
+
+        let match: RegExpExecArray | null;
+        while (match = regexp.exec(this.bscFile.fileContents)) {
+            this.namespaces.push({
                 name: match[2],
                 offset: match.index + match[1].length
             });

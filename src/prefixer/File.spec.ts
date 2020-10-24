@@ -44,7 +44,7 @@ describe('prefixer/File', () => {
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    async function setFile(value: string, extension: 'brs' | 'xml' = 'brs') {
+    async function setFile(value: string, extension: 'brs' | 'xml' | '.d.bs' = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
         file.srcPath = f.srcPath.replace('.brs', '.' + extension);
         file.destPath = f.destPath.replace('.brs', '.' + extension);
@@ -566,6 +566,32 @@ describe('prefixer/File', () => {
             }, {
                 name: 'doSomethingElse',
                 offset: getOffset(5, 34)
+            }]);
+        });
+    });
+
+    describe('namespaces', () => {
+        it.only('finds namespaces', async () => {
+            await setFile(`
+                namespace NameA
+                    sub logWarning()
+                    end sub
+                end namespace
+                sub logInfo()
+                end sub
+                namespace NameA.NameB
+                    sub logError()
+                    end sub
+                end namespace
+            `, '.d.bs');
+            file.discover(program);
+
+            expect(file.namespaces).to.eql([{
+                name: 'NameA',
+                offset: getOffset(1, 26)
+            }, {
+                name: 'NameA.NameB',
+                offset: getOffset(7, 26)
             }]);
         });
     });
