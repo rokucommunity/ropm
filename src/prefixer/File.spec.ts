@@ -130,7 +130,7 @@ describe('prefixer/File', () => {
                 end sub
             `);
             file.discover(program);
-            expect(f.functionCalls).to.eql([{
+            expect(f.functionReferences).to.eql([{
                 name: 'doSomething',
                 offset: getOffset(3, 20)
             }, {
@@ -159,7 +159,7 @@ describe('prefixer/File', () => {
                 end sub
             `, 'brs');
             file.discover(program);
-            expect(f.functionCalls).to.eql([{
+            expect(f.functionReferences).to.eql([{
                 name: 'speak',
                 offset: getOffset(8, 28)
             }, {

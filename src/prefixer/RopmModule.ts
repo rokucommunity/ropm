@@ -321,7 +321,7 @@ export class RopmModule {
             }
 
             //prefix all function calls to our own function names
-            for (const call of file.functionCalls) {
+            for (const call of file.functionReferences) {
                 const lowerName = call.name.toLowerCase();
                 //only apply prefixes if configured to do so
                 if (applyOwnPrefix) {
@@ -453,7 +453,7 @@ export class RopmModule {
     public getDistinctFunctionCallNames() {
         const result = {};
         for (const file of this.files) {
-            for (const call of file.functionCalls) {
+            for (const call of file.functionReferences) {
                 result[call.name.toLowerCase()] = true;
             }
         }
