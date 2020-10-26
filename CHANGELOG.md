@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.5] - 2020-10-25
 ### Fixed
- - prefixing bug that wasn't applying prefix to to xml filed `onChange` events
+ - prefixing bug that wasn't applying prefix to to xml field `onChange` events
 
 
 
