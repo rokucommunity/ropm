@@ -314,7 +314,7 @@ export class File {
     }
 
     private findNamespaces() {
-        const regexp = /^([ \t]*namespace[ \t]+)([a-z0-9_]+)/gi;
+        const regexp = /^([ \t]*namespace[ \t]+)((?:[a-z0-9_]+\.)*[a-z0-9_]+)/gim;
 
         let match: RegExpExecArray | null;
         while (match = regexp.exec(this.bscFile.fileContents)) {
