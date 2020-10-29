@@ -324,7 +324,7 @@ export class RopmModule {
             }
 
             //prefix all function calls to our own function names
-            for (const call of file.functionCalls) {
+            for (const call of file.functionReferences) {
                 const lowerName = call.name.toLowerCase();
                 //only apply prefixes if configured to do so
                 if (applyOwnPrefix) {
@@ -353,8 +353,13 @@ export class RopmModule {
 
             //prefix all identifiers that have the same name as a function
             for (const identifier of file.identifiers) {
+                const lowerName = identifier.name.toLowerCase();
+                //skip edits for special functions
+                if (nonPrefixedFunctionMap[lowerName]) {
+                    continue;
+                }
                 //if this identifier has the same name as a function, then prefix the identifier
-                if (ownFunctionMap[identifier.name.toLowerCase()]) {
+                if (ownFunctionMap[lowerName]) {
                     file.addEdit(identifier.offset, identifier.offset, prefix);
                 }
             }
@@ -456,7 +461,7 @@ export class RopmModule {
     public getDistinctFunctionCallNames() {
         const result = {};
         for (const file of this.files) {
-            for (const call of file.functionCalls) {
+            for (const call of file.functionReferences) {
                 result[call.name.toLowerCase()] = true;
             }
         }

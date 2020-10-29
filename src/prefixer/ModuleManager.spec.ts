@@ -1118,6 +1118,46 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('adds prefix to field onchange attributes', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'components/LoggerComponent.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="LoggerComponent">
+                                <script uri="LoggerComponent.brs" />
+                                <interface>
+                                    <field name="logMessage" onchange="logMessageChanged"/>
+                                </interface>
+                            </component>
+                        `,
+                        'components/LoggerComponent.brs': trim`
+                            sub logMessageChanged()
+                            end sub
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="logger_LoggerComponent">
+                    <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
+                    <interface>
+                        <field name="logMessage" onchange="logger_logMessageChanged"/>
+                    </interface>
+                </component>
+            `);
+            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
+                sub logger_logMessageChanged()
+                end sub
+            `);
+        });
+
         it('does not prefix function calls to interface-referenced functions', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
@@ -1129,13 +1169,16 @@ describe('ModuleManager', () => {
                             <component name="LoggerComponent">
                                 <script uri="LoggerComponent.brs" />
                                 <interface>
-                                    <function name="doSomething"/>
+                                    <function name="doSomething" />
+                                    <function name="notDefinedDoSomething" />
                                 </interface>
                             </component>
                         `,
                         'components/LoggerComponent.brs': trim`
                             sub init()
                                 doSomething()
+                                isFunction(doSomething)
+                                isFunction(notDefinedDoSomething)
                             end sub
                             sub doSomething()
                             end sub
@@ -1151,13 +1194,16 @@ describe('ModuleManager', () => {
                 <component name="logger_LoggerComponent">
                     <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
                     <interface>
-                        <function name="doSomething"/>
+                        <function name="doSomething" />
+                        <function name="notDefinedDoSomething" />
                     </interface>
                 </component>
             `);
             fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
                 sub init()
                     doSomething()
+                    isFunction(doSomething)
+                    isFunction(notDefinedDoSomething)
                 end sub
                 sub doSomething()
                 end sub

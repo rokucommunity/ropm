@@ -60,7 +60,7 @@ export class File {
         offset: number;
     }>;
 
-    public functionCalls = [] as Array<{
+    public functionReferences = [] as Array<{
         name: string;
         offset: number;
     }>;
@@ -163,7 +163,7 @@ export class File {
         this.bscFile = program.getFileByPathAbsolute(this.srcPath);
         this.loadFile();
         this.functionDefinitions = [];
-        this.functionCalls = [];
+        this.functionReferences = [];
         this.componentDeclarations = [];
         this.componentReferences = [];
         this.fileReferences = [];
@@ -184,6 +184,7 @@ export class File {
             this.findComponentDefinitions();
             this.findExtendsComponentReferences();
             this.findComponentInterfaceFunctions();
+            this.findComponentFieldOnChangeFunctions();
         }
     }
 
@@ -207,7 +208,7 @@ export class File {
 
                 //track function calls
                 if (isCallExpression(parent) && variable === parent.callee) {
-                    this.functionCalls.push({
+                    this.functionReferences.push({
                         name: variable.name.text,
                         offset: this.rangeToOffset(variable.name.range)
                     });
@@ -305,7 +306,7 @@ export class File {
             }
 
             //just add this to function calls, since there's no difference in terms of how they get replaced
-            this.functionCalls.push({
+            this.functionReferences.push({
                 name: match[2],
                 offset: match.index + match[1].length
             });
@@ -363,6 +364,23 @@ export class File {
                     //plus one to step past the opening "
                     offset: nameAttribute.syntax.value!.startOffset + 1
                 });
+            }
+        }
+    }
+
+    private findComponentFieldOnChangeFunctions() {
+        const interfaceEntries = this.xmlAst?.rootElement?.subElements.find(x => x.name?.toLowerCase() === 'interface')?.subElements ?? [];
+        for (const interfaceEntry of interfaceEntries) {
+            const nameAttribute = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'name');
+            if (interfaceEntry.name?.toLowerCase() === 'field' && nameAttribute) {
+                const onchange = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'onchange');
+                if (onchange) {
+                    this.functionReferences.push({
+                        name: onchange.value!,
+                        //plus one to step past the opening "
+                        offset: onchange.syntax.value!.startOffset + 1
+                    });
+                }
             }
         }
     }

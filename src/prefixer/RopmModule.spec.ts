@@ -158,11 +158,11 @@ describe('RopmModule', () => {
                 }]
             });
             logger.files = [{
-                functionCalls: [{
+                functionReferences: [{
                     name: 'Main'
                 }]
             }, {
-                functionCalls: [{
+                functionReferences: [{
                     name: 'Main'
                 }]
             }] as any[];
