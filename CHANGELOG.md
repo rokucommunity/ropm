@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.6.6] - 2020-10-29
+### Fixed
+ - bug where function references do not honor prefixing whitelist
+
+
+
 ## [0.6.5] - 2020-10-25
 ### Fixed
  - prefixing bug that wasn't applying prefix to to xml field `onChange` events
@@ -136,3 +142,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.3]:   https://github.com/rokucommunity/ropm/compare/v0.6.2...v0.6.3
 [0.6.4]:   https://github.com/rokucommunity/ropm/compare/v0.6.3...v0.6.4
 [0.6.5]:   https://github.com/rokucommunity/ropm/compare/v0.6.4...v0.6.5
+[0.6.6]:   https://github.com/rokucommunity/ropm/compare/v0.6.5...v0.6.6
