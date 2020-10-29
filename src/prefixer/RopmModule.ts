@@ -350,8 +350,13 @@ export class RopmModule {
 
             //prefix all identifiers that have the same name as a function
             for (const identifier of file.identifiers) {
+                const lowerName = identifier.name.toLowerCase();
+                //skip edits for special functions
+                if (nonPrefixedFunctionMap[lowerName]) {
+                    continue;
+                }
                 //if this identifier has the same name as a function, then prefix the identifier
-                if (ownFunctionMap[identifier.name.toLowerCase()]) {
+                if (ownFunctionMap[lowerName]) {
                     file.addEdit(identifier.offset, identifier.offset, prefix);
                 }
             }

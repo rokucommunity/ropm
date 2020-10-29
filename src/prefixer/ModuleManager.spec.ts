@@ -1169,13 +1169,16 @@ describe('ModuleManager', () => {
                             <component name="LoggerComponent">
                                 <script uri="LoggerComponent.brs" />
                                 <interface>
-                                    <function name="doSomething"/>
+                                    <function name="doSomething" />
+                                    <function name="notDefinedDoSomething" />
                                 </interface>
                             </component>
                         `,
                         'components/LoggerComponent.brs': trim`
                             sub init()
                                 doSomething()
+                                isFunction(doSomething)
+                                isFunction(notDefinedDoSomething)
                             end sub
                             sub doSomething()
                             end sub
@@ -1191,13 +1194,16 @@ describe('ModuleManager', () => {
                 <component name="logger_LoggerComponent">
                     <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
                     <interface>
-                        <function name="doSomething"/>
+                        <function name="doSomething" />
+                        <function name="notDefinedDoSomething" />
                     </interface>
                 </component>
             `);
             fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
                 sub init()
                     doSomething()
+                    isFunction(doSomething)
+                    isFunction(notDefinedDoSomething)
                 end sub
                 sub doSomething()
                 end sub
