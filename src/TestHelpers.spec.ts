@@ -170,3 +170,14 @@ export function standardizePath(stringParts, ...expressions: any[]) {
     );
 }
 
+export function pick(objects: any[], ...properties: string[]) {
+    const results = [] as any[];
+    for (const obj of objects) {
+        const result = {};
+        for (const property of properties) {
+            result[property] = obj[property];
+        }
+        results.push(result);
+    }
+    return results;
+}

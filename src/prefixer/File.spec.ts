@@ -1,10 +1,10 @@
 import { File } from './File';
-
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import { expect } from 'chai';
 import { createSandbox } from 'sinon';
 import { Position, Program } from 'brighterscript';
+import { pick } from '../TestHelpers.spec';
 const sinon = createSandbox();
 
 const tmpDir = path.join(process.cwd(), '.tmp');
@@ -107,12 +107,12 @@ describe('prefixer/File', () => {
                 end function
             `);
             file.discover(program);
-            expect(f.functionDefinitions).to.eql([{
+            expect(pick(f.functionDefinitions, 'name', 'nameOffset')).to.eql([{
                 name: 'Main',
-                offset: getOffset(1, 25)
+                nameOffset: getOffset(1, 25)
             }, {
                 name: 'Main2',
-                offset: getOffset(3, 25)
+                nameOffset: getOffset(3, 25)
             }]);
         });
     });

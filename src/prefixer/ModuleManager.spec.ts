@@ -1232,5 +1232,65 @@ describe('ModuleManager', () => {
                 import "pkg:/source/roku_modules/logger/lib.brs"
             `);
         });
+
+        it('prefixes namespaces and not their child functions or classes', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            namespace util
+                                function doSomething()
+                                end function
+                                class Person
+                                end class
+                            end namespace
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
+                namespace logger.util
+                    function doSomething()
+                    end function
+                    class Person
+                    end class
+                end namespace
+            `);
+        });
+
+        it('wraps top-level functions and classes with a namespace', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            function doSomething()
+                            end function
+                            class Person
+                            end class
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
+                namespace logger
+                function doSomething()
+                end function
+                end namespace
+                namespace logger
+                class Person
+                end class
+                end namespace
+            `);
+        });
     });
 });

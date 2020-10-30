@@ -4,7 +4,7 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
-import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Program, Range, WalkMode, XmlFile } from 'brighterscript';
+import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Position, Program, WalkMode, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
@@ -65,7 +65,30 @@ export class File {
 
     public functionDefinitions = [] as Array<{
         name: string;
-        offset: number;
+        nameOffset: number;
+        hasNamespace: boolean;
+        /**
+         * The starting offset of `function` or `sub`
+         */
+        startOffset: number;
+        /**
+         * The end offset of `end function` or `end sub`
+         */
+        endOffset: number;
+    }>;
+
+    public classDeclarations = [] as Array<{
+        name: string;
+        nameOffset: number;
+        hasNamespace: boolean;
+        /**
+         * The starting offset of `class`
+         */
+        startOffset: number;
+        /**
+         * The end offset of `end class`
+         */
+        endOffset: number;
     }>;
 
     public functionReferences = [] as Array<{
@@ -145,9 +168,9 @@ export class File {
     private lineOffsetMap!: { [lineNumber: number]: number };
 
     /**
-     * Convert a range into an offset from the start of the file
+     * Convert a position into an offset from the start of the file
      */
-    private rangeToOffset(range: Range) {
+    private positionToOffset(position: Position) {
         //create the line/offset map if not yet created
         if (!this.lineOffsetMap) {
             this.lineOffsetMap = {};
@@ -159,7 +182,7 @@ export class File {
                 this.lineOffsetMap[lineIndex++] = match.index + match[1].length;
             }
         }
-        return this.lineOffsetMap[range.start.line] + range.start.character;
+        return this.lineOffsetMap[position.line] + position.character;
     }
 
     public bscFile!: BrsFile | XmlFile;
@@ -182,10 +205,10 @@ export class File {
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
-            this.findIdentifiers();
             this.findObserveFieldFunctionNames();
             this.findNamespaces();
             this.findImportStatements();
+            this.walkAst();
         } else if (this.isXmlFile) {
             this.findFilePathStrings();
             this.findXmlChildrenComponentReferences();
@@ -198,12 +221,11 @@ export class File {
     }
 
     /**
-     * find all identifiers in this file. This will definitely find keywords and reserved words,
-     * but we only use this list to replace known function names, so it's ok to be a little greedy here.
+     * find various items from this file.
      */
-    public findIdentifiers() {
+    public walkAst() {
+        /* eslint-disable @typescript-eslint/naming-convention */
         this.bscFile.parser.ast.walk(createVisitor({
-            /* eslint-disable @typescript-eslint/naming-convention */
             VariableExpression: (variable, parent) => {
                 //skip objects to left of dotted/indexed expressions
                 if ((
@@ -219,19 +241,30 @@ export class File {
                 if (isCallExpression(parent) && variable === parent.callee) {
                     this.functionReferences.push({
                         name: variable.name.text,
-                        offset: this.rangeToOffset(variable.name.range)
+                        offset: this.positionToOffset(variable.name.range.start)
                     });
                 } else {
+                    //track identifiers
                     this.identifiers.push({
                         name: variable.name.text,
-                        offset: this.rangeToOffset(variable.name.range)
+                        offset: this.positionToOffset(variable.name.range.start)
                     });
                 }
+            },
+            //track class declarations (.bs and .d.bs only)
+            ClassStatement: (cls) => {
+                this.classDeclarations.push({
+                    name: cls.name.text,
+                    nameOffset: this.positionToOffset(cls.name.range.start),
+                    hasNamespace: !!cls.namespaceName,
+                    startOffset: this.positionToOffset(cls.classKeyword.range.start),
+                    endOffset: this.positionToOffset(cls.end.range.end)
+                });
             }
-            /* eslint-enable @typescript-eslint/naming-convention */
         }), {
             walkMode: WalkMode.visitAllRecursive
         });
+        /* eslint-enable @typescript-eslint/naming-convention */
     }
 
     /**
@@ -295,7 +328,10 @@ export class File {
         for (const func of this.bscFile.parser.references.functionStatements) {
             this.functionDefinitions.push({
                 name: func.name.text,
-                offset: this.rangeToOffset(func.name.range)
+                nameOffset: this.positionToOffset(func.name.range.start),
+                hasNamespace: !!func.namespaceName,
+                startOffset: this.positionToOffset(func.func.functionType!.range.start),
+                endOffset: this.positionToOffset(func.func.end.range.end)
             });
         }
     }
