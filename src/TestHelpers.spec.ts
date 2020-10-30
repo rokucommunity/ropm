@@ -106,7 +106,7 @@ export interface DepGraphNode {
 
 
 /**
- * Trim leading whitespace for every line (to make test writing cleaner
+ * Trim leading whitespace for every line (to make test writing cleaner)
  */
 function trimLeading(text: string) {
     if (!text) {
