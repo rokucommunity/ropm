@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.0] - 2020-20-30
+### Added
+ - Prefixing support for `d.bs` (typedef) files from BrighterScript
+### Changed
+ - updated to [brighterscript@0.18.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0180---2020-10-30)
+
+
+
 ## [0.6.6] - 2020-10-29
 ### Fixed
  - bug where function references do not honor prefixing whitelist
@@ -143,3 +151,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.4]:   https://github.com/rokucommunity/ropm/compare/v0.6.3...v0.6.4
 [0.6.5]:   https://github.com/rokucommunity/ropm/compare/v0.6.4...v0.6.5
 [0.6.6]:   https://github.com/rokucommunity/ropm/compare/v0.6.5...v0.6.6
+[0.7.0]:   https://github.com/rokucommunity/ropm/compare/v0.6.6...v0.7.0
