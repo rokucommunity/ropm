@@ -37,6 +37,14 @@ export class File {
     }
 
     /**
+     * Is this a .bs file? (NOT a .d.bs file)
+     */
+    public get isBsFile() {
+        const lowerSrcPath = this.srcPath.toLowerCase();
+        return lowerSrcPath.endsWith('.bs') && !lowerSrcPath.endsWith('.d.bs');
+    }
+
+    /**
      * Is this a .d.bs file?
      */
     public get isTypdefFile() {
@@ -169,7 +177,7 @@ export class File {
         this.fileReferences = [];
 
 
-        if (this.isBrsFile || this.isTypdefFile) {
+        if (this.isBrsFile || this.isBsFile || this.isTypdefFile) {
             this.findFilePathStrings();
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
@@ -177,6 +185,7 @@ export class File {
             this.findIdentifiers();
             this.findObserveFieldFunctionNames();
             this.findNamespaces();
+            this.findImportStatements();
         } else if (this.isXmlFile) {
             this.findFilePathStrings();
             this.findXmlChildrenComponentReferences();
@@ -473,6 +482,25 @@ export class File {
                 //+1 to step past opening quote
                 offset: match.index + 1,
                 path: match[1]
+            });
+        }
+    }
+
+    /**
+     * Look for every import statement (a brighterscript and .d.bs feature)
+     */
+    private findImportStatements() {
+        const regexp = /^(import[ \t]+")(.*?)"/gim;
+        let match: RegExpExecArray | null;
+        while (match = regexp.exec(this.bscFile.fileContents)) {
+            //skip pkg paths, those are collected elsewhere
+            if (match[2].startsWith('pkg:/')) {
+                continue;
+            }
+            this.fileReferences.push({
+                //step past opening quote
+                offset: match.index + match[1].length,
+                path: match[2]
             });
         }
     }

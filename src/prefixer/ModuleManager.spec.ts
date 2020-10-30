@@ -1209,5 +1209,28 @@ describe('ModuleManager', () => {
                 end sub
             `);
         });
+
+        it('resolves import statements', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'components/LoggerComponent.d.bs': trim`
+                            import "../source/lib.brs"
+                            import "pkg:/source/lib.brs"
+                        `,
+                        'source/lib.brs': ''
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.d.bs`, trim`
+                import "pkg:/source/roku_modules/logger/lib.brs"
+                import "pkg:/source/roku_modules/logger/lib.brs"
+            `);
+        });
     });
 });
