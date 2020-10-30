@@ -5,6 +5,7 @@ import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import { Dependency } from './ModuleManager';
 import { Program, ProgramBuilder } from 'brighterscript';
+import { LogLevel } from 'brighterscript/dist/Logger';
 
 export class RopmModule {
     constructor(
@@ -211,7 +212,9 @@ export class RopmModule {
             createPackage: false,
             rootDir: this.packageRootDir,
             //hide all diagnostics, the package author should be responsible for ensuring their package is valid
-            diagnosticFilters: ['**/*']
+            diagnosticFilters: ['**/*'],
+            //hide log statements
+            logLevel: LogLevel.error
         });
         this.program = builder.program;
 
@@ -297,6 +300,7 @@ export class RopmModule {
 
     private createEdits(noprefixRopmAliases: string[]) {
         const prefix = this.ropmModuleName + '_';
+        const brighterscriptPrefix = this.ropmModuleName.replace(/_/g, '.');
         const applyOwnPrefix = !noprefixRopmAliases.includes(this.ropmModuleName);
         const ownFunctionMap = this.getDistinctFunctionDeclarationMap();
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
@@ -310,13 +314,36 @@ export class RopmModule {
         for (const file of this.files) {
             //only apply prefixes if configured to do so
             if (applyOwnPrefix) {
+
                 //create an edit for each this-module-owned function
                 for (const func of file.functionDefinitions) {
+                    //for d.bs files, wrap un-namespaced functions with a namespace
+                    if (file.isTypdefFile) {
+                        if (!func.hasNamespace) {
+
+                            file.addEdit(func.startOffset, func.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                            file.addEdit(func.endOffset, func.endOffset, `\nend namespace`);
+                        }
+                        continue;
+                    }
                     //skip edits for special functions
                     if (nonPrefixedFunctionMap[func.name.toLowerCase()]) {
                         continue;
                     }
-                    file.addEdit(func.offset, func.offset, prefix);
+                    file.addEdit(func.nameOffset, func.nameOffset, prefix);
+                }
+
+                //wrap un-namespaced classes with prefix namespace
+                for (const cls of file.classDeclarations) {
+                    if (!cls.hasNamespace) {
+                        file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                        file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
+                    }
+                }
+
+                //prefix d.bs namespaces
+                for (const namespace of file.namespaces) {
+                    file.addEdit(namespace.offset, namespace.offset, brighterscriptPrefix + '.');
                 }
             }
 
