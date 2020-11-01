@@ -1263,6 +1263,41 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('ensures .brs files are parsed when d.bs files are present', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    alias: 'l',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            sub logWarning()
+                            end sub
+                            namespace util
+                                sub logError()
+                                end sub
+                            end namespace
+                        `,
+                        'source/lib.brs': trim`
+                            sub logWarning()
+                            end sub
+                            sub util_logError()
+                            end sub
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/l/lib.brs`, trim`
+                sub l_logWarning()
+                end sub
+                sub l_util_logError()
+                end sub
+            `);
+        });
+
         it('wraps top-level functions and classes with a namespace', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
