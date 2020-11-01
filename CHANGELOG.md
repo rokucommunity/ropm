@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.1] - 2020-11-01
+### Fixed
+ - Fix bug with unprefixed functions whenever a typedef is present.
+
+
+
 ## [0.7.0] - 2020-20-30
 ### Added
  - Prefixing support for `d.bs` (typedef) files from BrighterScript
@@ -152,3 +158,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.5]:   https://github.com/rokucommunity/ropm/compare/v0.6.4...v0.6.5
 [0.6.6]:   https://github.com/rokucommunity/ropm/compare/v0.6.5...v0.6.6
 [0.7.0]:   https://github.com/rokucommunity/ropm/compare/v0.6.6...v0.7.0
+[0.7.1]:   https://github.com/rokucommunity/ropm/compare/v0.7.0...v0.7.1
