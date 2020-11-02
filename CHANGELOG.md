@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [0.7.1] - 2020-11-01
-### Fixed
- - Fix bug with unprefixed functions whenever a typedef is present.
+### Changed
+ - updated to [brighterscript@0.18.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0182---2020-11-2)
+ - removed unnecessary code to force bsc files to parse (because brighterscript@0.18.2 now does that automatically)
 
 
 
@@ -158,4 +159,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.6.5]:   https://github.com/rokucommunity/ropm/compare/v0.6.4...v0.6.5
 [0.6.6]:   https://github.com/rokucommunity/ropm/compare/v0.6.5...v0.6.6
 [0.7.0]:   https://github.com/rokucommunity/ropm/compare/v0.6.6...v0.7.0
+[0.7.1]:   https://github.com/rokucommunity/ropm/compare/v0.7.0...v0.7.1
 [0.7.1]:   https://github.com/rokucommunity/ropm/compare/v0.7.0...v0.7.1
