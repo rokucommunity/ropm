@@ -4,7 +4,7 @@ import * as xmlParser from '@xml-tools/parser';
 import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
 import { RopmOptions, util } from '../util';
 import * as path from 'path';
-import { BrsFile, createVisitor, Deferred, isBrsFile, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Position, Program, WalkMode, XmlFile } from 'brighterscript';
+import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Position, Program, WalkMode, XmlFile } from 'brighterscript';
 
 export class File {
     constructor(
@@ -192,25 +192,6 @@ export class File {
      */
     public discover(program: Program) {
         this.bscFile = program.getFileByPathAbsolute(this.srcPath);
-        //ensure the file has been parsed (because d.bs files cause it not to be parsed sometimes)
-        if (isBrsFile(this.bscFile)) {
-            //TODO refactor this once bsc gets updated to make parser a getter
-            /* eslint-disable @typescript-eslint/dot-notation */
-            if (this.bscFile['wasParseSkipped']) {
-                this.bscFile.hasTypedef = false;
-                this.bscFile.typedefFile = undefined;
-
-                //reset the deferred
-                this.bscFile['parseDeferred'] = new Deferred();
-                //parse the file (it should parse fully since there's no linked typedef
-                this.bscFile.parse(this.bscFile.fileContents);
-
-                //re-link the typedef (if it exists...which it should)
-                this.bscFile['resolveTypdef']();
-                /* eslint-enable @typescript-eslint/dot-notation */
-            }
-
-        }
         this.loadFile();
         this.functionDefinitions = [];
         this.functionReferences = [];
