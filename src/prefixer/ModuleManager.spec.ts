@@ -1327,5 +1327,55 @@ describe('ModuleManager', () => {
                 end namespace
             `);
         });
+
+        it('does not wrap top-level non-namespaced functions that are referenced by component interface', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'components/comp.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="LoggerComponent">
+                                <script uri="pkg:/source/lib.brs" />
+                                <interface>
+                                    <function name="logWarning" />
+                                </interface>
+                            </component>
+                        `,
+                        'source/lib.d.bs': trim`
+                            function logWarning()
+                            end function
+                            function logError()
+                            end function
+                        `,
+                        'source/lib.brs': trim`
+                            function logWarning()
+                            end function
+                            function logError()
+                            end function
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
+                function logWarning()
+                end function
+                namespace logger
+                function logError()
+                end function
+                end namespace
+            `);
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, trim`
+                function logWarning()
+                end function
+                function logger_logError()
+                end function
+            `);
+        });
     });
 });

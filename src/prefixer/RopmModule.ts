@@ -317,20 +317,26 @@ export class RopmModule {
 
                 //create an edit for each this-module-owned function
                 for (const func of file.functionDefinitions) {
-                    //for d.bs files, wrap un-namespaced functions with a namespace
+                    const lowerName = func.name.toLowerCase();
+
+                    //skip edits for special functions
+                    if (nonPrefixedFunctionMap[lowerName]) {
+                        continue;
+                    }
+
+                    //handle typedef (.d.bs) files
                     if (file.isTypdefFile) {
+                        //wrap un-namespaced functions with a namespace
                         if (!func.hasNamespace) {
 
                             file.addEdit(func.startOffset, func.startOffset, `namespace ${brighterscriptPrefix}\n`);
                             file.addEdit(func.endOffset, func.endOffset, `\nend namespace`);
                         }
                         continue;
+                    } else {
+                        //is NOT a typedef file, and is not a nonPrefixed function, so prefix it
+                        file.addEdit(func.nameOffset, func.nameOffset, prefix);
                     }
-                    //skip edits for special functions
-                    if (nonPrefixedFunctionMap[func.name.toLowerCase()]) {
-                        continue;
-                    }
-                    file.addEdit(func.nameOffset, func.nameOffset, prefix);
                 }
 
                 //wrap un-namespaced classes with prefix namespace
