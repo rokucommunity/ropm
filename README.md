@@ -461,3 +461,9 @@ Here are the requirements for having `ropm` prefix your `observeField` string fu
         componentName: "something"
     }, "callbackFunction")
     ```
+
+## Sponsors
+[![image](https://user-images.githubusercontent.com/2544493/96571912-377af280-129a-11eb-8295-49eb12e54aeb.png)](https://www.applicaster.com/)
+
+## Changelog
+[Click here](CHANGELOG.md) to view the changelog.
