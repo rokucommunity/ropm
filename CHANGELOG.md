@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.7.4] - 2020-12-14
+### Changed
+ - updated to [brighterscript@0.22.1](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0221---2020-12-14)
+### Fixed
+ - bug with brighterscript->vscode-languageserver->vscode-languageserver-types dependency that had breaking change in minor version release.
+
+
+
 ## [0.7.3] - 2020-11-03
 ### Fixed
  - don't wrap interface-referenced functions found in `d.bs` with a namespace 
@@ -175,3 +183,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.1]:   https://github.com/rokucommunity/ropm/compare/v0.7.0...v0.7.1
 [0.7.2]:   https://github.com/rokucommunity/ropm/compare/v0.7.1...v0.7.2
 [0.7.3]:   https://github.com/rokucommunity/ropm/compare/v0.7.2...v0.7.3
+[0.7.4]:   https://github.com/rokucommunity/ropm/compare/v0.7.3...v0.7.4
