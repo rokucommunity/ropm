@@ -497,18 +497,19 @@ describe('ModuleManager', () => {
             `);
         });
 
-        describe('prefixing observeField', () => {
+        describe('prefixing observeField and observeFieldScoped', () => {
             async function testObserveField(testLine: string, expectedLine = testLine) {
+                const fileContents = trim`
+                    sub init()
+                        ${testLine}
+                    end sub
+                    sub logInfo()
+                    end sub
+                `;
                 await createDependencies([{
                     name: 'logger',
                     _files: {
-                        'source/lib.brs': trim`
-                            sub init()
-                                ${testLine}
-                            end sub
-                            sub logInfo()
-                            end sub
-                        `
+                        'source/lib.brs': fileContents
                     }
                 }]);
                 await process();
@@ -524,21 +525,27 @@ describe('ModuleManager', () => {
             it('does not prefix because not an object call', async () => {
                 //no change because it's not on an object
                 await testObserveField(`observeField("field", "logInfo")`);
+                await testObserveField(`observeFieldScoped("field", "logInfo")`);
             });
 
             it('does not prefix because not a string literal', async () => {
                 //no change because the second parameter is not a string
                 await testObserveField(`m.top.observeField("field", callbackName)`);
+                await testObserveField(`m.top.observeFieldScoped("field", callbackName)`);
             });
 
             it('does not prefix because references unknown function name', async () => {
                 //no change because the second parameter is not a string
                 await testObserveField(`m.top.observeField("field", "unknownFunctionName")`);
+                await testObserveField(`m.top.observeFieldScoped("field", "unknownFunctionName")`);
             });
 
             it('does not prefix multi-line first param', async () => {
                 //no change because the second parameter is not a string
                 await testObserveField(`m.top.observeField(getField({
+                    name: "something"
+                }, "unknownFunctionName")`);
+                await testObserveField(`m.top.observeFieldScoped(getField({
                     name: "something"
                 }, "unknownFunctionName")`);
             });
@@ -548,18 +555,25 @@ describe('ModuleManager', () => {
                         age: 12
                     }, "logInfo")
                 `);
+                await testObserveField(`m.top.observeFieldScoped({name: getName("bob")
+                        age: 12
+                    }, "logInfo")
+                `);
             });
 
             it('prefixes object call with string literal', async () => {
                 await testObserveField(`m.top.observeField("field", "logInfo")`, `m.top.observeField("field", "logger_logInfo")`);
+                await testObserveField(`m.top.observeFieldScoped("field", "logInfo")`, `m.top.observeFieldScoped("field", "logger_logInfo")`);
             });
 
             it('prefixes even with complex ', async () => {
                 await testObserveField(`m.top.observeField("field", "logInfo")`, `m.top.observeField("field", "logger_logInfo")`);
+                await testObserveField(`m.top.observeFieldScoped("field", "logInfo")`, `m.top.observeFieldScoped("field", "logger_logInfo")`);
             });
 
             it('prefixes with trailing comment', async () => {
                 await testObserveField(`m.top.observeField("field", "logInfo") 'comment`, `m.top.observeField("field", "logger_logInfo") 'comment`);
+                await testObserveField(`m.top.observeFieldScoped("field", "logInfo") 'comment`, `m.top.observeFieldScoped("field", "logger_logInfo") 'comment`);
             });
         });
 
