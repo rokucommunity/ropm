@@ -205,7 +205,7 @@ export class File {
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findFunctionDefinitions();
-            this.findObserveFieldFunctionNames();
+            this.findObserveFieldFunctionCalls();
             this.findNamespaces();
             this.findImportStatements();
             this.walkAst();
@@ -337,11 +337,11 @@ export class File {
     }
 
     /**
-     * Find all occurances of *.observeField function calls that have a string literal as the second parameter
+     * Find all occurances of *.observeField and *.observeFieldScoped function calls that have a string literal as the second parameter
      */
-    private findObserveFieldFunctionNames() {
-        //capture function names as a string literal in `observeField` functions.
-        const regexp = /(\.observeField[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
+    private findObserveFieldFunctionCalls() {
+        //capture function names as a string literal in `observeField` and `observeFieldScoped` functions.
+        const regexp = /(\.observeField(?:Scoped)?[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
 
         let match: RegExpExecArray | null;
         while (match = regexp.exec(this.bscFile.fileContents)) {
