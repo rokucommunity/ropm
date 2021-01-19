@@ -333,6 +333,9 @@ export class RopmModule {
                             file.addEdit(func.endOffset, func.endOffset, `\nend namespace`);
                         }
                         continue;
+                    } else if ((/__[a-z0-9_]*_builder/i).test(func.name)) {
+                        //we are currently producing incorrect builder names, which breaks bs. let's not do that anymore
+                        file.addEdit(func.nameOffset + 2, func.nameOffset + 2, `${this.ropmModuleName}_`);
                     } else {
                         //is NOT a typedef file, and is not a nonPrefixed function, so prefix it
                         file.addEdit(func.nameOffset, func.nameOffset, prefix);
@@ -364,7 +367,12 @@ export class RopmModule {
                     }
                     //if this function is owned by our project, rename it
                     if (ownFunctionMap[lowerName]) {
-                        file.addEdit(call.offset, call.offset, prefix);
+                        if ((/__[a-z0-9_]*_builder/i).test(lowerName)) {
+                            //we are currently producing incorrect builder names, which breaks bs. let's not do that anymore
+                            file.addEdit(call.offset + 2, call.offset + 2, `${this.ropmModuleName}_`);
+                        } else {
+                            file.addEdit(call.offset, call.offset, prefix);
+                        }
                         continue;
                     }
                 }

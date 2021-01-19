@@ -4,7 +4,7 @@ import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
-import { createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
+import { trimLeading, createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
@@ -310,6 +310,66 @@ describe('InstallCommand', () => {
             end sub
         `);
     });
+
+    it('does not corrupt class builder names', async () => {
+        writeProject('maestro-core', {
+            'source/NodeClass.brs': `
+            function __NodeClass_builder()
+                instance = {}
+                instance.new = function(globalNode, top)
+                    m.global = invalid
+                    m.data = invalid
+                    m.top = invalid
+                    m.global = globalNode
+                    m.top = top
+                    m.data = top.data
+                end function
+                return instance
+            end function
+            function NodeClass(globalNode, top)
+                instance = __NodeClass_builder()
+                instance.new(globalNode, top)
+                return instance
+            end function`
+        });
+
+        writeProject('maestro-core', {
+            'source/NodeClass.d.bs': `class NodeClass
+            public global as dynamic
+            public data as dynamic
+            public top as dynamic
+            function new(globalNode, top)
+            end function
+        end class`
+        });
+
+        writeProject(projectName, {}, {
+            dependencies: {
+                'mc': `file:../maestro-core`
+            }
+        });
+
+        await command.run();
+        fsEqual(`${projectDir}/source/roku_modules/mc/NodeClass.brs`, `
+    function __mc_NodeClass_builder()
+        instance = {}
+        instance.new = function(globalNode, top)
+            m.global = invalid
+            m.data = invalid
+            m.top = invalid
+            m.global = globalNode
+            m.top = top
+            m.data = top.data
+        end function
+        return instance
+    end function
+    function mc_NodeClass(globalNode, top)
+        instance = __mc_NodeClass_builder()
+        instance.new(globalNode, top)
+        return instance
+    end function`);
+    });
+
 
     describe('getProdDependencies', () => {
         it('excludes dependencies in folders above cwd for command', () => {
