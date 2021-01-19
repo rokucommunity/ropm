@@ -315,6 +315,35 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('applies function prefixes after leading underscores', async () => {
+            const [logger] = await createDependencies([{
+                name: 'logger'
+            }]);
+
+            file(`${logger.packageRootDir}/source/main.brs`, `
+                sub main()
+                    _sub1()
+                end sub
+                sub _sub1()
+                    __Sub2()
+                end sub
+                sub __Sub2()
+                end sub
+            `);
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
+                sub main()
+                    _logger_sub1()
+                end sub
+                sub _logger_sub1()
+                    __logger_Sub2()
+                end sub
+                sub __logger_Sub2()
+                end sub
+            `);
+        });
+
         it('applies a prefix to components and their usage', async () => {
             const [logger] = await createDependencies([{
                 name: 'logger'
