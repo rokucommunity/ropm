@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.8.0] - 2020-01-19
+### Added
+ - special prefixing logic for leading underscores. See [this](https://github.com/rokucommunity/ropm#leading-underscore) for more information.
+
+
+
 ## [0.7.7] - 2020-01-07
 ### Changed
  - updated to [brighterscript@0.23.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0232---2020-01-06)
@@ -206,3 +212,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.5]:   https://github.com/rokucommunity/ropm/compare/v0.7.4...v0.7.5
 [0.7.6]:   https://github.com/rokucommunity/ropm/compare/v0.7.5...v0.7.6
 [0.7.7]:   https://github.com/rokucommunity/ropm/compare/v0.7.6...v0.7.7
+[0.8.0]:   https://github.com/rokucommunity/ropm/compare/v0.7.7...v0.8.0
