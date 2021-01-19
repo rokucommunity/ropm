@@ -113,6 +113,25 @@ node.CreateChild("FancyKeyboards_AdvancedKeyboard")
 
 **WARNING**: `ropm` does not currently support rewriting components created with `ifSGNodeChildren`'s `update()` call (see the docs [here](updatefields-as-roassociativearray-addfields-as-boolean-as-void)). If you are a ropm package author and need support for this, please raise an issue. 
 
+### Special case
+#### Leading underscore
+Some languages use leading underscore to represent `private` or `internal`. Ropm detects leading underscores, and starts the prefixing process at the first non-underscore character. For example:
+```brightscript
+sub _SecretKeyboardSub1()
+end sub
+
+sub ________SecretKeyboardSub2()
+end sub
+```
+becomes
+```brightscript
+sub _FancyKeyboards_SecretKeyboardSub1()
+end sub
+
+sub ________FancyKeyboards_SecretKeyboardSub2()
+end sub
+```
+
 ### File paths
 `ropm` will rewrite file paths as well. These file paths will be rewritten based on the final location. `ropm` looks for:
 

@@ -333,6 +333,10 @@ export class RopmModule {
                             file.addEdit(func.endOffset, func.endOffset, `\nend namespace`);
                         }
                         continue;
+                        //functions with leading underscores are treated specially
+                    } else if (func.name.startsWith('_')) {
+                        const leadingUnderscores = /^_+/.exec(func.name)![0];
+                        file.addEdit(func.nameOffset + leadingUnderscores.length, func.nameOffset + leadingUnderscores.length, `${this.ropmModuleName}_`);
                     } else {
                         //is NOT a typedef file, and is not a nonPrefixed function, so prefix it
                         file.addEdit(func.nameOffset, func.nameOffset, prefix);
@@ -364,7 +368,12 @@ export class RopmModule {
                     }
                     //if this function is owned by our project, rename it
                     if (ownFunctionMap[lowerName]) {
-                        file.addEdit(call.offset, call.offset, prefix);
+                        if (lowerName.startsWith('_')) {
+                            const leadingUnderscores = /^_+/.exec(lowerName)![0];
+                            file.addEdit(call.offset + leadingUnderscores.length, call.offset + leadingUnderscores.length, `${this.ropmModuleName}_`);
+                        } else {
+                            file.addEdit(call.offset, call.offset, prefix);
+                        }
                         continue;
                     }
                 }
