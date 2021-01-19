@@ -4,7 +4,7 @@ import * as path from 'path';
 import { InstallCommandArgs, InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import { RopmPackageJson } from '../util';
-import { trimLeading, createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
+import { createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
