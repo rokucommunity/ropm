@@ -311,11 +311,6 @@ export class RopmModule {
             ...this.getInterfaceFunctions()
         };
 
-        const isSpecialFunction = (lowerName: string) => {
-            return nonPrefixedFunctionMap[lowerName] || lowerName.startsWith('bslib');
-        };
-
-
         for (const file of this.files) {
             //only apply prefixes if configured to do so
             if (applyOwnPrefix) {
@@ -325,7 +320,7 @@ export class RopmModule {
                     const lowerName = func.name.toLowerCase();
 
                     //skip edits for special functions
-                    if (isSpecialFunction(lowerName)) {
+                    if (nonPrefixedFunctionMap[lowerName]) {
                         continue;
                     }
 
@@ -368,7 +363,7 @@ export class RopmModule {
                 //only apply prefixes if configured to do so
                 if (applyOwnPrefix) {
                     //skip edits for special functions
-                    if (isSpecialFunction(lowerName)) {
+                    if (nonPrefixedFunctionMap[lowerName] || lowerName.startsWith('bslib')) {
                         continue;
                     }
                     //if this function is owned by our project, rename it
@@ -399,7 +394,7 @@ export class RopmModule {
             for (const identifier of file.identifiers) {
                 const lowerName = identifier.name.toLowerCase();
                 //skip edits for special functions
-                if (isSpecialFunction(lowerName)) {
+                if (nonPrefixedFunctionMap[lowerName]) {
                     continue;
                 }
                 //if this identifier has the same name as a function, then prefix the identifier
