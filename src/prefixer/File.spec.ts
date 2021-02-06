@@ -44,7 +44,7 @@ describe('prefixer/File', () => {
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    async function setFile(value: string, extension: 'brs' | 'xml' | 'd.bs' = 'brs') {
+    function setFile(value: string, extension: 'brs' | 'xml' | 'd.bs' = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
         file.srcPath = f.srcPath.replace('.brs', '.' + extension);
         file.destPath = f.destPath.replace('.brs', '.' + extension);
@@ -53,7 +53,7 @@ describe('prefixer/File', () => {
             .replace(rootDir, '')
             //remove leading slashes
             .replace(/^(\/|\\)*/, '');
-        await program.addOrReplaceFile(relativeSrcPath, fileContents);
+        program.addOrReplaceFile(relativeSrcPath, fileContents);
     }
 
     /**
@@ -99,8 +99,8 @@ describe('prefixer/File', () => {
     }
 
     describe('findFunctionDefinitions', () => {
-        it('finds functions in multiple lines', async () => {
-            await setFile(`
+        it('finds functions in multiple lines', () => {
+            setFile(`
                 function Main()
                 end function
                 function Main2()
@@ -118,8 +118,8 @@ describe('prefixer/File', () => {
     });
 
     describe('findFunctionCalls', () => {
-        it('works for brs files', async () => {
-            await setFile(`
+        it('works for brs files', () => {
+            setFile(`
                 'should not match on "main"
                 sub main()
                     doSomething()
@@ -139,8 +139,8 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('does not match object function calls', async () => {
-            await setFile(`
+        it('does not match object function calls', () => {
+            setFile(`
                 sub getPerson()
                     person = {
                         speak: sub(message)
@@ -170,11 +170,11 @@ describe('prefixer/File', () => {
     });
 
     describe('findIdentifiers', () => {
-        async function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
+        function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
             file = new File(srcPath, destPath, rootDir);
             f = file;
             initProgram();
-            await setFile(`
+            setFile(`
                 sub main()\n${text}
                 end sub`
             );
@@ -199,79 +199,79 @@ describe('prefixer/File', () => {
             })).to.eql(identifiers);
         }
 
-        it('finds simple assignment', async () => {
-            await verifyIdentifier(`someVar = logInfo`, ['logInfo', 0, 10]);
+        it('finds simple assignment', () => {
+            verifyIdentifier(`someVar = logInfo`, ['logInfo', 0, 10]);
         });
 
-        it('finds dotted set', async () => {
-            await verifyIdentifier(`object.var = logInfo`, ['logInfo', 0, 13]);
+        it('finds dotted set', () => {
+            verifyIdentifier(`object.var = logInfo`, ['logInfo', 0, 13]);
         });
 
-        it('finds indexed set', async () => {
-            await verifyIdentifier(`object["1"] = logInfo`, ['logInfo', 0, 14]);
+        it('finds indexed set', () => {
+            verifyIdentifier(`object["1"] = logInfo`, ['logInfo', 0, 14]);
         });
 
-        it('finds key for indexed set', async () => {
-            await verifyIdentifier(`object[logInfo] = "1"`, ['logInfo', 0, 7]);
+        it('finds key for indexed set', () => {
+            verifyIdentifier(`object[logInfo] = "1"`, ['logInfo', 0, 7]);
         });
 
-        it('function argument', async () => {
-            await verifyIdentifier(`callAFunction(logInfo)`, ['logInfo', 0, 14]);
+        it('function argument', () => {
+            verifyIdentifier(`callAFunction(logInfo)`, ['logInfo', 0, 14]);
         });
 
-        it('does not match function call name', async () => {
-            await verifyIdentifier(`doSomething()`);
+        it('does not match function call name', () => {
+            verifyIdentifier(`doSomething()`);
         });
 
-        it('matches first of two function arguments', async () => {
-            await verifyIdentifier(`callAFunction(logInfo, "asdf")`, ['logInfo', 0, 14]);
+        it('matches first of two function arguments', () => {
+            verifyIdentifier(`callAFunction(logInfo, "asdf")`, ['logInfo', 0, 14]);
         });
 
-        it('matches second of two function arguments', async () => {
-            await verifyIdentifier(`callAFunction("asdf", logInfo)`, ['logInfo', 0, 22]);
+        it('matches second of two function arguments', () => {
+            verifyIdentifier(`callAFunction("asdf", logInfo)`, ['logInfo', 0, 22]);
         });
 
-        it('does not match parameter name ', async () => {
-            await verifyIdentifier(`
+        it('does not match parameter name ', () => {
+            verifyIdentifier(`
                 innerSub = sub (logInfo)
                 end sub
             `);
         });
 
-        it('matches quirky AA multi-item-same-line syntax', async () => {
-            await verifyIdentifier(`
+        it('matches quirky AA multi-item-same-line syntax', () => {
+            verifyIdentifier(`
                 person = {
                     log: logInfo1 : log2: logInfo2
                 }
             `, ['logInfo1', 2, 25], ['logInfo2', 2, 42]);
         });
 
-        it('matches within array', async () => {
-            await verifyIdentifier(`
+        it('matches within array', () => {
+            verifyIdentifier(`
                 arr = [
                     logInfo
                 ]
             `, ['logInfo', 2, 20]);
         });
 
-        it('matches multi-line function argument', async () => {
-            await verifyIdentifier(`
+        it('matches multi-line function argument', () => {
+            verifyIdentifier(`
                 someFunction(
                     logInfo
                 )
             `, ['logInfo', 2, 20]);
         });
 
-        it('matches multiple statements on same line', async () => {
-            await verifyIdentifier(
+        it('matches multiple statements on same line', () => {
+            verifyIdentifier(
                 `print logInfo1 : print logInfo2`,
                 ['logInfo1', 0, 6],
                 ['logInfo2', 0, 23]
             );
         });
 
-        it('matches standard AA member value', async () => {
-            await verifyIdentifier(`
+        it('matches standard AA member value', () => {
+            verifyIdentifier(`
                 person = {
                     name: logInfo
                 }
@@ -279,12 +279,12 @@ describe('prefixer/File', () => {
         });
 
         //any expression where the function name is wrapped in parens
-        it('matches wrapped in parens', async () => {
-            await verifyIdentifier(`print "1" + (logInfo)`, ['logInfo', 0, 13]);
+        it('matches wrapped in parens', () => {
+            verifyIdentifier(`print "1" + (logInfo)`, ['logInfo', 0, 13]);
         });
 
-        it('skips identifiers in strings and keyword identifiers', async () => {
-            await verifyIdentifier(`
+        it('skips identifiers in strings and keyword identifiers', () => {
+            verifyIdentifier(`
                 function main()
                     print "main function"
                 end function
@@ -293,8 +293,8 @@ describe('prefixer/File', () => {
     });
 
     describe('findComponentDefinitions', () => {
-        it('finds component name', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+        it('finds component name', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                 </component>
             `, 'xml');
@@ -305,9 +305,9 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds component name on separate line', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
-                <component 
+        it('finds component name on separate line', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+                <component
                     name="CustomComponent">
                 </component>
             `, 'xml');
@@ -320,8 +320,8 @@ describe('prefixer/File', () => {
     });
 
     describe('findComponentReferences', () => {
-        it('finds component name from `extends` attribute', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+        it('finds component name from `extends` attribute', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent" extends="ParentComponent" >
                 </component>
             `, 'xml');
@@ -332,9 +332,9 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds component name from `extends` attribute on different line', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
-                <component name="CustomComponent" 
+        it('finds component name from `extends` attribute on different line', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
+                <component name="CustomComponent"
                     extends="ParentComponent" >
                 </component>
             `, 'xml');
@@ -345,8 +345,8 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds component name in `createObject`', async () => {
-            await setFile(`
+        it('finds component name in `createObject`', () => {
+            setFile(`
                 sub main()
                     'normal
                     createObject("RoSGNode", "Component1")
@@ -369,8 +369,8 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds component name in `node.createChild`', async () => {
-            await setFile(`
+        it('finds component name in `node.createChild`', () => {
+            setFile(`
                 sub main()
                     'normal
                     node.CreateChild("Component1")
@@ -406,8 +406,8 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds component name in xml usage', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+        it('finds component name in xml usage', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <children>
                         <CustomComponent2></CustomComponent2>
@@ -443,8 +443,8 @@ describe('prefixer/File', () => {
     });
 
     describe('findFileReferences', () => {
-        it('finds absolute script paths in xml tags', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+        it('finds absolute script paths in xml tags', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <script uri="pkg:/source/lib.brs" />
                     <script uri="pkg:/components/folder1/somelib.brs" />
@@ -464,8 +464,8 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds relative file paths in xml script tags', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+        it('finds relative file paths in xml script tags', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="CustomComponent">
                     <script uri="../lib.brs" />
                     <script uri="comp.brs" />
@@ -481,8 +481,8 @@ describe('prefixer/File', () => {
             }]);
         });
 
-        it('finds pkg paths in brs files', async () => {
-            await setFile(`
+        it('finds pkg paths in brs files', () => {
+            setFile(`
                 sub main()
                     filePath = "pkg:/images/CoolPhoto.brs"
                 end sub
@@ -495,47 +495,47 @@ describe('prefixer/File', () => {
         });
     });
     describe('applyEdits', () => {
-        it('leaves file intact with no edits', async () => {
-            await setFile('hello world', 'brs');
+        it('leaves file intact with no edits', () => {
+            setFile('hello world', 'brs');
             file.discover(program);
             file.applyEdits();
             expect(file.bscFile.fileContents).to.equal('hello world');
         });
 
-        it('applies zero-length edit as an insert', async () => {
-            await setFile('hello world', 'brs');
+        it('applies zero-length edit as an insert', () => {
+            setFile('hello world', 'brs');
             file.discover(program);
             file.addEdit(5, 5, ' my');
             file.applyEdits();
             expect(file.bscFile.fileContents).to.equal('hello my world');
         });
 
-        it('removes text with zero-length edit', async () => {
-            await setFile('hello world', 'brs');
+        it('removes text with zero-length edit', () => {
+            setFile('hello world', 'brs');
             file.discover(program);
             file.addEdit(5, 11, '');
             file.applyEdits();
             expect(file.bscFile.fileContents).to.equal('hello');
         });
 
-        it('replaces text', async () => {
-            await setFile('hello Jim, how are you', 'brs');
+        it('replaces text', () => {
+            setFile('hello Jim, how are you', 'brs');
             file.discover(program);
             file.addEdit(6, 9, 'Michael');
             file.applyEdits();
             expect(file.bscFile.fileContents).to.equal('hello Michael, how are you');
         });
 
-        it('works at beginning of string', async () => {
-            await setFile('hello world', 'brs');
+        it('works at beginning of string', () => {
+            setFile('hello world', 'brs');
             file.discover(program);
             file.addEdit(0, 5, 'goodbye');
             file.applyEdits();
             expect(file.bscFile.fileContents).to.equal('goodbye world');
         });
 
-        it('works with out-of-order edits', async () => {
-            await setFile('one two three', 'brs');
+        it('works with out-of-order edits', () => {
+            setFile('one two three', 'brs');
             file.discover(program);
             //middle
             file.addEdit(4, 7, 'twelve');
@@ -548,12 +548,12 @@ describe('prefixer/File', () => {
             expect(file.bscFile.fileContents).to.equal('eleven twelve thirteen');
         });
 
-        it('finds component interface function names', async () => {
-            await setFile(`<?xml version="1.0" encoding="utf-8" ?>
+        it('finds component interface function names', () => {
+            setFile(`<?xml version="1.0" encoding="utf-8" ?>
                 <component name="LoggerComponent">
                     <interface>
                         <function name="doSomething"/>
-                        <function 
+                        <function
                             name="doSomethingElse" />
                     </interface>
                 </component>
@@ -571,8 +571,8 @@ describe('prefixer/File', () => {
     });
 
     describe('namespaces', () => {
-        it('finds namespaces', async () => {
-            await setFile(`
+        it('finds namespaces', () => {
+            setFile(`
                 namespace NameA
                     sub logWarning()
                     end sub
