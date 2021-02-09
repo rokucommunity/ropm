@@ -225,7 +225,7 @@ export class File {
      */
     public walkAst() {
         /* eslint-disable @typescript-eslint/naming-convention */
-        this.bscFile.parser.ast.walk(createVisitor({
+        (this.bscFile as BrsFile).parser.ast.walk(createVisitor({
             VariableExpression: (variable, parent) => {
                 //skip objects to left of dotted/indexed expressions
                 if ((
@@ -325,7 +325,7 @@ export class File {
      * Find every top-level function defined in this file
      */
     private findFunctionDefinitions() {
-        for (const func of this.bscFile.parser.references.functionStatements) {
+        for (const func of (this.bscFile as BrsFile).parser.references.functionStatements) {
             this.functionDefinitions.push({
                 name: func.name.text,
                 nameOffset: this.positionToOffset(func.name.range.start),
