@@ -1,6 +1,6 @@
 {
   "name": "ropm",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "",
   "scripts": {
     "preversion": "npm run build && npm run lint && npm run test",
@@ -31,7 +31,7 @@
     "@types/semver": "7.3.1",
     "@xml-tools/ast": "5.0.0",
     "@xml-tools/parser": "1.0.7",
-    "brighterscript": "^0.23.2",
+    "brighterscript": "^0.30.6",
     "del": "5.1.0",
     "fs-extra": "9.0.1",
     "glob-all": "3.2.1",

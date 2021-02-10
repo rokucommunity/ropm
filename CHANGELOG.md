@@ -6,13 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.8.0] - 2020-01-19
+## [0.8.1] - 2021-02-09
+### Changed
+ - updated to [brighterscript@0.30.6](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0306---2021-02-07)
+### Fixed
+ - bug with old-style bsc plugins crashing ropm install.
+
+
+
+## [0.8.0] - 2021-01-19
 ### Added
  - special prefixing logic for leading underscores. See [this](https://github.com/rokucommunity/ropm#leading-underscore) for more information.
 
 
 
-## [0.7.7] - 2020-01-07
+## [0.7.7] - 2021-01-07
 ### Changed
  - updated to [brighterscript@0.23.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0232---2020-01-06)
  - remove direct reference to vscode-languageserver-protocol
@@ -41,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.3] - 2020-11-03
 ### Fixed
- - don't wrap interface-referenced functions found in `d.bs` with a namespace 
+ - don't wrap interface-referenced functions found in `d.bs` with a namespace
 
 
 
@@ -95,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.2] - 2020-10-08
 ### Fixed
- - `ropm` now disables prefixing functions that are referenced in component interfaces. 
+ - `ropm` now disables prefixing functions that are referenced in component interfaces.
 
 
 
@@ -137,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2020-09-24
 ### Added
- - `ropm.noprefix` package.json option to prevent certain modules from having a prefix applied. 
+ - `ropm.noprefix` package.json option to prevent certain modules from having a prefix applied.
  - reject installing packages that have the `ropm.noprefix` setting present in `package.json`: this setting is only for use in client applications.
 ### Fixed
  - dependency component references were not being renamed according to their resolved prefix.
@@ -213,3 +221,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.6]:   https://github.com/rokucommunity/ropm/compare/v0.7.5...v0.7.6
 [0.7.7]:   https://github.com/rokucommunity/ropm/compare/v0.7.6...v0.7.7
 [0.8.0]:   https://github.com/rokucommunity/ropm/compare/v0.7.7...v0.8.0
+[0.8.1]:   https://github.com/rokucommunity/ropm/compare/v0.8.0...v0.8.1
