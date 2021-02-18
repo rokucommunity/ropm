@@ -4,7 +4,7 @@ import * as fsExtra from 'fs-extra';
 import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
 import * as semver from 'semver';
-import { IOptions } from 'glob';
+import type { IOptions } from 'glob';
 import { Program } from 'brighterscript';
 import * as readline from 'readline';
 
@@ -292,7 +292,7 @@ export const util = new Util();
 
 export interface RopmPackageJson {
     name: string;
-    dependencies?: { [key: string]: string };
+    dependencies?: Record<string, string>;
     files?: string[];
     keywords?: string[];
     version: string;

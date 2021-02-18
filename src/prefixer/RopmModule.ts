@@ -1,10 +1,12 @@
 import { File } from './File';
-import { RopmPackageJson, util } from '../util';
+import type { RopmPackageJson } from '../util';
+import { util } from '../util';
 import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
-import { Dependency } from './ModuleManager';
-import { Program, ProgramBuilder } from 'brighterscript';
+import type { Dependency } from './ModuleManager';
+import type { Program } from 'brighterscript';
+import { ProgramBuilder } from 'brighterscript';
 import { LogLevel } from 'brighterscript/dist/Logger';
 
 export class RopmModule {
@@ -86,7 +88,7 @@ export class RopmModule {
      * when this module is installed in the overall project.
      * This depends on the module properly referencing every dependency.
      */
-    public prefixMap = {} as { [oldPrefix: string]: string };
+    public prefixMap = {} as Record<string, string>;
 
     /**
      * The contents of the package.json
@@ -289,7 +291,7 @@ export class RopmModule {
     }
 
     private getInterfaceFunctions() {
-        const names = {} as { [name: string]: boolean };
+        const names = {} as Record<string, boolean>;
         for (const file of this.files) {
             for (const func of file.componentInterfaceFunctions) {
                 names[func.name.toLowerCase()] = true;
@@ -488,7 +490,7 @@ export class RopmModule {
      * Scan every file and compute the list of function declaration names.
      */
     public getDistinctFunctionDeclarationMap() {
-        const result = {} as { [functionName: string]: boolean };
+        const result = {} as Record<string, boolean>;
         for (const file of this.files) {
             for (const func of file.functionDefinitions) {
                 //skip the special function names

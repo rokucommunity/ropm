@@ -72,7 +72,7 @@ describe('Util', () => {
         it('uses an empty object if not specified', async () => {
             const stub = sinon.stub(childProcess, 'spawn').callsFake(() => {
                 return {
-                    addListener: function (name: string, callback: any) {
+                    addListener: (name: string, callback: any) => {
                         if (name === 'exit') {
                             setTimeout(() => callback(), 1);
                         }
