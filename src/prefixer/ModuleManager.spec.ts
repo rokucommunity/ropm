@@ -204,6 +204,29 @@ describe('ModuleManager', () => {
 
     describe('process', () => {
 
+        it('replaces ROPM_PREFIX source literal', async () => {
+            const [logger] = await createDependencies([{
+                name: 'logger'
+            }]);
+
+            //don't rewrite parameters or variables on lhs of assignments
+            //DO rewrite variables used elsewhere
+            file(`${logger.packageRootDir}/source/lib.brs`, `
+                sub log(ROPM_PREFIX = "")
+                    ROPM_PREFIX = ""
+                    print ROPM_PREFIX + "ROPM_PREFIX"
+                end sub
+            `);
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_log(ROPM_PREFIX = "")
+                    ROPM_PREFIX = ""
+                    print "logger_" + "ROPM_PREFIX"
+                end sub
+            `);
+        });
+
         /**
          * This test converts the dependency name "module1" to "module2", and names this package "module1"
          */
@@ -276,13 +299,13 @@ describe('ModuleManager', () => {
             file(`${logger.packageRootDir}/source/main.brs`, `
                 sub runuserinterface()
                 end sub
-                
+
                 sub main()
                 end sub
 
                 sub runscreensaver()
                 end sub
-                
+
                 sub init()
                 end sub
 
@@ -297,13 +320,13 @@ describe('ModuleManager', () => {
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub runuserinterface()
                 end sub
-                
+
                 sub main()
                 end sub
 
                 sub runscreensaver()
                 end sub
-                
+
                 sub init()
                 end sub
 
@@ -759,10 +782,10 @@ describe('ModuleManager', () => {
             }]);
             file(`${logger.packageRootDir}/source/common.brs`, `
                 sub GetImagePath(imageName)
-                    
+
                     'will be rewritten because we have content after 'pkg:/'
                     image1 = "pkg:/images/" + imageName
-                    
+
                     'will not be rewritten because the 'pkg:/' is isolated
                     image2 = "pkg:/" + "images/" + imageName
 
@@ -773,10 +796,10 @@ describe('ModuleManager', () => {
 
             fsEqual(`${hostDir}/source/roku_modules/logger/common.brs`, `
                 sub logger_GetImagePath(imageName)
-                    
+
                     'will be rewritten because we have content after 'pkg:/'
                     image1 = "pkg:/images/roku_modules/logger/" + imageName
-                    
+
                     'will not be rewritten because the 'pkg:/' is isolated
                     image2 = "pkg:/" + "images/" + imageName
 
@@ -1275,6 +1298,7 @@ describe('ModuleManager', () => {
                 import "pkg:/source/roku_modules/logger/lib.brs"
             `);
         });
+
 
         it('prefixes namespaces and not their child functions or classes', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
