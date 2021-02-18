@@ -1,10 +1,13 @@
 /* eslint-disable no-cond-assign */
 import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
-import { buildAst, XMLDocument, XMLElement } from '@xml-tools/ast';
-import { RopmOptions, util } from '../util';
+import type { XMLDocument, XMLElement } from '@xml-tools/ast';
+import { buildAst } from '@xml-tools/ast';
+import type { RopmOptions } from '../util';
+import { util } from '../util';
 import * as path from 'path';
-import { BrsFile, createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, Position, Program, WalkMode, XmlFile } from 'brighterscript';
+import type { BrsFile, Position, Program, XmlFile } from 'brighterscript';
+import { createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode } from 'brighterscript';
 
 export class File {
     constructor(
@@ -166,7 +169,7 @@ export class File {
         }
     }
 
-    private lineOffsetMap!: { [lineNumber: number]: number };
+    private lineOffsetMap!: Record<number, number>;
 
     /**
      * Convert a position into an offset from the start of the file

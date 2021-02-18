@@ -3,7 +3,8 @@ import { createSandbox } from 'sinon';
 const sinon = createSandbox();
 import { tempDir } from '../TestHelpers.spec';
 import { util } from '../util';
-import { InitCommand, InitCommandArgs } from './InitCommand';
+import type { InitCommandArgs } from './InitCommand';
+import { InitCommand } from './InitCommand';
 import * as fsExtra from 'fs-extra';
 
 describe('InitCommand', () => {

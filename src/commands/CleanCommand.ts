@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
-import { util, RopmPackageJson } from '../util';
+import type { RopmPackageJson } from '../util';
+import { util } from '../util';
 import { InitCommand } from './InitCommand';
 import * as del from 'del';
 

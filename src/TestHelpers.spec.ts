@@ -3,7 +3,7 @@ import * as fsExtra from 'fs-extra';
 import { createSandbox } from 'sinon';
 import { expect } from 'chai';
 import { RopmModule } from './prefixer/RopmModule';
-import { RopmOptions } from './util';
+import type { RopmOptions } from './util';
 import * as rokuDeploy from 'roku-deploy';
 export const sinon = createSandbox();
 
@@ -107,7 +107,7 @@ export interface DepGraphNode {
     name: string;
     version?: string;
     dependencies?: Array<DepGraphNode>;
-    _files?: { [relativePath: string]: string };
+    _files?: Record<string, string>;
     ropm?: RopmOptions;
 }
 

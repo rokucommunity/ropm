@@ -3,7 +3,8 @@ import { ModuleManager } from './ModuleManager';
 import { expect } from 'chai';
 import * as path from 'path';
 import { util } from '../util';
-import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelpers.spec';
+import type { DepGraphNode } from '../TestHelpers.spec';
+import { file, fsEqual, createProjects, trim } from '../TestHelpers.spec';
 import * as fsExtra from 'fs-extra';
 import { InstallCommand } from '../commands/InstallCommand';
 
