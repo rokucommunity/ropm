@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as fsExtra from 'fs-extra';
 import * as path from 'path';
-import { InstallCommandArgs, InstallCommand } from './InstallCommand';
+import type { InstallCommandArgs } from './InstallCommand';
+import { InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
-import { RopmPackageJson } from '../util';
+import type { RopmPackageJson } from '../util';
 import { createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
 
 const projectName = 'test-project';
@@ -451,7 +452,7 @@ describe('InstallCommand', () => {
     });
 });
 
-export function writeProject(projectName: string, files: { [key: string]: string }, additionalPackageJson?: Partial<RopmPackageJson>) {
+export function writeProject(projectName: string, files: Record<string, string>, additionalPackageJson?: Partial<RopmPackageJson>) {
     for (const relativePath in files) {
         const filePath = path.join(tempDir, projectName, relativePath);
         fsExtra.ensureDirSync(

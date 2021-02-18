@@ -1,7 +1,7 @@
 import { RopmModule } from './RopmModule';
 import { tempDir, mergePackageJson, createProjects, expectThrowsAsync } from '../TestHelpers.spec';
 import { expect } from 'chai';
-import { Dependency } from './ModuleManager';
+import type { Dependency } from './ModuleManager';
 import { createSandbox } from 'sinon';
 import { util } from '../util';
 const sinon = createSandbox();

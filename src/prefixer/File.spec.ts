@@ -3,7 +3,8 @@ import * as path from 'path';
 import * as fsExtra from 'fs-extra';
 import { expect } from 'chai';
 import { createSandbox } from 'sinon';
-import { Position, Program } from 'brighterscript';
+import type { Position } from 'brighterscript';
+import { Program } from 'brighterscript';
 import { pick } from '../TestHelpers.spec';
 const sinon = createSandbox();
 

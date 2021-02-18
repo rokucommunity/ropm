@@ -3,7 +3,8 @@ import { ModuleManager } from './ModuleManager';
 import { expect } from 'chai';
 import * as path from 'path';
 import { util } from '../util';
-import { file, fsEqual, createProjects, DepGraphNode, trim } from '../TestHelpers.spec';
+import type { DepGraphNode } from '../TestHelpers.spec';
+import { file, fsEqual, createProjects, trim } from '../TestHelpers.spec';
 import * as fsExtra from 'fs-extra';
 import { InstallCommand } from '../commands/InstallCommand';
 
@@ -276,13 +277,13 @@ describe('ModuleManager', () => {
             file(`${logger.packageRootDir}/source/main.brs`, `
                 sub runuserinterface()
                 end sub
-                
+
                 sub main()
                 end sub
 
                 sub runscreensaver()
                 end sub
-                
+
                 sub init()
                 end sub
 
@@ -297,13 +298,13 @@ describe('ModuleManager', () => {
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub runuserinterface()
                 end sub
-                
+
                 sub main()
                 end sub
 
                 sub runscreensaver()
                 end sub
-                
+
                 sub init()
                 end sub
 
@@ -759,10 +760,10 @@ describe('ModuleManager', () => {
             }]);
             file(`${logger.packageRootDir}/source/common.brs`, `
                 sub GetImagePath(imageName)
-                    
+
                     'will be rewritten because we have content after 'pkg:/'
                     image1 = "pkg:/images/" + imageName
-                    
+
                     'will not be rewritten because the 'pkg:/' is isolated
                     image2 = "pkg:/" + "images/" + imageName
 
@@ -773,10 +774,10 @@ describe('ModuleManager', () => {
 
             fsEqual(`${hostDir}/source/roku_modules/logger/common.brs`, `
                 sub logger_GetImagePath(imageName)
-                    
+
                     'will be rewritten because we have content after 'pkg:/'
                     image1 = "pkg:/images/roku_modules/logger/" + imageName
-                    
+
                     'will not be rewritten because the 'pkg:/' is isolated
                     image2 = "pkg:/" + "images/" + imageName
 

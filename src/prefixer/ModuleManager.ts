@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/consistent-indexed-object-style */
 import { RopmModule } from './RopmModule';
 import * as semver from 'semver';
-import { util, ModuleDependency } from '../util';
+import type { ModuleDependency } from '../util';
+import { util } from '../util';
 
 export class ModuleManager {
     public modules = [] as RopmModule[];
