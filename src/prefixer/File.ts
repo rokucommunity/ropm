@@ -121,7 +121,8 @@ export class File {
     }>;
 
     /**
-     * A list of file paths found in this file
+     * A list of file paths found in this file.
+     * The offset points to the first character of the path itself (i.e. NOT the quotemark when found
      */
     public fileReferences = [] as Array<{
         path: string;
@@ -204,10 +205,7 @@ export class File {
             this.findFilePathStrings();
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
-            this.findFunctionDefinitions();
             this.findObserveFieldFunctionCalls();
-            this.findNamespaces();
-            this.findImportStatements();
             this.walkAst();
         } else if (this.isXmlFile) {
             this.findFilePathStrings();
@@ -226,6 +224,15 @@ export class File {
     public walkAst() {
         /* eslint-disable @typescript-eslint/naming-convention */
         (this.bscFile as BrsFile).parser.ast.walk(createVisitor({
+            ImportStatement: (stmt) => {
+                //skip pkg paths, those are collected elsewhere
+                if (!stmt.filePath.startsWith('pkg:/')) {
+                    this.fileReferences.push({
+                        offset: this.positionToOffset(stmt.filePathToken.range.start),
+                        path: stmt.filePath
+                    });
+                }
+            },
             VariableExpression: (variable, parent) => {
                 //skip objects to left of dotted/indexed expressions
                 if ((
@@ -257,8 +264,29 @@ export class File {
                     name: cls.name.text,
                     nameOffset: this.positionToOffset(cls.name.range.start),
                     hasNamespace: !!cls.namespaceName,
-                    startOffset: this.positionToOffset(cls.classKeyword.range.start),
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (cls.annotations?.length > 0 ? cls.annotations[0] : cls.classKeyword).range.start
+                    ),
                     endOffset: this.positionToOffset(cls.end.range.end)
+                });
+            },
+            FunctionStatement: (func) => {
+                this.functionDefinitions.push({
+                    name: func.name.text,
+                    nameOffset: this.positionToOffset(func.name.range.start),
+                    hasNamespace: !!func.namespaceName,
+                    //Use annotation start position if available, otherwise use keyword
+                    startOffset: this.positionToOffset(
+                        (func.annotations?.length > 0 ? func.annotations[0] : func.func.functionType)!.range.start
+                    ),
+                    endOffset: this.positionToOffset(func.func.end.range.end)
+                });
+            },
+            NamespaceStatement: (namespace) => {
+                this.namespaces.push({
+                    name: namespace.name,
+                    offset: this.positionToOffset(namespace.nameExpression.range.start)
                 });
             }
         }), {
@@ -321,20 +349,6 @@ export class File {
         await fsExtra.writeFile(this.destPath, this.bscFile.fileContents);
     }
 
-    /**
-     * Find every top-level function defined in this file
-     */
-    private findFunctionDefinitions() {
-        for (const func of (this.bscFile as BrsFile).parser.references.functionStatements) {
-            this.functionDefinitions.push({
-                name: func.name.text,
-                nameOffset: this.positionToOffset(func.name.range.start),
-                hasNamespace: !!func.namespaceName,
-                startOffset: this.positionToOffset(func.func.functionType!.range.start),
-                endOffset: this.positionToOffset(func.func.end.range.end)
-            });
-        }
-    }
 
     /**
      * Find all occurances of *.observeField and *.observeFieldScoped function calls that have a string literal as the second parameter
@@ -352,18 +366,6 @@ export class File {
 
             //just add this to function calls, since there's no difference in terms of how they get replaced
             this.functionReferences.push({
-                name: match[2],
-                offset: match.index + match[1].length
-            });
-        }
-    }
-
-    private findNamespaces() {
-        const regexp = /^([ \t]*namespace[ \t]+)((?:[a-z0-9_]+\.)*[a-z0-9_]+)/gim;
-
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
-            this.namespaces.push({
                 name: match[2],
                 offset: match.index + match[1].length
             });
@@ -518,25 +520,6 @@ export class File {
                 //+1 to step past opening quote
                 offset: match.index + 1,
                 path: match[1]
-            });
-        }
-    }
-
-    /**
-     * Look for every import statement (a brighterscript and .d.bs feature)
-     */
-    private findImportStatements() {
-        const regexp = /^(import[ \t]+")(.*?)"/gim;
-        let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
-            //skip pkg paths, those are collected elsewhere
-            if (match[2].startsWith('pkg:/')) {
-                continue;
-            }
-            this.fileReferences.push({
-                //step past opening quote
-                offset: match.index + match[1].length,
-                path: match[2]
             });
         }
     }

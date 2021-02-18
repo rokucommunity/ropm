@@ -276,13 +276,13 @@ describe('ModuleManager', () => {
             file(`${logger.packageRootDir}/source/main.brs`, `
                 sub runuserinterface()
                 end sub
-                
+
                 sub main()
                 end sub
 
                 sub runscreensaver()
                 end sub
-                
+
                 sub init()
                 end sub
 
@@ -297,13 +297,13 @@ describe('ModuleManager', () => {
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub runuserinterface()
                 end sub
-                
+
                 sub main()
                 end sub
 
                 sub runscreensaver()
                 end sub
-                
+
                 sub init()
                 end sub
 
@@ -759,10 +759,10 @@ describe('ModuleManager', () => {
             }]);
             file(`${logger.packageRootDir}/source/common.brs`, `
                 sub GetImagePath(imageName)
-                    
+
                     'will be rewritten because we have content after 'pkg:/'
                     image1 = "pkg:/images/" + imageName
-                    
+
                     'will not be rewritten because the 'pkg:/' is isolated
                     image2 = "pkg:/" + "images/" + imageName
 
@@ -773,10 +773,10 @@ describe('ModuleManager', () => {
 
             fsEqual(`${hostDir}/source/roku_modules/logger/common.brs`, `
                 sub logger_GetImagePath(imageName)
-                    
+
                     'will be rewritten because we have content after 'pkg:/'
                     image1 = "pkg:/images/roku_modules/logger/" + imageName
-                    
+
                     'will not be rewritten because the 'pkg:/' is isolated
                     image2 = "pkg:/" + "images/" + imageName
 
@@ -1275,6 +1275,57 @@ describe('ModuleManager', () => {
                 import "pkg:/source/roku_modules/logger/lib.brs"
             `);
         });
+
+        it('properly handles annotations', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            @NameSpaceAnnotation
+                            namespace NameSpace
+                                @Sub1Annotation
+                                sub Sub1()
+                                end sub
+                            end namespace
+
+                            @Sub2Annotation
+                            sub Sub2()
+                            end sub
+
+                            @ClassAnnotation
+                            class Person
+                            end class
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
+                @NameSpaceAnnotation
+                namespace logger.NameSpace
+                    @Sub1Annotation
+                    sub Sub1()
+                    end sub
+                end namespace
+
+                namespace logger
+                @Sub2Annotation
+                sub Sub2()
+                end sub
+                end namespace
+
+                namespace logger
+                @ClassAnnotation
+                class Person
+                end class
+                end namespace
+            `);
+        });
+
 
         it('prefixes namespaces and not their child functions or classes', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
