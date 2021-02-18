@@ -1277,6 +1277,57 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it('properly handles annotations', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            @NameSpaceAnnotation
+                            namespace NameSpace
+                                @Sub1Annotation
+                                sub Sub1()
+                                end sub
+                            end namespace
+
+                            @Sub2Annotation
+                            sub Sub2()
+                            end sub
+
+                            @ClassAnnotation
+                            class Person
+                            end class
+                        `
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
+                @NameSpaceAnnotation
+                namespace logger.NameSpace
+                    @Sub1Annotation
+                    sub Sub1()
+                    end sub
+                end namespace
+
+                namespace logger
+                @Sub2Annotation
+                sub Sub2()
+                end sub
+                end namespace
+
+                namespace logger
+                @ClassAnnotation
+                class Person
+                end class
+                end namespace
+            `);
+        });
+
+
         it('prefixes namespaces and not their child functions or classes', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
