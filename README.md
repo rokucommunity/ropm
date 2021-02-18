@@ -173,6 +173,37 @@ Due to their special handling within the Roku architecture, the following functi
  - `Init`
  - `OnKeyEvent`
 
+### ROPM_PREFIX source literal
+ropm provides a source literal called `ROPM_PREFIX` which, during ropm install, gets replaced with a string literal containing your module's prefix. This enables developers to decide the best way to construct their own function name strings. Consider the following exmaple.
+
+Your ropm module code:
+```brightscript
+sub init()
+    m.top.functionName = getFunctionName()
+end sub
+function getFunctionName()
+    if isLoggedIn()
+        return ROPM_PREFIX + "initLoggedIn"
+    else
+        return ROPM_PREFIX + "initLoggedOut"
+    end if
+end function
+```
+
+After ropm install (the module prefix is "logger"):
+```brightscript
+sub init()
+    m.top.functionName = getFunctionName()
+end sub
+function getFunctionName()
+    if isLoggedIn()
+        return "logger_" + "initLoggedIn"
+    else
+        return "logger_" + "initLoggedOut"
+    end if
+end function
+```
+
 ## Renaming modules
 By default, `ropm` will install modules with their default names from the registry. For example, if you run `ropm install roku-promise`, then the ropm package name will be `rokupromise`. But what if you wanted to reference it as `promise` in your project? You can accomplish this by leveraging the flexibility of the package.json `dependencies` section. Here's the command to install `roku-promise` with an alternate name:
 

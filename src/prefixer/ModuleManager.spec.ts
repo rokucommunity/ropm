@@ -205,6 +205,29 @@ describe('ModuleManager', () => {
 
     describe('process', () => {
 
+        it('replaces ROPM_PREFIX source literal', async () => {
+            const [logger] = await createDependencies([{
+                name: 'logger'
+            }]);
+
+            //don't rewrite parameters or variables on lhs of assignments
+            //DO rewrite variables used elsewhere
+            file(`${logger.packageRootDir}/source/lib.brs`, `
+                sub log(ROPM_PREFIX = "")
+                    ROPM_PREFIX = ""
+                    print ROPM_PREFIX + "ROPM_PREFIX"
+                end sub
+            `);
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
+                sub logger_log(ROPM_PREFIX = "")
+                    ROPM_PREFIX = ""
+                    print "logger_" + "ROPM_PREFIX"
+                end sub
+            `);
+        });
+
         /**
          * This test converts the dependency name "module1" to "module2", and names this package "module1"
          */

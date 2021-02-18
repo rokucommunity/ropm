@@ -312,6 +312,7 @@ export class RopmModule {
             ...this.nonPrefixedFunctionMap,
             ...this.getInterfaceFunctions()
         };
+        const ropmPrefixSourceLiteralValue = applyOwnPrefix ? `"${prefix}"` : '';
 
         for (const file of this.files) {
             //only apply prefixes if configured to do so
@@ -392,9 +393,15 @@ export class RopmModule {
                 }
             }
 
-            //prefix all identifiers that have the same name as a function
+            //replace ROPM_PREFIX source literals and prefix identifiers with same name as function
             for (const identifier of file.identifiers) {
                 const lowerName = identifier.name.toLowerCase();
+
+                //replace ROPM_PREFIX source literal
+                if (lowerName === 'ropm_prefix') {
+                    file.addEdit(identifier.offset, identifier.offset + identifier.name.length, ropmPrefixSourceLiteralValue);
+                }
+
                 //skip edits for special functions
                 if (nonPrefixedFunctionMap[lowerName]) {
                     continue;
