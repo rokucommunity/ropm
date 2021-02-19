@@ -6,8 +6,8 @@ import { buildAst } from '@xml-tools/ast';
 import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, XmlFile } from 'brighterscript';
-import { createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode } from 'brighterscript';
+import type { BrsFile, Position, Program, Range, XmlFile } from 'brighterscript';
+import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil } from 'brighterscript';
 
 export class File {
     constructor(
@@ -92,6 +92,15 @@ export class File {
          * The end offset of `end class`
          */
         endOffset: number;
+    }>;
+
+    /**
+     * Anywhere that a class is used as a type (like in class `extends` or function parameters)
+     */
+    public classReferences = [] as Array<{
+        fullyQualifiedName: string;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
 
     public functionReferences = [] as Array<{
@@ -231,12 +240,31 @@ export class File {
         }
     }
 
+    private addClassRef(className: string, containingNamespace: string | undefined, range: Range) {
+        //look up the class. If we can find it, use it
+        const cls = (this.bscFile as BrsFile).getClassFileLink(className, containingNamespace)?.item;
+
+        let fullyQualifiedName: string;
+        if (cls) {
+            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(cls.getName(ParseMode.BrighterScript), cls.namespaceName?.getName(ParseMode.BrighterScript));
+        } else {
+            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(className, containingNamespace);
+        }
+
+        this.classReferences.push({
+            fullyQualifiedName: fullyQualifiedName,
+            offsetBegin: this.positionToOffset(range.start),
+            offsetEnd: this.positionToOffset(range.end)
+        });
+    }
+
     /**
      * find various items from this file.
      */
     public walkAst() {
+        const file = this.bscFile as BrsFile;
         /* eslint-disable @typescript-eslint/naming-convention */
-        (this.bscFile as BrsFile).parser.ast.walk(createVisitor({
+        file.parser.ast.walk(createVisitor({
             ImportStatement: (stmt) => {
                 //skip pkg paths, those are collected elsewhere
                 if (!stmt.filePath.startsWith('pkg:/')) {
@@ -283,6 +311,34 @@ export class File {
                     ),
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
+
+                if (cls.parentClassName) {
+                    this.addClassRef(
+                        cls.parentClassName.getName(ParseMode.BrighterScript),
+                        cls.namespaceName?.getName(ParseMode.BrighterScript),
+                        cls.parentClassName.range
+                    );
+                }
+            },
+            FunctionExpression: (func) => {
+                const namespaceName = func.namespaceName?.getName(ParseMode.BrighterScript);
+                //any parameters containing custom types
+                for (const param of func.parameters) {
+                    if (isCustomType(param.type)) {
+                        this.addClassRef(
+                            param.type.name,
+                            namespaceName,
+                            param.typeToken!.range
+                        );
+                    }
+                }
+                if (isCustomType(func.returnType)) {
+                    this.addClassRef(
+                        func.returnType.name,
+                        namespaceName,
+                        func.returnTypeToken!.range
+                    );
+                }
             },
             FunctionStatement: (func) => {
                 this.functionDefinitions.push({

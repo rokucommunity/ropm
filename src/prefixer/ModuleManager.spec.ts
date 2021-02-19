@@ -1272,6 +1272,165 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('prefixes classes used in parameters', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace animals
+                            class Dog
+                                sub new(brother as Dog, sister as animals.Dog, owner as Human)
+                                end sub
+                            end class
+                        end namespace
+
+                        class Human
+                        end class
+                    `,
+                    trim`
+                        namespace logger.animals
+                            class Dog
+                                sub new(brother as logger.animals.Dog, sister as logger.animals.Dog, owner as logger.Human)
+                                end sub
+                            end class
+                        end namespace
+
+                        namespace logger
+                        class Human
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes classes used in extends', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace animals
+                            class Animal
+                            end class
+                            class Dog extends Animal
+                            end class
+                            class Cat extends animals.Animal
+                            end class
+                            class Warewolf extends Human
+                            end class
+                        end namespace
+                        class Human
+                        end class
+                        class Warecat extends animals.Cat
+                        end class
+                    `,
+                    trim`
+                        namespace logger.animals
+                            class Animal
+                            end class
+                            class Dog extends logger.animals.Animal
+                            end class
+                            class Cat extends logger.animals.Animal
+                            end class
+                            class Warewolf extends logger.Human
+                            end class
+                        end namespace
+                        namespace logger
+                        class Human
+                        end class
+                        end namespace
+                        namespace logger
+                        class Warecat extends logger.animals.Cat
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes classes used as return type', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace animals
+                            class Dog
+                            end class
+                            function GetDog1() as Dog
+                            end function
+                            function GetDog2() as animals.Dog
+                            end function
+                            function GetHuman() as Human
+                            end function
+                        end namespace
+
+                        function GetDog3() as animals.Dog
+                        end function
+
+                        class Human
+                        end class
+                    `,
+                    trim`
+                        namespace logger.animals
+                            class Dog
+                            end class
+                            function GetDog1() as logger.animals.Dog
+                            end function
+                            function GetDog2() as logger.animals.Dog
+                            end function
+                            function GetHuman() as logger.Human
+                            end function
+                        end namespace
+
+                        namespace logger
+                        function GetDog3() as logger.animals.Dog
+                        end function
+                        end namespace
+
+                        namespace logger
+                        class Human
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('does not prefix other module namespaced class names', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            class Person
+                                sub new(pet as a.Duck)
+                                end sub
+                                sub watchPetForFriend(friendPet as dogs.Poodle)
+                                end sub
+                            end class
+                        `
+                    },
+                    dependencies: [{
+                        name: 'animals',
+                        alias: 'a'
+                    }, {
+                        name: 'dogs'
+                    }]
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, `
+                namespace logger
+                class Person
+                    sub new(pet as animals_v1.Duck)
+                    end sub
+                    sub watchPetForFriend(friendPet as dogs_v1.Poodle)
+                    end sub
+                end class
+                end namespace
+            `);
+        });
+
         it('properly handles annotations', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [

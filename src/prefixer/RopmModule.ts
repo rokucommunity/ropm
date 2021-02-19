@@ -311,6 +311,21 @@ export class RopmModule {
         const ownComponentNames = this.getDistinctComponentDeclarationNames();
         const prefixMapKeys = Object.keys(this.prefixMap);
         const prefixMapKeysLower = prefixMapKeys.map(x => x.toLowerCase());
+
+        /**
+         * Get the alias for a namespace. Only returns if it exists and is different than what is given.
+         */
+        const getAlias = (namespace?: string) => {
+            if (namespace) {
+                const lowerNamespaceName = namespace.toLowerCase();
+                const idx = prefixMapKeysLower.indexOf(lowerNamespaceName);
+                const prefix = this.prefixMap[prefixMapKeys[idx]];
+                if (prefix && prefix.toLowerCase() !== lowerNamespaceName) {
+                    return prefix;
+                }
+            }
+        };
+
         const nonPrefixedFunctionMap = {
             ...this.nonPrefixedFunctionMap,
             ...this.getInterfaceFunctions()
@@ -360,6 +375,22 @@ export class RopmModule {
                         file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
                         file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
                     }
+                }
+
+                //prefix d.bs class references
+                for (const ref of file.classReferences) {
+                    const baseNamespace = util.getBaseNamespace(ref.fullyQualifiedName);
+
+                    const alias = getAlias(baseNamespace);
+                    let fullyQualifiedName: string;
+                    //if we have an alias, this is a class from another module.
+                    if (alias) {
+                        fullyQualifiedName = ref.fullyQualifiedName.replace(/^.*?\./, alias + '.');
+                    } else {
+                        //this is an internal-module class, so append our prefix to it
+                        fullyQualifiedName = `${brighterscriptPrefix}.${ref.fullyQualifiedName}`;
+                    }
+                    file.addEdit(ref.offsetBegin, ref.offsetEnd, fullyQualifiedName);
                 }
 
                 //prefix d.bs namespaces
