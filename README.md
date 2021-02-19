@@ -164,6 +164,10 @@ Result:
  end sub
 ```
 
+### Tasks (`m.top.functionName`)
+BrightScript Task objects have a special `m.top.functionName` property that specifies which function should be run during the task. ropm will find all instances of `m.top.functionName = "<anything>"` and add the prefix to the beginning of the string.
+
+The syntax must be exactly `m.top.functionName = ` followed by a string (i.e. `m.top.functionName = "taskCallback"`). ropm will skip the statement if anything other than a string is found to the right-hand-side of the equals sign. If you dynamically generate the value for `m.top.functionName`, or assign it in some other fashion, consider using the [ROPM_PREFIX](#ropm_prefix-source-literal) source literal instead.
 
 ### Never-prefixed functions
 Due to their special handling within the Roku architecture, the following functions  will never be prefixed:

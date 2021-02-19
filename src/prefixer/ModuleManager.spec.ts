@@ -1474,6 +1474,107 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('prefixes m.top.functionName for files NOT imported by a Task', async () => {
+            await testProcess({
+                'logger:source/lib.brs': [
+                    trim`
+                        sub a()
+                            m.top.functionName = "doSomething"
+                        end sub
+                    `,
+                    trim`
+                        sub logger_a()
+                            m.top.functionName = "logger_doSomething"
+                        end sub
+                    `]
+            });
+        });
+
+        it('prefixes direct task reference from component in same module', async () => {
+            await testProcess({
+                'logger:components/SimpleTask.brs': [
+                    trim`
+                        sub init()
+                            m.top.functionName = "doSomething"
+                        end sub
+                    `, trim`
+                        sub init()
+                            m.top.functionName = "logger_doSomething"
+                        end sub
+                    `
+                ],
+                //directly extends task
+                'logger:components/SimpleTask.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="SimpleTask" extends="Task">
+                            <script uri="SimpleTask.brs" />
+                        </component>
+                    `
+                ]
+            });
+        });
+
+        it('prefixes indirect task reference from component in same module', async () => {
+            await testProcess({
+                'logger:components/HardTask.brs': [
+                    trim`
+                        sub init()
+                            m.top.functionName = "doSomething"
+                        end sub
+                    `, trim`
+                        sub init()
+                            m.top.functionName = "logger_doSomething"
+                        end sub
+                    `
+                ],
+                'logger:components/SimpleTask.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="SimpleTask" extends="Task">
+                        </component>
+                    `
+                ], 'logger:components/HardTask.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="HardTask" extends="SimpleTask">
+                            <script uri="HardTask.brs" />
+                        </component>
+                    `
+                ]
+            });
+        });
+
+        it('prefixes indirect task reference from component in different module', async () => {
+            await testProcess({
+                'logger:components/HardTask.brs': [
+                    trim`
+                        sub init()
+                            m.top.functionName = "doSomething"
+                        end sub
+                    `, trim`
+                        sub init()
+                            m.top.functionName = "logger_doSomething"
+                        end sub
+                    `
+                ],
+                'tasker:components/SimpleTask.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="SimpleTask" extends="Task">
+                        </component>
+                    `
+                ], 'logger:components/HardTask.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="HardTask" extends="tasker_SimpleTask">
+                            <script uri="HardTask.brs" />
+                        </component>
+                    `
+                ]
+            });
+        });
+
         it('prefixes namespaces and not their child functions or classes', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
