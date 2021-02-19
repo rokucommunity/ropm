@@ -1393,8 +1393,6 @@ describe('ModuleManager', () => {
             });
         });
 
-        it
-
         it('does not prefix other module namespaced class names', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',
