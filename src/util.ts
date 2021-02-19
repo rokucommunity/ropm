@@ -283,6 +283,16 @@ export class Util {
         }
     }
 
+    /**
+     * Get the base namespace from a namespace statement, or undefined if there are no dots
+     */
+    public getBaseNamespace(text: string) {
+        const parts = text.split('.');
+        if (parts.length > 1) {
+            return parts[0];
+        }
+    }
+
 }
 
 function mockProgramValidate() {

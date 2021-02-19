@@ -6,8 +6,8 @@ import { buildAst } from '@xml-tools/ast';
 import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, XmlFile } from 'brighterscript';
-import { createVisitor, isCallExpression, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode } from 'brighterscript';
+import { BrsFile, ParseMode, Position, Program, XmlFile } from 'brighterscript';
+import { createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil } from 'brighterscript';
 
 export class File {
     constructor(
@@ -92,6 +92,15 @@ export class File {
          * The end offset of `end class`
          */
         endOffset: number;
+    }>;
+
+    /**
+     * Anywhere that a class is used as a type (like in class `extends` or function parameters)
+     */
+    public classReferences = [] as Array<{
+        fullyQualifiedName: string;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
 
     public functionReferences = [] as Array<{
@@ -225,8 +234,9 @@ export class File {
      * find various items from this file.
      */
     public walkAst() {
+        const file = this.bscFile as BrsFile;
         /* eslint-disable @typescript-eslint/naming-convention */
-        (this.bscFile as BrsFile).parser.ast.walk(createVisitor({
+        file.parser.ast.walk(createVisitor({
             ImportStatement: (stmt) => {
                 //skip pkg paths, those are collected elsewhere
                 if (!stmt.filePath.startsWith('pkg:/')) {
@@ -273,6 +283,31 @@ export class File {
                     ),
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
+            },
+            FunctionExpression: (func) => {
+                //any parameters containing custom types
+                for (const param of func.parameters) {
+                    if (isCustomType(param.type)) {
+                        //look up the class. If we can find it, use it
+                        const cls = file.getClassFileLink(
+                            param.type.name,
+                            func.namespaceName?.getName(ParseMode.BrighterScript)
+                        )?.item;
+
+                        let fullyQualifiedName: string;
+                        if (cls) {
+                            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(cls.getName(ParseMode.BrighterScript), cls.namespaceName?.getName(ParseMode.BrighterScript));
+                        } else {
+                            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(param.type.name, func.namespaceName?.getName(ParseMode.BrighterScript));
+                        }
+
+                        this.classReferences.push({
+                            fullyQualifiedName: fullyQualifiedName,
+                            offsetBegin: this.positionToOffset(param.typeToken!.range.start),
+                            offsetEnd: this.positionToOffset(param.typeToken!.range.end)
+                        });
+                    }
+                }
             },
             FunctionStatement: (func) => {
                 this.functionDefinitions.push({

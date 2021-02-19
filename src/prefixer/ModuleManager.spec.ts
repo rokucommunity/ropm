@@ -1272,6 +1272,75 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('properly prefixes classes', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace animals
+                            class Dog
+                                sub new(brother as Dog, sister as animals.Dog, owner as Human)
+                                end sub
+                            end class
+                        end namespace
+
+                        class Human
+                        end class
+                    `,
+                    trim`
+                        namespace logger.animals
+                            class Dog
+                                sub new(brother as logger.animals.Dog, sister as logger.animals.Dog, owner as logger.Human)
+                                end sub
+                            end class
+                        end namespace
+
+                        namespace logger
+                        class Human
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('does not prefix other module namespaced class names', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/lib.d.bs': trim`
+                            class Person
+                                sub new(pet as a.Duck)
+                                end sub
+                                sub watchPetForFriend(friendPet as dogs.Poodle)
+                                end sub
+                            end class
+                        `
+                    },
+                    dependencies: [{
+                        name: 'animals',
+                        alias: 'a'
+                    }, {
+                        name: 'dogs'
+                    }]
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, `
+                namespace logger
+                class Person
+                    sub new(pet as animals_v1.Duck)
+                    end sub
+                    sub watchPetForFriend(friendPet as dogs_v1.Poodle)
+                    end sub
+                end class
+                end namespace
+            `);
+        });
+
         it('properly handles annotations', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
