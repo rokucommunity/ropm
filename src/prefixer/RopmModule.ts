@@ -51,6 +51,8 @@ export class RopmModule {
         '!**/roku_modules/**/*'
     ];
 
+    public files = [] as File[];
+
     /**
      * The name of this module. Users can rename modules on install-time, so this is the folder we must use
      */
@@ -235,6 +237,7 @@ export class RopmModule {
             file.discover(this.program);
         }
 
+
         //create the edits for every file
         this.createEdits(noprefixRopmAliases);
 
@@ -317,6 +320,11 @@ export class RopmModule {
         for (const file of this.files) {
             //only apply prefixes if configured to do so
             if (applyOwnPrefix) {
+
+                // replace `m.top.functionName = "<anything>"` assignments to support Tasks
+                for (const ref of file.taskFunctionNameAssignments) {
+                    file.addEdit(ref.offset, ref.offset, prefix);
+                }
 
                 //create an edit for each this-module-owned function
                 for (const func of file.functionDefinitions) {
@@ -541,7 +549,4 @@ export class RopmModule {
         }
         return Object.keys(result);
     }
-
-
-    public files = [] as File[];
 }
