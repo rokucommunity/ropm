@@ -62,7 +62,12 @@ export class File {
     }
 
     /**
-     * The full pkg path to the file (minus the `pkg:/` protocol since we never actually need that part
+     * If this is a component, does it extend from Task (directly or indirectly)
+     */
+    public isTask = false;
+
+    /**
+     * The full pkg path to the file (minus the `pkg:/` protocol since we never actually need that part)
      */
     public pkgPath: string;
 
@@ -95,6 +100,15 @@ export class File {
     }>;
 
     public functionReferences = [] as Array<{
+        name: string;
+        offset: number;
+    }>;
+
+    /**
+     * Every instance of `m.top.functionName = "<anything>".
+     * Used only if this file is referenced by a Task
+     */
+    public taskFunctionNameAssignments = [] as Array<{
         name: string;
         offset: number;
     }>;
@@ -219,6 +233,7 @@ export class File {
             this.findCreateObjectComponentReferences();
             this.findCreateChildComponentReferences();
             this.findObserveFieldFunctionCalls();
+            this.findTaskFunctionNameAssignments();
             this.walkAst();
         } else if (this.isXmlFile) {
             this.findFilePathStrings();
@@ -567,6 +582,23 @@ export class File {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Look for every statement that looks exactly like the default task functionName assignment.
+     * These are not necessarily all used...as the RopmModule class will determie if ours should be used based on
+     * whether this script is included in a Task or not
+     */
+    private findTaskFunctionNameAssignments() {
+        //look for any string containing `m.top.functionName = "<anything>"`
+        const regexp = /(m\s*\.\s*top\s*\.\s*functionName\s*=\s*")(.*?)"/gi;
+        let match: RegExpExecArray | null;
+        while (match = regexp.exec(this.bscFile.fileContents)) {
+            this.taskFunctionNameAssignments.push({
+                offset: match.index + match[1].length,
+                name: match[2]
+            });
         }
     }
 }

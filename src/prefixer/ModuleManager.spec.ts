@@ -1315,7 +1315,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it('prefixes task functionName', async () => {
+        it('does not prefix m.top.functionName for files NOT imported by a Task', async () => {
             await testProcess({
                 'logger:source/lib.brs': [
                     trim`
@@ -1331,7 +1331,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it.only('prefixes direct task reference from component in same module', async () => {
+        it('prefixes direct task reference from component in same module', async () => {
             await testProcess({
                 'logger:components/SimpleTask.brs': [
                     trim`
@@ -1356,7 +1356,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it.only('prefixes indirect task reference from component in same module', async () => {
+        it('prefixes indirect task reference from component in same module', async () => {
             await testProcess({
                 'logger:components/HardTask.brs': [
                     trim`
@@ -1386,7 +1386,8 @@ describe('ModuleManager', () => {
             });
         });
 
-        it.only('prefixes indirect task reference from component in different module', async () => {
+        //TODO should we even support this?
+        it.skip('prefixes indirect task reference from component in different module', async () => {
             await testProcess({
                 'logger:components/HardTask.brs': [
                     trim`
