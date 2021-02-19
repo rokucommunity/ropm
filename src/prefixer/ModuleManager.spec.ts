@@ -1346,6 +1346,55 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('prefixes classes used as return type', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace animals
+                            class Dog
+                            end class
+                            function GetDog1() as Dog
+                            end function
+                            function GetDog2() as animals.Dog
+                            end function
+                            function GetHuman() as Human
+                            end function
+                        end namespace
+
+                        function GetDog3() as animals.Dog
+                        end function
+
+                        class Human
+                        end class
+                    `,
+                    trim`
+                        namespace logger.animals
+                            class Dog
+                            end class
+                            function GetDog1() as logger.animals.Dog
+                            end function
+                            function GetDog2() as logger.animals.Dog
+                            end function
+                            function GetHuman() as logger.Human
+                            end function
+                        end namespace
+
+                        namespace logger
+                        function GetDog3() as logger.animals.Dog
+                        end function
+                        end namespace
+
+                        namespace logger
+                        class Human
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it
+
         it('does not prefix other module namespaced class names', async () => {
             manager.modules = createProjects(hostDir, hostDir, {
                 name: 'host',

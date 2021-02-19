@@ -311,15 +311,23 @@ export class File {
                 }
             },
             FunctionExpression: (func) => {
+                const namespaceName = func.namespaceName?.getName(ParseMode.BrighterScript);
                 //any parameters containing custom types
                 for (const param of func.parameters) {
                     if (isCustomType(param.type)) {
                         this.addClassRef(
                             param.type.name,
-                            func.namespaceName?.getName(ParseMode.BrighterScript),
+                            namespaceName,
                             param.typeToken!.range
                         );
                     }
+                }
+                if (isCustomType(func.returnType)) {
+                    this.addClassRef(
+                        func.returnType.name,
+                        namespaceName,
+                        func.returnTypeToken!.range
+                    );
                 }
             },
             FunctionStatement: (func) => {
