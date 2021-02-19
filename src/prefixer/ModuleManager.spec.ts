@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import * as path from 'path';
 import { util } from '../util';
 import type { DepGraphNode } from '../TestHelpers.spec';
-import { file, fsEqual, createProjects, trim } from '../TestHelpers.spec';
+import { testProcess, file, fsEqual, createProjects, trim } from '../TestHelpers.spec';
 import * as fsExtra from 'fs-extra';
 import { InstallCommand } from '../commands/InstallCommand';
 
@@ -1002,82 +1002,76 @@ describe('ModuleManager', () => {
         });
 
         it('supports a package using both rootDir and packageRootDir', async () => {
-            noprefixNpmAliases = ['logger'];
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'source/loggerlib.brs': `
-                            sub logInfo(message)
-                                print message
-                            end sub
-                        `,
-                        'components/loggercomp1.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="loggercomp1"></component>
-                        `,
-                        'components/loggercomp2.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="loggercomp2">
-                                <children>
-                                    <!--reference component1 in component2 -->
-                                    <loggercomp1></loggercomp1>
-                                </children>
-                            </component>
-                        `
-                    }
-                }, {
-                    name: 'json',
-                    _files: {
-                        'source/jsonlib.brs': `
-                            sub parseJson(text)
-                                return {}
-                            end sub
-                        `,
-                        'components/jsoncomp.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="jsoncomp">
-                            </component>
-                        `
-                    }
-                }]
+            await testProcess({
+                noprefixNpmAliases: ['logger'],
+                'logger:source/loggerlib.brs': [
+                    trim`
+                        sub logInfo(message)
+                            print message
+                        end sub
+                    `,
+                    //the logger module should have no prefixes applied to its functions or components
+                    trim`
+                        sub logInfo(message)
+                            print message
+                        end sub
+                    `
+                ],
+                'logger:components/loggercomp1.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="loggercomp1"></component>
+                    `,
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="loggercomp1"></component>
+                    `
+                ],
+                'logger:components/loggercomp2.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="loggercomp2">
+                            <children>
+                                <!--reference component1 in component2 -->
+                                <loggercomp1></loggercomp1>
+                            </children>
+                        </component>
+                    `,
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="loggercomp2">
+                            <children>
+                                <!--reference component1 in component2 -->
+                                <loggercomp1></loggercomp1>
+                            </children>
+                        </component>
+                    `
+                ],
+                'json:source/jsonlib.brs': [
+                    trim`
+                        sub parseJson(text)
+                            return {}
+                        end sub
+                    `, trim`
+                        sub json_parseJson(text)
+                            return {}
+                        end sub
+                    `
+                ],
+                'json:components/jsoncomp.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="jsoncomp">
+                        </component>
+                    `,
+                    //the json module should be prefixed
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="json_jsoncomp">
+                        </component>
+                    `
+                ]
             });
-
-            await process();
-
-            //the logger module should have no prefixes applied to its functions or components
-            fsEqual(`${hostDir}/source/roku_modules/logger/loggerlib.brs`, `
-                sub logInfo(message)
-                    print message
-                end sub
-            `);
-            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp1.xml`, trim`
-                <?xml version="1.0" encoding="utf-8" ?>
-                <component name="loggercomp1"></component>
-            `);
-
-            fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp2.xml`, trim`
-                <?xml version="1.0" encoding="utf-8" ?>
-                <component name="loggercomp2">
-                    <children>
-                        <!--reference component1 in component2 -->
-                        <loggercomp1></loggercomp1>
-                    </children>
-                </component>
-            `);
-
-            //the json module should be prefixed
-            fsEqual(`${hostDir}/source/roku_modules/json/jsonlib.brs`, `
-                sub json_parseJson(text)
-                    return {}
-                end sub
-            `);
-            fsEqual(`${hostDir}/components/roku_modules/json/jsoncomp.xml`, trim`
-                <?xml version="1.0" encoding="utf-8" ?>
-                <component name="json_jsoncomp">
-                </component>
-            `);
         });
 
         it('rejects ropm module using `noprefix` when installed as a dependency', async () => {
@@ -1132,368 +1126,314 @@ describe('ModuleManager', () => {
         });
 
         it('does not prefix functions referenced by component interface', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'components/LoggerComponent.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="LoggerComponent">
-                                <script uri="LoggerComponent.brs" />
-                                <interface>
-                                    <function name="doSomething"/>
-                                    <!--finds function with name on next line -->
-                                    <function
-                                        name="doSomethingElse" />
-                                </interface>
-                            </component>
-                        `,
-                        'components/LoggerComponent.brs': trim`
-                            sub doSomething()
-                            end sub
-                            sub doSomethingElse()
-                            end sub
-                            sub writeToLog()
-                            end sub
-                        `
-                    }
-                }]
+            await testProcess({
+                'logger:components/LoggerComponent.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="LoggerComponent">
+                            <script uri="LoggerComponent.brs" />
+                            <interface>
+                                <function name="doSomething"/>
+                                <!--finds function with name on next line -->
+                                <function
+                                    name="doSomethingElse" />
+                            </interface>
+                        </component>
+                    `,
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="logger_LoggerComponent">
+                            <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
+                            <interface>
+                                <function name="doSomething"/>
+                                <!--finds function with name on next line -->
+                                <function
+                                    name="doSomethingElse" />
+                            </interface>
+                        </component>
+                    `
+                ],
+                'logger:components/LoggerComponent.brs': [
+                    trim`
+                        sub doSomething()
+                        end sub
+                        sub doSomethingElse()
+                        end sub
+                        sub writeToLog()
+                        end sub
+                    `, trim`
+                        sub doSomething()
+                        end sub
+                        sub doSomethingElse()
+                        end sub
+                        sub logger_writeToLog()
+                        end sub
+                    `
+                ]
             });
-
-            await process();
-
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.xml`, trim`
-                <?xml version="1.0" encoding="utf-8" ?>
-                <component name="logger_LoggerComponent">
-                    <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
-                    <interface>
-                        <function name="doSomething"/>
-                        <!--finds function with name on next line -->
-                        <function
-                            name="doSomethingElse" />
-                    </interface>
-                </component>
-            `);
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
-                sub doSomething()
-                end sub
-                sub doSomethingElse()
-                end sub
-                sub logger_writeToLog()
-                end sub
-            `);
         });
 
         it('adds prefix to field onchange attributes', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'components/LoggerComponent.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="LoggerComponent">
-                                <script uri="LoggerComponent.brs" />
-                                <interface>
-                                    <field name="logMessage" onchange="logMessageChanged"/>
-                                </interface>
-                            </component>
-                        `,
-                        'components/LoggerComponent.brs': trim`
-                            sub logMessageChanged()
-                            end sub
-                        `
-                    }
-                }]
+            await testProcess({
+                'logger:components/LoggerComponent.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="LoggerComponent">
+                            <script uri="LoggerComponent.brs" />
+                            <interface>
+                                <field name="logMessage" onchange="logMessageChanged"/>
+                            </interface>
+                        </component>
+                    `,
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="logger_LoggerComponent">
+                            <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
+                            <interface>
+                                <field name="logMessage" onchange="logger_logMessageChanged"/>
+                            </interface>
+                        </component>
+                    `
+                ],
+                'logger:components/LoggerComponent.brs': [
+                    trim`
+                        sub logMessageChanged()
+                        end sub
+                    `,
+                    trim`
+                        sub logger_logMessageChanged()
+                        end sub
+                    `
+                ]
             });
-
-            await process();
-
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.xml`, trim`
-                <?xml version="1.0" encoding="utf-8" ?>
-                <component name="logger_LoggerComponent">
-                    <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
-                    <interface>
-                        <field name="logMessage" onchange="logger_logMessageChanged"/>
-                    </interface>
-                </component>
-            `);
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
-                sub logger_logMessageChanged()
-                end sub
-            `);
         });
 
         it('does not prefix function calls to interface-referenced functions', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'components/LoggerComponent.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="LoggerComponent">
-                                <script uri="LoggerComponent.brs" />
-                                <interface>
-                                    <function name="doSomething" />
-                                    <function name="notDefinedDoSomething" />
-                                </interface>
-                            </component>
-                        `,
-                        'components/LoggerComponent.brs': trim`
-                            sub init()
-                                doSomething()
-                                isFunction(doSomething)
-                                isFunction(notDefinedDoSomething)
-                            end sub
-                            sub doSomething()
-                            end sub
-                        `
-                    }
-                }]
+            await testProcess({
+                'logger:components/LoggerComponent.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="LoggerComponent">
+                            <script uri="LoggerComponent.brs" />
+                            <interface>
+                                <function name="doSomething" />
+                                <function name="notDefinedDoSomething" />
+                            </interface>
+                        </component>
+                    `,
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="logger_LoggerComponent">
+                            <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
+                            <interface>
+                                <function name="doSomething" />
+                                <function name="notDefinedDoSomething" />
+                            </interface>
+                        </component>
+                    `
+                ],
+                'logger:components/LoggerComponent.brs': [
+                    trim`
+                        sub init()
+                            doSomething()
+                            isFunction(doSomething)
+                            isFunction(notDefinedDoSomething)
+                        end sub
+                        sub doSomething()
+                        end sub
+                    `,
+                    trim`
+                        sub init()
+                            doSomething()
+                            isFunction(doSomething)
+                            isFunction(notDefinedDoSomething)
+                        end sub
+                        sub doSomething()
+                        end sub
+                    `
+                ]
             });
-
-            await process();
-
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.xml`, trim`
-                <?xml version="1.0" encoding="utf-8" ?>
-                <component name="logger_LoggerComponent">
-                    <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
-                    <interface>
-                        <function name="doSomething" />
-                        <function name="notDefinedDoSomething" />
-                    </interface>
-                </component>
-            `);
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.brs`, trim`
-                sub init()
-                    doSomething()
-                    isFunction(doSomething)
-                    isFunction(notDefinedDoSomething)
-                end sub
-                sub doSomething()
-                end sub
-            `);
         });
 
         it('resolves import statements', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'components/LoggerComponent.d.bs': trim`
-                            import "../source/lib.brs"
-                            import "pkg:/source/lib.brs"
-                        `,
-                        'source/lib.brs': ''
-                    }
-                }]
+            await testProcess({
+                'logger:source/lib.brs': [''],
+
+                'logger:components/LoggerComponent.d.bs': [
+                    trim`
+                        import "../source/lib.brs"
+                        import "pkg:/source/lib.brs"
+                    `,
+                    trim`
+                        import "pkg:/source/roku_modules/logger/lib.brs"
+                        import "pkg:/source/roku_modules/logger/lib.brs"
+                    `
+                ]
             });
-
-            await process();
-
-            fsEqual(`${hostDir}/components/roku_modules/logger/LoggerComponent.d.bs`, trim`
-                import "pkg:/source/roku_modules/logger/lib.brs"
-                import "pkg:/source/roku_modules/logger/lib.brs"
-            `);
         });
 
         it('properly handles annotations', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'source/lib.d.bs': trim`
-                            @NameSpaceAnnotation
-                            namespace NameSpace
-                                @Sub1Annotation
-                                sub Sub1()
-                                end sub
-                            end namespace
-
-                            @Sub2Annotation
-                            sub Sub2()
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        @NameSpaceAnnotation
+                        namespace NameSpace
+                            @Sub1Annotation
+                            sub Sub1()
                             end sub
+                        end namespace
 
-                            @ClassAnnotation
-                            class Person
-                            end class
-                        `
-                    }
-                }]
+                        @Sub2Annotation
+                        sub Sub2()
+                        end sub
+
+                        @ClassAnnotation
+                        class Person
+                        end class
+                    `,
+                    trim`
+                        @NameSpaceAnnotation
+                        namespace logger.NameSpace
+                            @Sub1Annotation
+                            sub Sub1()
+                            end sub
+                        end namespace
+
+                        namespace logger
+                        @Sub2Annotation
+                        sub Sub2()
+                        end sub
+                        end namespace
+
+                        namespace logger
+                        @ClassAnnotation
+                        class Person
+                        end class
+                        end namespace
+                    `
+                ]
             });
-
-            await process();
-
-            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
-                @NameSpaceAnnotation
-                namespace logger.NameSpace
-                    @Sub1Annotation
-                    sub Sub1()
-                    end sub
-                end namespace
-
-                namespace logger
-                @Sub2Annotation
-                sub Sub2()
-                end sub
-                end namespace
-
-                namespace logger
-                @ClassAnnotation
-                class Person
-                end class
-                end namespace
-            `);
         });
-
 
         it('prefixes namespaces and not their child functions or classes', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'source/lib.d.bs': trim`
-                            namespace util
-                                function doSomething()
-                                end function
-                                class Person
-                                end class
-                            end namespace
-                        `
-                    }
-                }]
-            });
-
-            await process();
-
-            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
-                namespace logger.util
-                    function doSomething()
-                    end function
-                    class Person
-                    end class
-                end namespace
-            `);
-        });
-
-        it('ensures .brs files are parsed when d.bs files are present', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    alias: 'l',
-                    _files: {
-                        'source/lib.d.bs': trim`
-                            sub logWarning()
-                            end sub
-                            namespace util
-                                sub logError()
-                                end sub
-                            end namespace
-                        `,
-                        'source/lib.brs': trim`
-                            sub logWarning()
-                            end sub
-                            sub util_logError()
-                            end sub
-                        `
-                    }
-                }]
-            });
-
-            await process();
-
-            fsEqual(`${hostDir}/source/roku_modules/l/lib.brs`, trim`
-                sub l_logWarning()
-                end sub
-                sub l_util_logError()
-                end sub
-            `);
-        });
-
-        it('wraps top-level functions and classes with a namespace', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'source/lib.d.bs': trim`
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace util
                             function doSomething()
                             end function
                             class Person
                             end class
-                        `
-                    }
-                }]
+                        end namespace
+                    `, trim`
+                        namespace logger.util
+                            function doSomething()
+                            end function
+                            class Person
+                            end class
+                        end namespace
+                    `
+                ]
             });
+        });
 
-            await process();
+        it('ensures .brs files are parsed when d.bs files are present', async () => {
+            await testProcess({
+                'l@logger:source/lib.d.bs': [
+                    trim`
+                        sub logWarning()
+                        end sub
+                        namespace util
+                            sub logError()
+                            end sub
+                        end namespace
+                    `
+                ],
 
-            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
-                namespace logger
-                function doSomething()
-                end function
-                end namespace
-                namespace logger
-                class Person
-                end class
-                end namespace
-            `);
+                'l@logger:source/lib.brs': [
+                    trim`
+                        sub logWarning()
+                        end sub
+                        sub util_logError()
+                        end sub
+                    `, trim`
+                        sub l_logWarning()
+                        end sub
+                        sub l_util_logError()
+                        end sub
+                    `
+                ]
+            });
+        });
+
+        it('wraps top-level functions and classes with a namespace', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        function doSomething()
+                        end function
+                        class Person
+                        end class
+                    `,
+                    trim`
+                        namespace logger
+                        function doSomething()
+                        end function
+                        end namespace
+                        namespace logger
+                        class Person
+                        end class
+                        end namespace
+                    `
+                ]
+            });
         });
 
         it('does not wrap top-level non-namespaced functions that are referenced by component interface', async () => {
-            manager.modules = createProjects(hostDir, hostDir, {
-                name: 'host',
-                dependencies: [{
-                    name: 'logger',
-                    _files: {
-                        'components/comp.xml': trim`
-                            <?xml version="1.0" encoding="utf-8" ?>
-                            <component name="LoggerComponent">
-                                <script uri="pkg:/source/lib.brs" />
-                                <interface>
-                                    <function name="logWarning" />
-                                </interface>
-                            </component>
-                        `,
-                        'source/lib.d.bs': trim`
-                            function logWarning()
-                            end function
-                            function logError()
-                            end function
-                        `,
-                        'source/lib.brs': trim`
-                            function logWarning()
-                            end function
-                            function logError()
-                            end function
-                        `
-                    }
-                }]
+            await testProcess({
+                'logger:components/comp.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="LoggerComponent">
+                            <script uri="pkg:/source/lib.brs" />
+                            <interface>
+                                <function name="logWarning" />
+                            </interface>
+                        </component>
+                    `
+                ],
+                'logger:source/lib.d.bs': [
+                    trim`
+                        function logWarning()
+                        end function
+                        function logError()
+                        end function
+                    `,
+                    trim`
+                        function logWarning()
+                        end function
+                        namespace logger
+                        function logError()
+                        end function
+                        end namespace
+                    `
+                ],
+
+                'logger:source/lib.brs': [
+                    trim`
+                        function logWarning()
+                        end function
+                        function logError()
+                        end function
+                    `,
+                    trim`
+                        function logWarning()
+                        end function
+                        function logger_logError()
+                        end function
+                    `
+                ]
             });
-
-            await process();
-
-            fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, trim`
-                function logWarning()
-                end function
-                namespace logger
-                function logError()
-                end function
-                end namespace
-            `);
-
-            fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, trim`
-                function logWarning()
-                end function
-                function logger_logError()
-                end function
-            `);
         });
     });
 });
