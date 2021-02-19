@@ -62,11 +62,6 @@ export class File {
     }
 
     /**
-     * If this is a component, does it extend from Task (directly or indirectly)
-     */
-    public isTask = false;
-
-    /**
      * The full pkg path to the file (minus the `pkg:/` protocol since we never actually need that part)
      */
     public pkgPath: string;
@@ -128,16 +123,6 @@ export class File {
         name: string;
         offset: number;
     }>;
-
-    /**
-     * The name of the component if this is an xml file
-     */
-    public componentName?: string;
-
-    /**
-     * The name of the parent component if this is an xml file
-     */
-    public parentComponentName?: string;
 
     /**
      * List of functions referenced by a component's <interface> element
@@ -403,7 +388,6 @@ export class File {
     private findComponentDefinitions() {
         const nameAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'name');
         if (nameAttribute?.value && nameAttribute?.syntax?.value) {
-            this.componentName = nameAttribute.value.replace(/"/g, '');
             this.componentDeclarations.push({
                 name: nameAttribute.value,
                 //plus one to step past the opening "
@@ -419,7 +403,6 @@ export class File {
         //get any "extends" attribute from the xml
         const extendsAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'extends');
         if (extendsAttribute?.value && extendsAttribute?.syntax?.value) {
-            this.parentComponentName = extendsAttribute.value.replace(/"/g, '');
             this.componentReferences.push({
                 name: extendsAttribute.value,
                 //plus one to step past the opening "
@@ -587,8 +570,6 @@ export class File {
 
     /**
      * Look for every statement that looks exactly like the default task functionName assignment.
-     * These are not necessarily all used...as the RopmModule class will determie if ours should be used based on
-     * whether this script is included in a Task or not
      */
     private findTaskFunctionNameAssignments() {
         //look for any string containing `m.top.functionName = "<anything>"`

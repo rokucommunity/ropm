@@ -1315,7 +1315,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it('does not prefix m.top.functionName for files NOT imported by a Task', async () => {
+        it('prefixes m.top.functionName for files NOT imported by a Task', async () => {
             await testProcess({
                 'logger:source/lib.brs': [
                     trim`
@@ -1325,7 +1325,7 @@ describe('ModuleManager', () => {
                     `,
                     trim`
                         sub logger_a()
-                            m.top.functionName = "doSomething"
+                            m.top.functionName = "logger_doSomething"
                         end sub
                     `]
             });
@@ -1386,8 +1386,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        //TODO should we even support this?
-        it.skip('prefixes indirect task reference from component in different module', async () => {
+        it('prefixes indirect task reference from component in different module', async () => {
             await testProcess({
                 'logger:components/HardTask.brs': [
                     trim`

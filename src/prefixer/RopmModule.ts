@@ -5,8 +5,8 @@ import * as path from 'path';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import type { Dependency } from './ModuleManager';
-import type { Program, XmlFile } from 'brighterscript';
-import { ProgramBuilder, standardizePath as s } from 'brighterscript';
+import type { Program } from 'brighterscript';
+import { ProgramBuilder } from 'brighterscript';
 import { LogLevel } from 'brighterscript/dist/Logger';
 
 export class RopmModule {
@@ -101,17 +101,6 @@ export class RopmModule {
      * The dominant version of the dependency. This will be the major version in most cases, will be the full version string for pre-release versions
      */
     public dominantVersion!: string;
-
-    /**
-     * A map of every compoent by component name.
-     * The key is all lower case component name
-     */
-    public componentMap = new Map<string, File>();
-
-    /**
-     * An array of every script referenced by a Task
-     */
-    public taskScripts!: Map<string, string>;
 
     public isValid = true;
 
@@ -246,17 +235,8 @@ export class RopmModule {
         //let all files discover all functions/components
         for (const file of this.files) {
             file.discover(this.program);
-
-            //add xml file to the component map
-            if (file.isXmlFile) {
-                this.componentMap.set(file.componentName!.toLowerCase(), file);
-            }
         }
 
-        //discover every task component
-        this.discoverTaskComponents();
-
-        this.discoverTaskScripts();
 
         //create the edits for every file
         this.createEdits(noprefixRopmAliases);
@@ -341,11 +321,9 @@ export class RopmModule {
             //only apply prefixes if configured to do so
             if (applyOwnPrefix) {
 
-                // if this file is a script referenced by a task, prefix `m.top.functionName` assignments
-                if (this.taskScripts.has(s`${file.pkgPath.toLowerCase()}`)) {
-                    for (const ref of file.taskFunctionNameAssignments) {
-                        file.addEdit(ref.offset, ref.offset, prefix);
-                    }
+                // replace `m.top.functionName = "<anything>"` assignments to support Tasks
+                for (const ref of file.taskFunctionNameAssignments) {
+                    file.addEdit(ref.offset, ref.offset, prefix);
                 }
 
                 //create an edit for each this-module-owned function
@@ -570,50 +548,5 @@ export class RopmModule {
             }
         }
         return Object.keys(result);
-    }
-
-    /**
-     * Mark every file that is a component and extends a Task (directly or indirectly)
-     */
-    private discoverTaskComponents() {
-        for (const file of this.files) {
-            if (file.isXmlFile && file.parentComponentName) {
-
-                let parent: File | undefined = file;
-
-                //walk ancestors until we can't find one. (loop to 50 just to guard against infinite loops)
-                while (parent) {
-                    //if there is no parent, then this file is not a task
-                    if (!parent) {
-                        break;
-                    }
-                    if (parent.parentComponentName?.toLowerCase() === 'task') {
-                        file.isTask = true;
-                        break;
-                    }
-                    parent = this.componentMap.get(file.parentComponentName.toLowerCase());
-                }
-            }
-        }
-    }
-
-    /**
-     * Build the list of every script that is referenced by at least one task
-     */
-    private discoverTaskScripts() {
-        this.taskScripts = new Map<string, string>();
-        for (const file of this.componentMap.values()) {
-            //only capture scripts from Tasks
-            if (file.isTask) {
-                //get this file from the program
-                const bscFile = this.program.getFileByPathAbsolute<XmlFile>(file.srcPath);
-                for (const importPath of bscFile.getAvailableScriptImports()) {
-                    const lowerImport = s`${importPath.toLowerCase()}`;
-                    if (!this.taskScripts.has(lowerImport)) {
-                        this.taskScripts.set(lowerImport, importPath);
-                    }
-                }
-            }
-        }
     }
 }
