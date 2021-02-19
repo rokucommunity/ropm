@@ -5,6 +5,9 @@ import { expect } from 'chai';
 import { RopmModule } from './prefixer/RopmModule';
 import type { RopmOptions } from './util';
 import * as rokuDeploy from 'roku-deploy';
+import { ModuleManager } from './prefixer/ModuleManager';
+import { util } from './util';
+
 export const sinon = createSandbox();
 
 export const tempDir = path.join(process.cwd(), '.tmp');
@@ -187,4 +190,52 @@ export function pick(objects: any[], ...properties: string[]) {
         results.push(result);
     }
     return results;
+}
+
+/**
+ * Streamlined way to test the ModuleManager.process functionality
+ */
+export async function testProcess(args: Record<string, [source: string, expected: string]>) {
+    const manager = new ModuleManager();
+    const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
+
+    const dependencies = [] as DepGraphNode[];
+    const expectedFileMap = new Map<string, any>();
+
+    for (const fileKey in args) {
+        const [source, expected] = args[fileKey];
+        const parts = fileKey.split(':');
+        const [dependencyName, filePath] = parts;
+
+        let dep = dependencies.find(x => x.name === dependencyName);
+        if (!dep) {
+            dep = {
+                name: dependencyName,
+                _files: {}
+            };
+            dependencies.push(dep);
+        }
+        dep._files![filePath] = source;
+        expectedFileMap.set(filePath, expected);
+    }
+
+    manager.modules = createProjects(hostDir, hostDir, {
+        name: 'host',
+        dependencies: dependencies
+    });
+
+    manager.hostDependencies = await util.getModuleDependencies(hostDir);
+    manager.noprefixNpmAliases = [];
+    await manager.process();
+
+    //copmare each output file to the expected
+    for (const dep of dependencies) {
+        for (const filePath in dep._files) {
+            const parts = filePath.split('/');
+            const baseFolder = parts.shift();
+            const remainingPath = parts.join('/');
+            const destinationPath = `${hostDir}/${baseFolder}/roku_modules/${dep.alias ?? dep.name}/${remainingPath}`;
+            fsEqual(destinationPath, expectedFileMap.get(filePath));
+        }
+    }
 }

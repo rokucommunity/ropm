@@ -3,7 +3,7 @@ import { ModuleManager } from './ModuleManager';
 import { expect } from 'chai';
 import * as path from 'path';
 import { util } from '../util';
-import type { DepGraphNode } from '../TestHelpers.spec';
+import { DepGraphNode, testProcess } from '../TestHelpers.spec';
 import { file, fsEqual, createProjects, trim } from '../TestHelpers.spec';
 import * as fsExtra from 'fs-extra';
 import { InstallCommand } from '../commands/InstallCommand';
@@ -1350,6 +1350,53 @@ describe('ModuleManager', () => {
             `);
         });
 
+        it.only('prefixes task functionName', async () => {
+            await testProcess({
+                'logger:source/lib.brs': [
+                    trim`
+                        sub a()
+                            m.top.functionName = "doSomething"
+                        end sub
+                    `,
+                    trim`
+                        sub logger_a()
+                            m.top.functionName = "doSomething"
+                        end sub
+                    `]
+            });
+        });
+
+        it('prefixes same-module direct task reference', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        //this file is referenced by a task
+                        'components/SimpleTask.brs': trim`
+                            sub init()
+                                m.top.functionName = "doSomething"
+                            end sub
+                        `,
+                        //directly extends task
+                        'components/SimpleTask.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="SimpleTask" extends="Task">
+                                <script uri="SimpleTask.brs" />
+                            </component>
+                        `,
+                    }
+                }]
+            });
+
+            await process();
+
+            fsEqual(`${hostDir}/source/roku_modules/logger/lib2.brs`, trim`
+                sub logger_b()
+                    m.top.functionName = "logger_doSomething"
+                end sub
+            `);
+        });
 
         it('prefixes namespaces and not their child functions or classes', async () => {
             manager.modules = createProjects(hostDir, hostDir, {

@@ -100,6 +100,11 @@ export class RopmModule {
      */
     public dominantVersion!: string;
 
+    /**
+     * A map of every compoent by component name
+     */
+    public componentMap = new Map<string, File>();
+
     public isValid = true;
 
     public async init() {
@@ -232,6 +237,10 @@ export class RopmModule {
 
         //let all files discover all functions/components
         for (const file of this.files) {
+            //add xml file to the component map
+            if (file.isXmlFile) {
+                this.componentMap.set(file.componentName!, file);
+            }
             file.discover(this.program);
         }
 

@@ -116,6 +116,16 @@ export class File {
     }>;
 
     /**
+     * The name of the component if this is an xml file
+     */
+    public componentName?: string;
+
+    /**
+     * The name of the parent component if this is an xml file
+     */
+    public parentComponentName?: string;
+
+    /**
      * List of functions referenced by a component's <interface> element
      */
     public componentInterfaceFunctions = [] as Array<{
@@ -378,6 +388,7 @@ export class File {
     private findComponentDefinitions() {
         const nameAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'name');
         if (nameAttribute?.value && nameAttribute?.syntax?.value) {
+            this.componentName = nameAttribute.value.replace(/"/g, '');
             this.componentDeclarations.push({
                 name: nameAttribute.value,
                 //plus one to step past the opening "
@@ -393,6 +404,7 @@ export class File {
         //get any "extends" attribute from the xml
         const extendsAttribute = this.xmlAst?.rootElement?.attributes?.find(x => x.key?.toLowerCase() === 'extends');
         if (extendsAttribute?.value && extendsAttribute?.syntax?.value) {
+            this.parentComponentName = extendsAttribute.value.replace(/"/g, '');
             this.componentReferences.push({
                 name: extendsAttribute.value,
                 //plus one to step past the opening "
