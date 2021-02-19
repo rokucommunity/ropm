@@ -8,7 +8,6 @@ import type { Dependency } from './ModuleManager';
 import type { Program } from 'brighterscript';
 import { ProgramBuilder } from 'brighterscript';
 import { LogLevel } from 'brighterscript/dist/Logger';
-import { basename } from 'path';
 
 export class RopmModule {
     constructor(

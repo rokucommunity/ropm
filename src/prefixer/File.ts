@@ -6,8 +6,8 @@ import { buildAst } from '@xml-tools/ast';
 import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import { BrsFile, ParseMode, Position, Program, XmlFile } from 'brighterscript';
-import { createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil } from 'brighterscript';
+import type { BrsFile, Position, Program, Range, XmlFile } from 'brighterscript';
+import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil } from 'brighterscript';
 
 export class File {
     constructor(
@@ -230,6 +230,24 @@ export class File {
         }
     }
 
+    private addClassRef(className: string, containingNamespace: string | undefined, range: Range) {
+        //look up the class. If we can find it, use it
+        const cls = (this.bscFile as BrsFile).getClassFileLink(className, containingNamespace)?.item;
+
+        let fullyQualifiedName: string;
+        if (cls) {
+            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(cls.getName(ParseMode.BrighterScript), cls.namespaceName?.getName(ParseMode.BrighterScript));
+        } else {
+            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(className, containingNamespace);
+        }
+
+        this.classReferences.push({
+            fullyQualifiedName: fullyQualifiedName,
+            offsetBegin: this.positionToOffset(range.start),
+            offsetEnd: this.positionToOffset(range.end)
+        });
+    }
+
     /**
      * find various items from this file.
      */
@@ -283,29 +301,24 @@ export class File {
                     ),
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
+
+                if (cls.parentClassName) {
+                    this.addClassRef(
+                        cls.parentClassName.getName(ParseMode.BrighterScript),
+                        cls.namespaceName?.getName(ParseMode.BrighterScript),
+                        cls.parentClassName.range
+                    );
+                }
             },
             FunctionExpression: (func) => {
                 //any parameters containing custom types
                 for (const param of func.parameters) {
                     if (isCustomType(param.type)) {
-                        //look up the class. If we can find it, use it
-                        const cls = file.getClassFileLink(
+                        this.addClassRef(
                             param.type.name,
-                            func.namespaceName?.getName(ParseMode.BrighterScript)
-                        )?.item;
-
-                        let fullyQualifiedName: string;
-                        if (cls) {
-                            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(cls.getName(ParseMode.BrighterScript), cls.namespaceName?.getName(ParseMode.BrighterScript));
-                        } else {
-                            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(param.type.name, func.namespaceName?.getName(ParseMode.BrighterScript));
-                        }
-
-                        this.classReferences.push({
-                            fullyQualifiedName: fullyQualifiedName,
-                            offsetBegin: this.positionToOffset(param.typeToken!.range.start),
-                            offsetEnd: this.positionToOffset(param.typeToken!.range.end)
-                        });
+                            func.namespaceName?.getName(ParseMode.BrighterScript),
+                            param.typeToken!.range
+                        );
                     }
                 }
             },

@@ -1272,7 +1272,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it('properly prefixes classes', async () => {
+        it('prefixes classes used in parameters', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
                     trim`
@@ -1296,6 +1296,49 @@ describe('ModuleManager', () => {
 
                         namespace logger
                         class Human
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes classes used in extends', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace animals
+                            class Animal
+                            end class
+                            class Dog extends Animal
+                            end class
+                            class Cat extends animals.Animal
+                            end class
+                            class Warewolf extends Human
+                            end class
+                        end namespace
+                        class Human
+                        end class
+                        class Warecat extends animals.Cat
+                        end class
+                    `,
+                    trim`
+                        namespace logger.animals
+                            class Animal
+                            end class
+                            class Dog extends logger.animals.Animal
+                            end class
+                            class Cat extends logger.animals.Animal
+                            end class
+                            class Warewolf extends logger.Human
+                            end class
+                        end namespace
+                        namespace logger
+                        class Human
+                        end class
+                        end namespace
+                        namespace logger
+                        class Warecat extends logger.animals.Cat
                         end class
                         end namespace
                     `
