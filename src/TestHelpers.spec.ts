@@ -7,7 +7,6 @@ import type { RopmOptions } from './util';
 import * as rokuDeploy from 'roku-deploy';
 import { ModuleManager } from './prefixer/ModuleManager';
 import { util } from './util';
-
 export const sinon = createSandbox();
 
 export const tempDir = path.join(process.cwd(), '.tmp');
@@ -194,10 +193,13 @@ export function pick(objects: any[], ...properties: string[]) {
 
 /**
  * Streamlined way to test the ModuleManager.process functionality
+ * The key is in the format `moduleName:path/to/file.ext`. You can specify an alias by doing `alias@moduleName:path/to/file.ext`
  */
-export async function testProcess(args: Record<string, [source: string, expected: string]>) {
+export async function testProcess(args: Record<string, [source: string, expected?: string]>) {
     const manager = new ModuleManager();
     const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
+    const noprefixNpmAliases = (args['noprefixNpmAliases'] ?? []) as string[];
+    delete args['noprefixNpmAliases'];
 
     const dependencies = [] as DepGraphNode[];
     const expectedFileMap = new Map<string, any>();
@@ -205,18 +207,30 @@ export async function testProcess(args: Record<string, [source: string, expected
     for (const fileKey in args) {
         const [source, expected] = args[fileKey];
         const parts = fileKey.split(':');
-        const [dependencyName, filePath] = parts;
+        let [dependencyName, filePath] = parts;
+        let alias = dependencyName;
+
+        //you can specify an alias by typing alias@originalName
+        const nameParts = dependencyName.split('@');
+        if (nameParts.length > 1) {
+            dependencyName = nameParts[1];
+            alias = nameParts[0];
+        }
 
         let dep = dependencies.find(x => x.name === dependencyName);
         if (!dep) {
             dep = {
                 name: dependencyName,
+                alias: dependencyName !== alias ? alias : undefined,
                 _files: {}
             };
             dependencies.push(dep);
         }
         dep._files![filePath] = source;
-        expectedFileMap.set(filePath, expected);
+        //only set if we have an expected value (undefined means "don't test this one")
+        if (expected) {
+            expectedFileMap.set(filePath, expected);
+        }
     }
 
     manager.modules = createProjects(hostDir, hostDir, {
@@ -225,7 +239,7 @@ export async function testProcess(args: Record<string, [source: string, expected
     });
 
     manager.hostDependencies = await util.getModuleDependencies(hostDir);
-    manager.noprefixNpmAliases = [];
+    manager.noprefixNpmAliases = noprefixNpmAliases;
     await manager.process();
 
     //copmare each output file to the expected
@@ -235,7 +249,10 @@ export async function testProcess(args: Record<string, [source: string, expected
             const baseFolder = parts.shift();
             const remainingPath = parts.join('/');
             const destinationPath = `${hostDir}/${baseFolder}/roku_modules/${dep.alias ?? dep.name}/${remainingPath}`;
-            fsEqual(destinationPath, expectedFileMap.get(filePath));
+            //only test if we have an expected value
+            if (expectedFileMap.has(filePath)) {
+                fsEqual(destinationPath, expectedFileMap.get(filePath));
+            }
         }
     }
 }
