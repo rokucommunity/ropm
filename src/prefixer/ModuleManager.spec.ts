@@ -7,8 +7,8 @@ import type { DepGraphNode } from '../TestHelpers.spec';
 import { testProcess, file, fsEqual, createProjects, trim } from '../TestHelpers.spec';
 import * as fsExtra from 'fs-extra';
 import { InstallCommand } from '../commands/InstallCommand';
-
-const hostDir = path.join(process.cwd(), '.tmp', 'hostApp');
+const cwd = process.cwd();
+const hostDir = path.join(cwd, '.tmp', 'hostApp');
 
 describe('ModuleManager', () => {
     let manager: ModuleManager;
@@ -1694,6 +1694,54 @@ describe('ModuleManager', () => {
                     `
                 ]
             });
+        });
+
+        it('prevents loading and running bsc plugins during ropm install', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    _files: {
+                        'source/loggerlib.brs': `
+                            sub logInfo(message)
+                                print message
+                            end sub
+                        `
+                    }
+                }]
+            });
+
+            //create a bsc plugin for the lib
+            fsExtra.outputFileSync(`${hostDir}/node_modules/logger/plugin.js`, `
+                throw new Error('plugin loaded');
+                `);
+
+            fsExtra.outputFileSync(`${hostDir}/node_modules/logger/bsconfig.json`, JSON.stringify({
+                plugins: [
+                    './plugin.js'
+                ]
+            }));
+
+            //create a bsc plugin for the host
+            fsExtra.outputFileSync(`${hostDir}/plugin.js`, `
+                throw new Error('plugin loaded');
+            `);
+
+            fsExtra.outputFileSync(`${hostDir}/bsconfig.json`, JSON.stringify({
+                plugins: [
+                    './plugin.js'
+                ]
+            }));
+
+            try {
+                //change directory into hostDir to reproduce this issue
+                process.chdir(hostDir);
+                await managerProcess();
+            } finally {
+                //restore cwd regardless of the test
+                process.chdir(cwd);
+            }
+            //loading the plugin causes an exception, so if no errors are thrown, this test was successful
         });
     });
 });

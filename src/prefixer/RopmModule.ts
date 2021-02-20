@@ -212,9 +212,12 @@ export class RopmModule {
         util.mockProgramValidate();
 
         await builder.run({
+            //specify an optional bogus bsconfig which prevents loading any bsconfig found in cwd
+            project: '?___not-real-bsconfig.json",',
             copyToStaging: false,
             createPackage: false,
             rootDir: this.packageRootDir,
+            cwd: this.packageRootDir,
             //hide all diagnostics, the package author should be responsible for ensuring their package is valid
             diagnosticFilters: ['**/*'],
             //hide log statements
