@@ -19,7 +19,7 @@ describe('ModuleManager', () => {
         noprefixNpmAliases = [];
     });
 
-    async function process() {
+    async function managerProcess() {
         manager.hostDependencies = await util.getModuleDependencies(hostDir);
         manager.noprefixNpmAliases = noprefixNpmAliases;
         await manager.process();
@@ -45,7 +45,7 @@ describe('ModuleManager', () => {
             await createDependencies([{
                 name: 'promise'
             }]);
-            await process();
+            await managerProcess();
             expect(manager.getReducedDependencies()).to.eql([{
                 npmModuleName: 'promise',
                 dominantVersion: '1',
@@ -62,7 +62,7 @@ describe('ModuleManager', () => {
                     name: 'promise'
                 }]
             }]);
-            await process();
+            await managerProcess();
             expect(manager.getReducedDependencies().filter(x => x.npmModuleName === 'promise')).to.eql([{
                 npmModuleName: 'promise',
                 dominantVersion: '1',
@@ -83,7 +83,7 @@ describe('ModuleManager', () => {
                     }]
                 }]
             }]);
-            await process();
+            await managerProcess();
             expect(manager.getReducedDependencies().filter(x => x.npmModuleName !== 'logger').sort((a, b) => a.dominantVersion.localeCompare(b.dominantVersion))).to.eql([{
                 npmModuleName: 'promise',
                 dominantVersion: '1',
@@ -106,7 +106,7 @@ describe('ModuleManager', () => {
                 name: 'promise',
                 version: '2.0.0'
             }]);
-            await process();
+            await managerProcess();
             expect(manager.getReducedDependencies().sort((a, b) => a.dominantVersion.localeCompare(b.dominantVersion))).to.eql([{
                 npmModuleName: 'promise',
                 dominantVersion: '1',
@@ -167,7 +167,7 @@ describe('ModuleManager', () => {
                 name: 'promise',
                 version: '2.0.0'
             }]);
-            await process();
+            await managerProcess();
 
             await manager.reduceModulesAndCreatePrefixMaps();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
@@ -194,7 +194,7 @@ describe('ModuleManager', () => {
                 name: 'promise',
                 version: '2.0.0'
             }]);
-            await process();
+            await managerProcess();
             await manager.reduceModulesAndCreatePrefixMaps();
             expect(manager.modules.map(x => [x.npmModuleName, x.version])).to.eql([
                 ['promise', '1.2.0'],
@@ -218,7 +218,7 @@ describe('ModuleManager', () => {
                     print ROPM_PREFIX + "ROPM_PREFIX"
                 end sub
             `);
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
                 sub logger_log(ROPM_PREFIX = "")
@@ -247,7 +247,7 @@ describe('ModuleManager', () => {
                     return logger_writeToLog(message)
                 end sub
             `);
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub logger_WriteToLog(message)
@@ -274,7 +274,7 @@ describe('ModuleManager', () => {
                     print message
                 end sub
             `);
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub main()
@@ -316,7 +316,7 @@ describe('ModuleManager', () => {
                 sub NonSpecialFunction()
                 end sub
             `);
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub runuserinterface()
@@ -354,7 +354,7 @@ describe('ModuleManager', () => {
                 sub __Sub2()
                 end sub
             `);
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub main()
@@ -394,7 +394,7 @@ describe('ModuleManager', () => {
                     comp.CreateChild("Component2")
                 end sub
             `);
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -436,7 +436,7 @@ describe('ModuleManager', () => {
                 end sub
             `);
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub logger_PrintValue(value)
@@ -471,7 +471,7 @@ describe('ModuleManager', () => {
                 }
             }]);
 
-            await process();
+            await managerProcess();
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
                 sub logger_getPerson()
                     person = {
@@ -508,7 +508,7 @@ describe('ModuleManager', () => {
                     `
                 }
             }]);
-            await process();
+            await managerProcess();
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
                 sub logger_writeToLog(message)
                     logFunc = logger_logWarning
@@ -537,7 +537,7 @@ describe('ModuleManager', () => {
                 }
             }]);
 
-            await process();
+            await managerProcess();
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
                 sub logger_logWarning(message)
                     logger_log(message, "warning")
@@ -565,7 +565,7 @@ describe('ModuleManager', () => {
                         'source/lib.brs': fileContents
                     }
                 }]);
-                await process();
+                await managerProcess();
                 fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, trim`
                     sub init()
                         ${expectedLine}
@@ -645,7 +645,7 @@ describe('ModuleManager', () => {
                 }
             }]);
 
-            await process();
+            await managerProcess();
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.brs`, `
                 sub logger_logWarning(message)
                     doSomething = sub()
@@ -683,7 +683,7 @@ describe('ModuleManager', () => {
                 </component>
             `);
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -707,7 +707,7 @@ describe('ModuleManager', () => {
             // the jsonlib package forgot to exclude its roku_modules folder
             file(`${promise.packageRootDir}/source/roku_modules/jsonlib/json.brs`, ``);
 
-            await process();
+            await managerProcess();
 
             //ropm should have IGNORED the roku_modules folder from the promise package
             expect(fsExtra.pathExistsSync(`${hostDir}/source/roku_modules/promise_v1/roku_modules/jsonlib/json.brs`)).to.be.false;
@@ -731,7 +731,7 @@ describe('ModuleManager', () => {
                 </component>
             `);
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -763,7 +763,7 @@ describe('ModuleManager', () => {
                 </component>
             `);
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -793,7 +793,7 @@ describe('ModuleManager', () => {
                 end sub
             `);
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/common.brs`, `
                 sub logger_GetImagePath(imageName)
@@ -865,7 +865,7 @@ describe('ModuleManager', () => {
                 }]
             });
 
-            await process();
+            await managerProcess();
 
             //the logger module should use the "l" prefix
             fsEqual(`${hostDir}/source/roku_modules/l/loggerlib.brs`, `
@@ -915,7 +915,7 @@ describe('ModuleManager', () => {
                 }]
             });
 
-            await process();
+            await managerProcess();
 
             //the logger module should have no prefixes applied to its functions or components
             fsEqual(`${hostDir}/source/roku_modules/logger/loggerlib.brs`, `
@@ -975,7 +975,7 @@ describe('ModuleManager', () => {
                 }]
             });
 
-            await process();
+            await managerProcess();
 
             //the logger module should have no prefixes applied to its functions or components
             fsEqual(`${hostDir}/source/roku_modules/logger/loggerlib.brs`, `
@@ -1087,7 +1087,7 @@ describe('ModuleManager', () => {
                     }]
                 }]
             });
-            await process();
+            await managerProcess();
             expect(manager.modules.map(x => x.npmModuleName)).to.eql(['smartlist']);
         });
 
@@ -1113,7 +1113,7 @@ describe('ModuleManager', () => {
                 }]
             });
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/components/roku_modules/logger/loggercomp.xml`, trim`
                 <?xml version="1.0" encoding="utf-8" ?>
@@ -1417,7 +1417,7 @@ describe('ModuleManager', () => {
                 }]
             });
 
-            await process();
+            await managerProcess();
 
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, `
                 namespace logger
