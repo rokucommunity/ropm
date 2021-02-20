@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.0] - 2021-02-19
+### Added
+ - `ROPM_PREFIX` source literal to assist package authors with non-standard string function name logic ([#32](https://github.com/rokucommunity/ropm/pull/32))
+### Changed
+ - updated to [brighterscript@0.31.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0312---2021-02-18)
+### Fixed
+ - bug in d.bs type definition files causing function and class annotiations to be incorrectly associated with their parent namespaces ([#31](https://github.com/rokucommunity/ropm/pull/31))
+ - add missing prefix for Task `m.top.functionName = "<someFunctionName>"` ([#34](https://github.com/rokucommunity/ropm/pull/34))
+ - better class name handling in d.bs type definition files ([#33](https://github.com/rokucommunity/ropm/pull/33))
+ - prevent running host project brighterscript plugins during ropm install of every ropm package ([#35](https://github.com/rokucommunity/ropm/pull/35))
+
+
+
 ## [0.8.1] - 2021-02-09
 ### Changed
  - updated to [brighterscript@0.30.6](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0306---2021-02-07)
@@ -222,3 +235,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.7]:   https://github.com/rokucommunity/ropm/compare/v0.7.6...v0.7.7
 [0.8.0]:   https://github.com/rokucommunity/ropm/compare/v0.7.7...v0.8.0
 [0.8.1]:   https://github.com/rokucommunity/ropm/compare/v0.8.0...v0.8.1
+[0.9.0]:   https://github.com/rokucommunity/ropm/compare/v0.8.1...v0.9.0
