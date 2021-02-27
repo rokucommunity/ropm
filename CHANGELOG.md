@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.1] - 2021-02-27
+### Changed
+ - updated to [brighterscript@0.33.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0330---2021-02-27)
+### Fixed
+ - bug where any function containing an immediately-invoked function expression would have its contents skipped during preprocessing (fixed by [brighterscript#343](https://github.com/rokucommunity/brighterscript/pull/343))
+
+
+
 ## [0.9.0] - 2021-02-19
 ### Added
  - `ROPM_PREFIX` source literal to assist package authors with non-standard string function name logic ([#32](https://github.com/rokucommunity/ropm/pull/32))
@@ -236,3 +244,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.8.0]:   https://github.com/rokucommunity/ropm/compare/v0.7.7...v0.8.0
 [0.8.1]:   https://github.com/rokucommunity/ropm/compare/v0.8.0...v0.8.1
 [0.9.0]:   https://github.com/rokucommunity/ropm/compare/v0.8.1...v0.9.0
+[0.9.1]:   https://github.com/rokucommunity/ropm/compare/v0.9.0...v0.9.1
