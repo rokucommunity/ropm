@@ -1649,6 +1649,33 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('prefixes functions found inside IIFEs', async () => {
+            await testProcess({
+                'logger:source/main.brs': [
+                    `
+                        sub getResult()
+                            return (sub()
+                                print getName()
+                            end sub)()
+                        end sub
+                        function getName()
+                            return "name"
+                        end function
+                    `,
+                    `
+                        sub logger_getResult()
+                            return (sub()
+                                print logger_getName()
+                            end sub)()
+                        end sub
+                        function logger_getName()
+                            return "name"
+                        end function
+                    `
+                ]
+            });
+        });
+
         it('does not wrap top-level non-namespaced functions that are referenced by component interface', async () => {
             await testProcess({
                 'logger:components/comp.xml': [
