@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.2] - 2021-05-28
+### Changed
+ - upgraded to [roku-deploy@3.4.0](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#340---2021-05-28) which brings significant zip speed improvements
+ - updated to [brighterscript@0.39.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0392---2021-05-28)
+### Fixed
+ - several npm audit vulnerability issues
+
+
+
 ## [0.9.1] - 2021-02-27
 ### Changed
  - updated to [brighterscript@0.33.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0330---2021-02-27)
@@ -245,3 +254,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.8.1]:   https://github.com/rokucommunity/ropm/compare/v0.8.0...v0.8.1
 [0.9.0]:   https://github.com/rokucommunity/ropm/compare/v0.8.1...v0.9.0
 [0.9.1]:   https://github.com/rokucommunity/ropm/compare/v0.9.0...v0.9.1
+[0.9.2]:   https://github.com/rokucommunity/ropm/compare/v0.9.1...v0.9.2
