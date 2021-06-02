@@ -36,7 +36,7 @@
     "glob-all": "3.2.1",
     "latinize": "0.5.0",
     "npm-packlist": "2.1.4",
-    "roku-deploy": "^3.4.0",
+    "roku-deploy": "^3.4.1",
     "semver": "7.3.4",
     "yargs": "16.2.0"
   },
