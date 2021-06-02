@@ -6,8 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.9.3] - 2021-06-01
+[0.9.3]: https://github.com/rokucommunity/ropm/compare/v0.9.2...v0.9.3
+### Changed
+ - upgraded to [roku-deploy@3.4.1](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#341---2021-06-01)
+ - updated to [brighterscript@0.39.3](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0392---2021-05-28) which includes roku-deploy@3.4.1
+### Fixed
+ - crash in roku-deploy caused by missing dependency
+
+
+
 ## [0.9.2] - 2021-05-28
-[0.9.2]:   https://github.com/rokucommunity/ropm/compare/v0.9.1...v0.9.2
+[0.9.2]: https://github.com/rokucommunity/ropm/compare/v0.9.1...v0.9.2
 ### Changed
  - upgraded to [roku-deploy@3.4.0](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#340---2021-05-28) which brings significant zip speed improvements
  - updated to [brighterscript@0.39.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0392---2021-05-28)
