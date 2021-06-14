@@ -140,7 +140,9 @@ export interface InstallCommandArgs {
      */
     packages?: string[];
     /**
-     * Dependencies installation location
+     * Dependencies installation location.
+     * By default the setting from package.json is imported out-of-the-box, but if rootDir is passed here,
+     * it will override the value from package.json.
      */
     rootDir?: string;
 }
