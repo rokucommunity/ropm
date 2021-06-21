@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.0] - 2021-06-21
+[0.10.0]: https://github.com/rokucommunity/ropm/compare/v0.9.3...v0.10.0
+### Added
+ - Allow option to override `rootDir` in NodeJS api options for `InstallCommand` rather than always loading from package.json
+
+
+
 ## [0.9.3] - 2021-06-01
 [0.9.3]: https://github.com/rokucommunity/ropm/compare/v0.9.2...v0.9.3
 ### Changed
