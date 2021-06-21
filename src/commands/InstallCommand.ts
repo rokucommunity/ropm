@@ -19,7 +19,7 @@ export class InstallCommand {
     private moduleManager = new ModuleManager();
 
     private get hostRootDir() {
-        const packageJsonRootDir = this.hostPackageJson?.ropm?.rootDir;
+        const packageJsonRootDir = this.args.rootDir ?? this.hostPackageJson?.ropm?.rootDir;
         if (packageJsonRootDir) {
             return path.resolve(this.cwd, packageJsonRootDir);
         } else {
@@ -139,4 +139,10 @@ export interface InstallCommandArgs {
      * The list of packages that should be installed
      */
     packages?: string[];
+    /**
+     * Dependencies installation location.
+     * By default the setting from package.json is imported out-of-the-box, but if rootDir is passed here,
+     * it will override the value from package.json.
+     */
+    rootDir?: string;
 }

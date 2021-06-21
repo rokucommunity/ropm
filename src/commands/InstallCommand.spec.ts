@@ -59,7 +59,7 @@ describe('InstallCommand', () => {
             )).to.be.true;
         });
 
-        it('uses dependency package.json ropm.rootDir when specified', async () => {
+        it('uses dependency package.json ropm.packageRootDir when specified', async () => {
 
             writeProject('logger', {
                 'src/source/logger.brs': ''
@@ -139,6 +139,35 @@ describe('InstallCommand', () => {
             )).to.be.true;
             expect(fsExtra.pathExistsSync(
                 path.join(projectDir, 'src', 'source', 'roku_modules', 'logger', 'temp.brs')
+            )).to.be.true;
+        });
+
+        it('honors rootDir arg over package.json `ropm.rootDir` property', async () => {
+            args.rootDir = 'anotherSrc';
+
+            writeProject('logger', {
+                'source/logger.brs': '',
+                'source/temp.brs': ''
+            });
+
+            writeProject(projectName, {
+                'anotherSrc/source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                },
+                ropm: {
+                    rootDir: 'src'
+                }
+            });
+
+            await command.run();
+
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'anotherSrc', 'source', 'roku_modules', 'logger', 'logger.brs')
+            )).to.be.true;
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'anotherSrc', 'source', 'roku_modules', 'logger', 'temp.brs')
             )).to.be.true;
         });
 
