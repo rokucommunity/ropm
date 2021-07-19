@@ -1,5 +1,6 @@
 node_modules*
 dist
+.idea
 .tmp
 dist
 .nyc_output
