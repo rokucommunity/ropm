@@ -301,8 +301,8 @@ describe('InstallCommand', () => {
 
             await command.run();
             expect(fsExtra.pathExistsSync(
-                path.join(projectDir, 'source', 'roku_modules', 'maestro')
-            )).to.be.false;
+                path.join(projectDir, 'source', 'roku_modules', 'maestro_v1')
+            )).to.be.true;
         });
 
         it('ignores prod dependencies of prod dependencies that are missing the "ropm" keyword', async () => {
@@ -330,7 +330,7 @@ describe('InstallCommand', () => {
 
             await command.run();
             expect(fsExtra.pathExistsSync(
-                path.join(projectDir, 'source', 'roku_modules', 'maestro')
+                path.join(projectDir, 'source', 'roku_modules', 'maestro_v1')
             )).to.be.false;
         });
 
