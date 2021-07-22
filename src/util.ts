@@ -182,12 +182,14 @@ export class Util {
                     throw new Error(`Could not resolve dependency "${npmAlias}" for "${moduleDir}"`);
                 }
                 const packageJson = await util.getPackageJson(dependencyDir);
-                result.push({
-                    npmAlias: npmAlias,
-                    ropmModuleName: util.getRopmNameFromModuleName(npmAlias),
-                    npmModuleName: packageJson.name,
-                    version: packageJson.version
-                });
+                if ((packageJson.keywords ?? []).includes('ropm')) {
+                    result.push({
+                        npmAlias: npmAlias,
+                        ropmModuleName: util.getRopmNameFromModuleName(npmAlias),
+                        npmModuleName: packageJson.name,
+                        version: packageJson.version
+                    });
+                }
             })
         );
 
