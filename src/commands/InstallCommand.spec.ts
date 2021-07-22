@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as fsExtra from 'fs-extra';
 import * as path from 'path';
+import * as util from 'util';
+import { exec } from 'child_process';
+const execPromisified = util.promisify(exec);
 import type { InstallCommandArgs } from './InstallCommand';
 import { InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
@@ -270,6 +273,64 @@ describe('InstallCommand', () => {
             await command.run();
             expect(fsExtra.pathExistsSync(
                 path.join(projectDir, 'source', 'roku_modules', 'logger')
+            )).to.be.false;
+        });
+
+        it('installs nested dependencies', async () => {
+            writeProject('maestro', {
+                'source/NodeClass.brs': ''
+            });
+
+            writeProject('logger', {
+                'source/logger.brs': ''
+            }, {
+                dependencies: {
+                    'maestro': `file:../maestro`
+                }
+            });
+            // `npm install` doesn't install dependencies of local dependencies - they have to be installed in dependency directory
+            await execPromisified('npm install', { cwd: path.join(tempDir, 'logger') });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            await command.run();
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'source', 'roku_modules', 'maestro')
+            )).to.be.false;
+        });
+
+        it('ignores prod dependencies of prod dependencies that are missing the "ropm" keyword', async () => {
+            writeProject('maestro', {
+                'source/NodeClass.brs': ''
+            }, { keywords: ['non-ropm'] });
+
+            writeProject('logger', {
+                'source/logger.brs': ''
+            }, {
+                dependencies: {
+                    'maestro': `file:../maestro`
+                }
+            });
+            // `npm install` doesn't install dependencies of local dependencies - they have to be installed in dependency directory
+            await execPromisified('npm install', { cwd: path.join(tempDir, 'logger') });
+
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            await command.run();
+            expect(fsExtra.pathExistsSync(
+                path.join(projectDir, 'source', 'roku_modules', 'maestro')
             )).to.be.false;
         });
 
