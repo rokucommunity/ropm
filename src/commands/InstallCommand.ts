@@ -112,7 +112,7 @@ export class InstallCommand {
         }
         let stdout: string;
         try {
-            stdout = childProcess.execSync('npm ls --parseable --prod --depth=99', {
+            stdout = childProcess.execSync('npm ls --parseable --prod --depth=Infinity', {
                 cwd: this.cwd
             }).toString();
         } catch (e) {
