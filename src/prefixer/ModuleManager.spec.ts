@@ -67,7 +67,7 @@ describe('ModuleManager', () => {
                 npmModuleName: 'promise',
                 dominantVersion: '1',
                 version: '1.0.0',
-                ropmModuleName: 'promise_v1'
+                ropmModuleName: 'promise'
             }]);
         });
 
@@ -129,7 +129,7 @@ describe('ModuleManager', () => {
                 npmModuleName: 'cool-package',
                 dominantVersion: '4.0.0-b4',
                 version: '4.0.0-b4',
-                ropmModuleName: 'coolpackage_v4_0_0_b4'
+                ropmModuleName: 'coolpackage'
             }]);
         });
 
@@ -251,7 +251,7 @@ describe('ModuleManager', () => {
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub logger_WriteToLog(message)
-                    return complexlogger_v1_writeToLog(message)
+                    return complexlogger_writeToLog(message)
                 end sub
             `);
         });
@@ -440,7 +440,7 @@ describe('ModuleManager', () => {
 
             fsEqual(`${hostDir}/source/roku_modules/logger/main.brs`, `
                 sub logger_PrintValue(value)
-                    print bravo_printer_v1_writeLine(value)
+                    print bravo_printer_writeLine(value)
                 end sub
             `);
         });
@@ -736,8 +736,8 @@ describe('ModuleManager', () => {
             fsEqual(`${hostDir}/components/roku_modules/logger/Component1.xml`, `
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="logger_Component1">
-                    <script uri="pkg:/source/roku_modules/promise_v1/promise.brs" />
-                    <script uri="pkg:/source/roku_modules/promise_v1/promise.brs" />
+                    <script uri="pkg:/source/roku_modules/promise/promise.brs" />
+                    <script uri="pkg:/source/roku_modules/promise/promise.brs" />
                 </component>
             `);
         });
@@ -771,7 +771,7 @@ describe('ModuleManager', () => {
                     <children>
                         <Poster uri="pkg:/images/roku_modules/logger/photo.jpg" />
                         <!--dependency paths-->
-                        <Poster uri="pkg:/images/roku_modules/photolib_v1/photo.jpg" />
+                        <Poster uri="pkg:/images/roku_modules/photolib/photo.jpg" />
                     </children>
                 </component>
             `);
@@ -1119,7 +1119,7 @@ describe('ModuleManager', () => {
                 <?xml version="1.0" encoding="utf-8" ?>
                 <component name="logger_loggercomp">
                     <children>
-                        <smartlist_v1_SimpleList></smartlist_v1_SimpleList>
+                        <smartlist_SimpleList></smartlist_SimpleList>
                     </children>
                 </component>
             `);
@@ -1422,9 +1422,9 @@ describe('ModuleManager', () => {
             fsEqual(`${hostDir}/source/roku_modules/logger/lib.d.bs`, `
                 namespace logger
                 class Person
-                    sub new(pet as animals_v1.Duck)
+                    sub new(pet as animals.Duck)
                     end sub
-                    sub watchPetForFriend(friendPet as dogs_v1.Poodle)
+                    sub watchPetForFriend(friendPet as dogs.Poodle)
                     end sub
                 end class
                 end namespace
