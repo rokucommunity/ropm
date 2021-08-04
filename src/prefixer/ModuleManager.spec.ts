@@ -860,6 +860,10 @@ describe('ModuleManager', () => {
                             sub parseJson(text)
                                 return {}
                             end sub
+
+                            sub anotherFunction()
+                                test = parseJson
+                            end sub
                         `
                     }
                 }]
@@ -877,6 +881,10 @@ describe('ModuleManager', () => {
             fsEqual(`${hostDir}/source/roku_modules/jsonlib/jsonlib.brs`, `
                 sub parseJson(text)
                     return {}
+                end sub
+
+                sub anotherFunction()
+                    test = parseJson
                 end sub
             `);
         });
