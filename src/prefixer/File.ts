@@ -213,14 +213,18 @@ export class File {
      * Scan the file for all important information
      */
     public discover(program: Program) {
-        this.bscFile = program.getFileByPathAbsolute(this.srcPath);
-        this.loadFile();
         this.functionDefinitions = [];
         this.functionReferences = [];
         this.componentDeclarations = [];
         this.componentReferences = [];
         this.fileReferences = [];
 
+        this.bscFile = program.getFileByPathAbsolute(this.srcPath);
+        //skip all processing if we didn't get a bscFile
+        if (!this.bscFile) {
+            return;
+        }
+        this.loadFile();
 
         if (this.isBrsFile || this.isBsFile || this.isTypdefFile) {
             this.findFilePathStrings();
@@ -238,6 +242,7 @@ export class File {
             this.findComponentInterfaceFunctions();
             this.findComponentFieldOnChangeFunctions();
         }
+
     }
 
     private addClassRef(className: string, containingNamespace: string | undefined, range: Range) {
@@ -264,7 +269,7 @@ export class File {
     public walkAst() {
         const file = this.bscFile as BrsFile;
         /* eslint-disable @typescript-eslint/naming-convention */
-        file.parser.ast.walk(createVisitor({
+        file?.parser.ast.walk(createVisitor({
             ImportStatement: (stmt) => {
                 //skip pkg paths, those are collected elsewhere
                 if (!stmt.filePath.startsWith('pkg:/')) {
@@ -415,7 +420,9 @@ export class File {
      * Write the new file contents back to disk
      */
     public async write() {
-        await fsExtra.writeFile(this.destPath, this.bscFile.fileContents);
+        if (this.bscFile?.fileContents !== undefined) {
+            await fsExtra.writeFile(this.destPath, this.bscFile.fileContents);
+        }
     }
 
 
