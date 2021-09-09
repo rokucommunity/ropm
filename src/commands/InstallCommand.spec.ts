@@ -62,6 +62,30 @@ describe('InstallCommand', () => {
             )).to.be.true;
         });
 
+        it('processes non-default folder paths', async () => {
+            //main project
+            writeProject(projectName, {
+                'source/main.brs': ''
+            }, {
+                dependencies: {
+                    'logger': `file:../logger`
+                }
+            });
+
+            //lib
+            writeProject('logger', {
+                'nonStandardFolder/logger.brs': 'sub log()\nend sub'
+            });
+
+            await command.run();
+
+            expect(
+                fsExtra.readFileSync(s`${projectDir}/nonStandardFolder/roku_modules/logger/logger.brs`).toString()
+            ).to.eql(
+                'sub logger_log()\nend sub'
+            );
+        });
+
         it('uses dependency package.json ropm.packageRootDir when specified', async () => {
 
             writeProject('logger', {
