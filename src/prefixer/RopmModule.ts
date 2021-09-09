@@ -210,7 +210,6 @@ export class RopmModule {
 
         //disable the Program.validate function to improve performance (we don't care about the validity of the code...that should be handled by the package publisher)
         util.mockProgramValidate();
-
         await builder.run({
             //specify an optional bogus bsconfig which prevents loading any bsconfig found in cwd
             project: '?___not-real-bsconfig.json",',
@@ -221,7 +220,13 @@ export class RopmModule {
             //hide all diagnostics, the package author should be responsible for ensuring their package is valid
             diagnosticFilters: ['**/*'],
             //hide log statements
-            logLevel: LogLevel.error
+            logLevel: LogLevel.error,
+            //include all files except node_modules and roku_modules (publishers SHOULD be excluding those, but might not)
+            files: [
+                '**/*',
+                '!**/roku_modules/**/*',
+                '!**/node_modules/**/*'
+            ]
         });
         this.program = builder.program;
 
