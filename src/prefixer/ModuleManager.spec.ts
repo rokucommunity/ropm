@@ -1684,6 +1684,66 @@ describe('ModuleManager', () => {
             });
         });
 
+        it.skip('works for maestro', async () => {
+            const command = new InstallCommand({ cwd: 'C:/projects/temp/maestro-test' });
+            await command.run(false);
+        });
+
+        it('rewrites import statements in d.bs files for noprefix-enabled module', async () => {
+            noprefixNpmAliases.push('maestro');
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'maestro',
+                    _files: {
+                        'source/core/Array.d.bs': trim`
+                            import "pkg:/source/core/Collections.brs"
+                            import "Source.brs"
+                        `
+                    }
+                }]
+            });
+
+            await managerProcess();
+
+            fsEqual(`${hostDir}/source/roku_modules/maestro/core/Array.d.bs`, trim`
+                import "pkg:/source/roku_modules/maestro/core/Collections.brs"
+                import "pkg:/source/roku_modules/maestro/core/Source.brs"
+            `);
+        });
+
+        it.skip('does not lose subfolder', async () => {
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'forms',
+                    _files: {
+                        'components/forms/LoginForm.xml': trim`
+                            <?xml version="1.0" encoding="utf-8" ?>
+                            <component name="LoginForm">
+                                <script uri="pkg:/components/roku_modules/buttons/SubmitButton.brs" />
+                            </component>
+                        `
+                    },
+                    dependencies: [{
+                        name: 'buttons',
+                        _files: {
+                            'components/SubmitButton.brs': `'hello world`
+                        }
+                    }]
+                }]
+            });
+
+            await managerProcess();
+            //the logger module should use the "l" prefix
+            fsEqual(`${hostDir}/components/roku_modules/forms/LoginForm.xml`, trim`
+                <?xml version="1.0" encoding="utf-8" ?>
+                <component name="LoginForm">
+                    <script uri="pkg:/components/roku_modules/buttons/SubmitButton.brs" />
+                </component>
+            `);
+        });
+
         it('does not wrap top-level non-namespaced functions that are referenced by component interface', async () => {
             await testProcess({
                 'logger:components/comp.xml': [
