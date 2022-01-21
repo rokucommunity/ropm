@@ -1684,11 +1684,6 @@ describe('ModuleManager', () => {
             });
         });
 
-        it.skip('works for maestro', async () => {
-            const command = new InstallCommand({ cwd: 'C:/projects/temp/maestro-test' });
-            await command.run(false);
-        });
-
         it('rewrites import statements in d.bs files for noprefix-enabled module', async () => {
             noprefixNpmAliases.push('maestro');
             manager.modules = createProjects(hostDir, hostDir, {
