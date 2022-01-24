@@ -30,7 +30,7 @@
   "dependencies": {
     "@xml-tools/ast": "5.0.4",
     "@xml-tools/parser": "1.0.10",
-    "brighterscript": "^0.39.3",
+    "brighterscript": "^0.42.0",
     "del": "6.0.0",
     "fs-extra": "9.1.0",
     "glob-all": "3.2.1",
