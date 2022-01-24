@@ -1684,6 +1684,29 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('rewrites import statements in d.bs files for noprefix-enabled module', async () => {
+            noprefixNpmAliases.push('maestro');
+            manager.modules = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'maestro',
+                    _files: {
+                        'source/core/Array.d.bs': trim`
+                            import "pkg:/source/core/Collections.brs"
+                            import "Source.brs"
+                        `
+                    }
+                }]
+            });
+
+            await managerProcess();
+
+            fsEqual(`${hostDir}/source/roku_modules/maestro/core/Array.d.bs`, trim`
+                import "pkg:/source/roku_modules/maestro/core/Collections.brs"
+                import "pkg:/source/roku_modules/maestro/core/Source.brs"
+            `);
+        });
+
         it('does not wrap top-level non-namespaced functions that are referenced by component interface', async () => {
             await testProcess({
                 'logger:components/comp.xml': [

@@ -313,9 +313,6 @@ export class RopmModule {
 
     private createEdits(noprefixRopmAliases: string[]) {
         const applyOwnPrefix = !noprefixRopmAliases.includes(this.ropmModuleName);
-        if (!applyOwnPrefix) {
-            return;
-        }
 
         const prefix = this.ropmModuleName + '_';
         const brighterscriptPrefix = this.ropmModuleName.replace(/_/g, '.');
@@ -345,146 +342,151 @@ export class RopmModule {
         const ropmPrefixSourceLiteralValue = `"${prefix}"`;
 
         for (const file of this.files) {
-            // replace `m.top.functionName = "<anything>"` assignments to support Tasks
-            for (const ref of file.taskFunctionNameAssignments) {
-                file.addEdit(ref.offset, ref.offset, prefix);
+
+            //rewrite file references
+            for (const fileReference of file.fileReferences) {
+                this.createFileReferenceEdit(file, fileReference);
             }
 
-            //create an edit for each this-module-owned function
-            for (const func of file.functionDefinitions) {
-                const lowerName = func.name.toLowerCase();
+            //apply prefix-related transforms
+            if (applyOwnPrefix) {
 
-                //skip edits for special functions
-                if (nonPrefixedFunctionMap[lowerName]) {
-                    continue;
+                // replace `m.top.functionName = "<anything>"` assignments to support Tasks
+                for (const ref of file.taskFunctionNameAssignments) {
+                    file.addEdit(ref.offset, ref.offset, prefix);
                 }
 
-                //handle typedef (.d.bs) files
-                if (file.isTypdefFile) {
-                    //wrap un-namespaced functions with a namespace
-                    if (!func.hasNamespace) {
+                //create an edit for each this-module-owned function
+                for (const func of file.functionDefinitions) {
+                    const lowerName = func.name.toLowerCase();
 
-                        file.addEdit(func.startOffset, func.startOffset, `namespace ${brighterscriptPrefix}\n`);
-                        file.addEdit(func.endOffset, func.endOffset, `\nend namespace`);
+                    //skip edits for special functions
+                    if (nonPrefixedFunctionMap[lowerName]) {
+                        continue;
                     }
-                    continue;
-                    //functions with leading underscores are treated specially
-                } else if (func.name.startsWith('_')) {
-                    const leadingUnderscores = /^_+/.exec(func.name)![0];
-                    file.addEdit(func.nameOffset + leadingUnderscores.length, func.nameOffset + leadingUnderscores.length, `${this.ropmModuleName}_`);
-                } else {
-                    //is NOT a typedef file, and is not a nonPrefixed function, so prefix it
-                    file.addEdit(func.nameOffset, func.nameOffset, prefix);
-                }
-            }
 
-            //wrap un-namespaced classes with prefix namespace
-            for (const cls of file.classDeclarations) {
-                if (!cls.hasNamespace) {
-                    file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
-                    file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
-                }
-            }
+                    //handle typedef (.d.bs) files
+                    if (file.isTypdefFile) {
+                        //wrap un-namespaced functions with a namespace
+                        if (!func.hasNamespace) {
 
-            //prefix d.bs class references
-            for (const ref of file.classReferences) {
-                const baseNamespace = util.getBaseNamespace(ref.fullyQualifiedName);
-
-                const alias = getAlias(baseNamespace);
-                let fullyQualifiedName: string;
-                //if we have an alias, this is a class from another module.
-                if (alias) {
-                    fullyQualifiedName = ref.fullyQualifiedName.replace(/^.*?\./, alias + '.');
-                } else {
-                    //this is an internal-module class, so append our prefix to it
-                    fullyQualifiedName = `${brighterscriptPrefix}.${ref.fullyQualifiedName}`;
-                }
-                file.addEdit(ref.offsetBegin, ref.offsetEnd, fullyQualifiedName);
-            }
-
-            //prefix d.bs namespaces
-            for (const namespace of file.namespaces) {
-                file.addEdit(namespace.offset, namespace.offset, brighterscriptPrefix + '.');
-            }
-
-            //prefix all function calls to our own function names
-            for (const call of file.functionReferences) {
-                const lowerName = call.name.toLowerCase();
-
-                //skip edits for special functions
-                if (nonPrefixedFunctionMap[lowerName]) {
-                    continue;
-                }
-                //if this function is owned by our project, rename it
-                if (ownFunctionMap[lowerName]) {
-                    if (lowerName.startsWith('_')) {
-                        const leadingUnderscores = /^_+/.exec(lowerName)![0];
-                        file.addEdit(call.offset + leadingUnderscores.length, call.offset + leadingUnderscores.length, `${this.ropmModuleName}_`);
+                            file.addEdit(func.startOffset, func.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                            file.addEdit(func.endOffset, func.endOffset, `\nend namespace`);
+                        }
+                        continue;
+                        //functions with leading underscores are treated specially
+                    } else if (func.name.startsWith('_')) {
+                        const leadingUnderscores = /^_+/.exec(func.name)![0];
+                        file.addEdit(func.nameOffset + leadingUnderscores.length, func.nameOffset + leadingUnderscores.length, `${this.ropmModuleName}_`);
                     } else {
-                        file.addEdit(call.offset, call.offset, prefix);
+                        //is NOT a typedef file, and is not a nonPrefixed function, so prefix it
+                        file.addEdit(func.nameOffset, func.nameOffset, prefix);
                     }
-                    continue;
                 }
 
-                //rename dependency function calls
-                const possiblePrefix = lowerName.split('_')[0];
-                const idx = prefixMapKeysLower.indexOf(possiblePrefix);
-                //if we have a prefix match, then convert the old prefix to the new prefix
-                if (idx > -1) {
-                    const newPrefix = this.prefixMap[prefixMapKeys[idx]];
-                    //begin position + the length of the original prefix + 1 for the underscore
-                    const offsetEnd = call.offset + possiblePrefix.length + 1;
-                    file.addEdit(call.offset, offsetEnd, newPrefix + '_');
-                }
-            }
-
-            //replace ROPM_PREFIX source literals and prefix identifiers with same name as function
-            for (const identifier of file.identifiers) {
-                const lowerName = identifier.name.toLowerCase();
-
-                //replace ROPM_PREFIX source literal
-                if (lowerName === 'ropm_prefix') {
-                    file.addEdit(identifier.offset, identifier.offset + identifier.name.length, ropmPrefixSourceLiteralValue);
+                //wrap un-namespaced classes with prefix namespace
+                for (const cls of file.classDeclarations) {
+                    if (!cls.hasNamespace) {
+                        file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                        file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
+                    }
                 }
 
-                //skip edits for special functions
-                if (nonPrefixedFunctionMap[lowerName]) {
-                    continue;
+                //prefix d.bs class references
+                for (const ref of file.classReferences) {
+                    const baseNamespace = util.getBaseNamespace(ref.fullyQualifiedName);
+
+                    const alias = getAlias(baseNamespace);
+                    let fullyQualifiedName: string;
+                    //if we have an alias, this is a class from another module.
+                    if (alias) {
+                        fullyQualifiedName = ref.fullyQualifiedName.replace(/^.*?\./, alias + '.');
+                    } else {
+                        //this is an internal-module class, so append our prefix to it
+                        fullyQualifiedName = `${brighterscriptPrefix}.${ref.fullyQualifiedName}`;
+                    }
+                    file.addEdit(ref.offsetBegin, ref.offsetEnd, fullyQualifiedName);
                 }
-                //if this identifier has the same name as a function, then prefix the identifier
-                if (ownFunctionMap[lowerName]) {
-                    file.addEdit(identifier.offset, identifier.offset, prefix);
+
+                //prefix d.bs namespaces
+                for (const namespace of file.namespaces) {
+                    file.addEdit(namespace.offset, namespace.offset, brighterscriptPrefix + '.');
                 }
-            }
 
-            //rename all this-file-defined component definitions
-            for (const comp of file.componentDeclarations) {
-                file.addEdit(comp.offset, comp.offset, prefix);
-            }
+                //prefix all function calls to our own function names
+                for (const call of file.functionReferences) {
+                    const lowerName = call.name.toLowerCase();
 
-            //rename all component usage
-            for (const comp of file.componentReferences) {
-                //if this component is owned by our module, rename it
-                if (ownComponentNames.includes(comp.name.toLowerCase())) {
-                    file.addEdit(comp.offset, comp.offset, prefix);
+                    //skip edits for special functions
+                    if (nonPrefixedFunctionMap[lowerName]) {
+                        continue;
+                    }
+                    //if this function is owned by our project, rename it
+                    if (ownFunctionMap[lowerName]) {
+                        if (lowerName.startsWith('_')) {
+                            const leadingUnderscores = /^_+/.exec(lowerName)![0];
+                            file.addEdit(call.offset + leadingUnderscores.length, call.offset + leadingUnderscores.length, `${this.ropmModuleName}_`);
+                        } else {
+                            file.addEdit(call.offset, call.offset, prefix);
+                        }
+                        continue;
+                    }
 
-                    //rename dependency component usage
-                } else {
-                    const possiblePrefix = comp.name.toLowerCase().split('_')[0];
+                    //rename dependency function calls
+                    const possiblePrefix = lowerName.split('_')[0];
                     const idx = prefixMapKeysLower.indexOf(possiblePrefix);
                     //if we have a prefix match, then convert the old prefix to the new prefix
                     if (idx > -1) {
                         const newPrefix = this.prefixMap[prefixMapKeys[idx]];
                         //begin position + the length of the original prefix + 1 for the underscore
-                        const offsetEnd = comp.offset + possiblePrefix.length + 1;
-                        file.addEdit(comp.offset, offsetEnd, newPrefix + '_');
+                        const offsetEnd = call.offset + possiblePrefix.length + 1;
+                        file.addEdit(call.offset, offsetEnd, newPrefix + '_');
                     }
                 }
-            }
 
-            //rewrite file references
-            for (const fileReference of file.fileReferences) {
-                this.createFileReferenceEdit(file, fileReference);
+                //replace ROPM_PREFIX source literals and prefix identifiers with same name as function
+                for (const identifier of file.identifiers) {
+                    const lowerName = identifier.name.toLowerCase();
+
+                    //replace ROPM_PREFIX source literal
+                    if (lowerName === 'ropm_prefix') {
+                        file.addEdit(identifier.offset, identifier.offset + identifier.name.length, ropmPrefixSourceLiteralValue);
+                    }
+
+                    //skip edits for special functions
+                    if (nonPrefixedFunctionMap[lowerName]) {
+                        continue;
+                    }
+                    //if this identifier has the same name as a function, then prefix the identifier
+                    if (ownFunctionMap[lowerName]) {
+                        file.addEdit(identifier.offset, identifier.offset, prefix);
+                    }
+                }
+
+                //rename all this-file-defined component definitions
+                for (const comp of file.componentDeclarations) {
+                    file.addEdit(comp.offset, comp.offset, prefix);
+                }
+
+                //rename all component usage
+                for (const comp of file.componentReferences) {
+                    //if this component is owned by our module, rename it
+                    if (ownComponentNames.includes(comp.name.toLowerCase())) {
+                        file.addEdit(comp.offset, comp.offset, prefix);
+
+                        //rename dependency component usage
+                    } else {
+                        const possiblePrefix = comp.name.toLowerCase().split('_')[0];
+                        const idx = prefixMapKeysLower.indexOf(possiblePrefix);
+                        //if we have a prefix match, then convert the old prefix to the new prefix
+                        if (idx > -1) {
+                            const newPrefix = this.prefixMap[prefixMapKeys[idx]];
+                            //begin position + the length of the original prefix + 1 for the underscore
+                            const offsetEnd = comp.offset + possiblePrefix.length + 1;
+                            file.addEdit(comp.offset, offsetEnd, newPrefix + '_');
+                        }
+                    }
+                }
             }
         }
     }
