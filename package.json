@@ -28,7 +28,7 @@
   "author": "Bronley Plumb",
   "license": "MIT",
   "dependencies": {
-    "@xml-tools/ast": "5.0.4",
+    "@xml-tools/ast": "^5.0.5",
     "@xml-tools/parser": "1.0.10",
     "brighterscript": "^0.42.0",
     "del": "6.0.0",
@@ -58,7 +58,7 @@
     "eslint": "7.20.0",
     "eslint-plugin-github": "^4.1.1",
     "eslint-plugin-no-only-tests": "^2.4.0",
-    "mocha": "^8.3.0",
+    "mocha": "^9.2.0",
     "nyc": "^15.1.0",
     "sinon": "^9.2.4",
     "source-map-support": "^0.5.19",
