@@ -1,10 +1,12 @@
 # ropm
 A package manager for the Roku platform.
 
-[![build](https://img.shields.io/github/workflow/status/rokucommunity/ropm/build.svg?logo=github)](https://github.com/rokucommunity/ropm/actions?query=workflow%3Abuild)
-[![Coverage Status](https://coveralls.io/repos/github/rokucommunity/ropm/badge.svg?branch=master)](https://coveralls.io/github/rokucommunity/ropm?branch=master)
-[![NPM Version](https://badge.fury.io/js/ropm.svg?style=flat)](https://npmjs.org/package/ropm)
-
+[![build status](https://img.shields.io/github/workflow/status/rokucommunity/ropm/build.svg?logo=github)](https://github.com/rokucommunity/ropm/actions?query=workflow%3Abuild)
+[![coverage status](https://img.shields.io/coveralls/github/rokucommunity/ropm?logo=coveralls)](https://coveralls.io/github/rokucommunity/ropm?branch=master)
+[![monthly downloads](https://img.shields.io/npm/dm/ropm.svg?sanitize=true&logo=npm&logoColor=)](https://npmcharts.com/compare/ropm?minimal=true)
+[![npm version](https://img.shields.io/npm/v/ropm.svg?logo=npm)](https://www.npmjs.com/package/ropm)
+[![license](https://img.shields.io/github/license/rokucommunity/ropm.svg)](LICENSE)
+[![Slack](https://img.shields.io/badge/Slack-RokuCommunity-4A154B?logo=slack)](https://join.slack.com/t/rokudevelopers/shared_invite/zt-4vw7rg6v-NH46oY7hTktpRIBM_zGvwA)
 ## Installation
 1. Install Node.JS from [here](https://nodejs.org/en/download/)
 2. install the `ropm` node module globally
