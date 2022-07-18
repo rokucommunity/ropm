@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.6](https://github.com/rokucommunity/ropm/compare/v0.10.5...0.10.6) - 2022-07-18
+### Changed
+ - upgrade to [brighterscript@0.53.1](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0531---2022-07-15). Notable changes since 0.48.0:
+     - New Language Feature: Constants ([brighterscript#632](https://github.com/rokucommunity/brighterscript/pull/632))
+     - Fix missing range on interface statement ([brighterscript#623](https://github.com/rokucommunity/brighterscript/pull/623))
+     - Catch class circular extends ([brighterscript#619](https://github.com/rokucommunity/brighterscript/pull/619))
+     - Add object and key to visitor callbacks. ([brighterscript#600](https://github.com/rokucommunity/brighterscript/pull/600))
+     - fixes enums and interfaces resulting in diagnostics error when used as field types ([brighterscript#602](https://github.com/rokucommunity/brighterscript/pull/602))
+     - fixes enums and interfaces resulting in diagnostics error when used as return types from a function ([brighterscript#601](https://github.com/rokucommunity/brighterscript/pull/601))
+     - Better super handling ([brighterscript#590](https://github.com/rokucommunity/brighterscript/pull/590))
+     - Allow interfaces and enums as function param types ([brighterscript#580](https://github.com/rokucommunity/brighterscript/pull/580))
+ - upgrade to [roku-deploy@3.7.1](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#371---2022-06-08). Notable changes since 3.4.1:
+     - export `rokuDeploy` as its own variable to get better docs ([#roku-deploy3c3deb4](https://github.com/rokucommunity/roku-deploy/commit/3c3deb4))
+     - Performance improvements ([roku-deploy#86](https://github.com/rokucommunity/roku-deploy/pull/86))
+     - Allow negated non-root-dir top-level patterns in files array ([roku-deploy#78](https://github.com/rokucommunity/roku-deploy/pull/78))
+
+
+
 ## [0.10.5](https://github.com/rokucommunity/ropm/compare/v0.10.4...v0.10.5) - 2022-04-13
 ### Changed
  - updated to [brighterscript@0.48.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0480---2022-04-13)
