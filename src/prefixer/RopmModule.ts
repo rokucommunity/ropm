@@ -457,7 +457,7 @@ export class RopmModule {
                     if (nonPrefixedFunctionMap[lowerName]) {
                         continue;
                     }
-                    //if this identifier has the same name as a function and we're not in a typedef, then prefix the identifier
+                    //if this identifier has the same name as a function, then prefix the identifier
                     if (ownFunctionMap[lowerName]) {
                         const leadingEditText = file.isTypdefFile ? `${brighterscriptPrefix}.` : prefix;
                         file.addEdit(identifier.offset, identifier.offset, leadingEditText);
