@@ -1542,7 +1542,8 @@ describe('ModuleManager', () => {
                         <component name="SimpleTask" extends="Task">
                         </component>
                     `
-                ], 'logger:components/HardTask.xml': [
+                ],
+                'logger:components/HardTask.xml': [
                     trim`
                         <?xml version="1.0" encoding="utf-8" ?>
                         <component name="HardTask" extends="SimpleTask">
@@ -1553,31 +1554,86 @@ describe('ModuleManager', () => {
             });
         });
 
-        it('prefixes indirect task reference from component in different module', async () => {
+        it('handles d.bs default param values properly', async () => {
+            await createDependencies([{
+                name: 'alpha',
+                dependencies: [{
+                    name: 'beta',
+                    _files: {
+                        'source/betaLib.d.bs': trim`
+                            sub doSomething(callback = noop)
+                            end sub
+                            sub noop()
+                            end sub
+                        `
+                    }
+                }]
+            }]);
+
+            await managerProcess();
+
+            fsEqual(`${hostDir}/source/roku_modules/beta_v1/betaLib.d.bs`, `
+                namespace beta.v1
+                sub doSomething(callback = beta.v1.noop)
+                end sub
+                end namespace
+                namespace beta.v1
+                sub noop()
+                end sub
+                end namespace
+            `);
+        });
+
+        //TODO eventually we need to fix this test
+        it.skip('handles d.bs default param namespaced values properly', async () => {
+            await createDependencies([{
+                name: 'alpha',
+                dependencies: [{
+                    name: 'beta',
+                    _files: {
+                        'source/betaLib.d.bs': trim`
+                            sub doSomething(callback = internal.noop)
+                            end sub
+                            namespace internal
+                                sub noop()
+                                end sub
+                            end namespace
+                        `
+                    }
+                }]
+            }]);
+
+            await managerProcess();
+
+            fsEqual(`${hostDir}/source/roku_modules/beta_v1/betaLib.d.bs`, `
+                namespace beta.v1
+                sub doSomething(callback = beta.v1.internal.noop)
+                end sub
+                end namespace
+                namespace beta.v1.internal
+                    sub noop()
+                    end sub
+                end namespace
+            `);
+        });
+
+        it('prefixes default parameter values in d.bs files', async () => {
             await testProcess({
-                'logger:components/HardTask.brs': [
+                'logger:source/lib.d.bs': [
                     trim`
-                        sub init()
-                            m.top.functionName = "doSomething"
-                        end sub
+                        namespace util
+                            function doSomething()
+                            end function
+                            class Person
+                            end class
+                        end namespace
                     `, trim`
-                        sub init()
-                            m.top.functionName = "logger_doSomething"
-                        end sub
-                    `
-                ],
-                'tasker:components/SimpleTask.xml': [
-                    trim`
-                        <?xml version="1.0" encoding="utf-8" ?>
-                        <component name="SimpleTask" extends="Task">
-                        </component>
-                    `
-                ], 'logger:components/HardTask.xml': [
-                    trim`
-                        <?xml version="1.0" encoding="utf-8" ?>
-                        <component name="HardTask" extends="tasker_SimpleTask">
-                            <script uri="HardTask.brs" />
-                        </component>
+                        namespace logger.util
+                            function doSomething()
+                            end function
+                            class Person
+                            end class
+                        end namespace
                     `
                 ]
             });

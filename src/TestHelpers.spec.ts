@@ -154,7 +154,7 @@ export async function expectThrowsAsync(func, startingText?: string) {
         await Promise.resolve(
             func()
         );
-    } catch (e) {
+    } catch (e: any) {
         ex = e;
     }
     if (!ex) {
@@ -242,7 +242,7 @@ export async function testProcess(args: Record<string, [source: string, expected
     manager.noprefixNpmAliases = noprefixNpmAliases;
     await manager.process();
 
-    //copmare each output file to the expected
+    //compare each output file to the expected
     for (const dep of dependencies) {
         for (const filePath in dep._files) {
             const parts = filePath.split('/');
