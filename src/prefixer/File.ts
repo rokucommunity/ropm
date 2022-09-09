@@ -219,7 +219,7 @@ export class File {
         this.componentReferences = [];
         this.fileReferences = [];
 
-        this.bscFile = program.getFileByPathAbsolute(this.srcPath);
+        this.bscFile = program.getFile(this.srcPath);
         //skip all processing if we didn't get a bscFile
         if (!this.bscFile) {
             return;

@@ -459,7 +459,8 @@ export class RopmModule {
                     }
                     //if this identifier has the same name as a function, then prefix the identifier
                     if (ownFunctionMap[lowerName]) {
-                        file.addEdit(identifier.offset, identifier.offset, prefix);
+                        const leadingEditText = file.isTypdefFile ? `${brighterscriptPrefix}.` : prefix;
+                        file.addEdit(identifier.offset, identifier.offset, leadingEditText);
                     }
                 }
 
