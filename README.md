@@ -1,7 +1,7 @@
 # ropm
 A package manager for the Roku platform.
 
-[![build status](https://img.shields.io/github/workflow/status/rokucommunity/ropm/build.svg?logo=github)](https://github.com/rokucommunity/ropm/actions?query=workflow%3Abuild)
+[![build status](https://img.shields.io/github/actions/workflow/status/rokucommunity/ropm/build.yml?logo=github&branch=master)](https://github.com/rokucommunity/ropm/actions?query=branch%3Amaster+workflow%3Abuild)
 [![coverage status](https://img.shields.io/coveralls/github/rokucommunity/ropm?logo=coveralls)](https://coveralls.io/github/rokucommunity/ropm?branch=master)
 [![monthly downloads](https://img.shields.io/npm/dm/ropm.svg?sanitize=true&logo=npm&logoColor=)](https://npmcharts.com/compare/ropm?minimal=true)
 [![npm version](https://img.shields.io/npm/v/ropm.svg?logo=npm)](https://www.npmjs.com/package/ropm)
