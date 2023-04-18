@@ -30,13 +30,13 @@
   "dependencies": {
     "@xml-tools/ast": "^5.0.5",
     "@xml-tools/parser": "1.0.10",
-    "brighterscript": "^0.62.0",
+    "brighterscript": "^0.64.2",
     "del": "6.0.0",
     "fs-extra": "9.1.0",
     "glob-all": "3.2.1",
     "latinize": "0.5.0",
     "npm-packlist": "2.1.4",
-    "roku-deploy": "^3.10.0",
+    "roku-deploy": "^3.10.1",
     "semver": "7.3.4",
     "yargs": "16.2.0"
   },
