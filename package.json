@@ -1,6 +1,6 @@
 {
   "name": "ropm",
-  "version": "0.10.14",
+  "version": "0.10.15",
   "description": "",
   "scripts": {
     "preversion": "npm run build && npm run lint && npm run test",
