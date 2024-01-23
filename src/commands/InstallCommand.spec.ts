@@ -563,6 +563,50 @@ describe('InstallCommand', () => {
                 s`${tempDir}/outerProject/innerProject/node_modules/innerProjectDependency`
             ]);
         });
+
+        it('recognizes workspace packages and excludes root', async () => {
+            const rootProject = s`${tempDir}/root-project`;
+            const workspaceProject = s`packages/workspace-project`;
+
+            //lib
+            writeProject('root-project-dependency', {});
+            //lib
+            writeProject('workspace-dependency', {});
+
+            writeProject('root-project', {}, {
+                dependencies: {
+                    'root-project-dependency': 'file:../root-project-dependency'
+                },
+                workspaces: [workspaceProject]
+            });
+
+            writeProject('root-project/packages/workspace-project', {}, {
+                dependencies: {
+                    'workspace-dependency': 'file:../../../workspace-dependency'
+                }
+            });
+
+            const workspaceCommand = new InstallCommand({
+                cwd: s`${rootProject}/${workspaceProject}`
+            });
+            await workspaceCommand.run();
+
+            /**
+             * While this assert is for node 10, newer versions of npm
+             * install workspace dependencies to the root node_modules
+             * (if they don't conflict) and resolve workspaces from there
+             * too. Not sure what npm version added that improvement, but
+             * for example node 18 the assert would be:
+             * expect(innerCommand.getProdDependencies()).to.eql([
+             *   s`${rootProject}/node_modules/workspace-project`,
+             *   s`${rootProject}/node_modules/workspace-dependency`
+             * ]);
+             */
+            expect(workspaceCommand.getProdDependencies()).to.eql([
+                s`${rootProject}/packages/workspace-project`,
+                s`${rootProject}/packages/workspace-project/node_modules/workspace-dependency`
+            ]);
+        });
     });
 });
 
@@ -575,7 +619,7 @@ export function writeProject(projectName: string, files: Record<string, string>,
         fsExtra.writeFileSync(filePath, files[relativePath]);
     }
     const packageJson = {
-        name: projectName,
+        name: projectName.split('/').slice(-1)[0],
         version: '1.0.0',
         description: '',
         keywords: [

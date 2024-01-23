@@ -308,6 +308,7 @@ export interface RopmPackageJson {
     files?: string[];
     keywords?: string[];
     version: string;
+    workspaces?: string[];
     ropm?: RopmOptions;
 }
 export interface RopmOptions {
