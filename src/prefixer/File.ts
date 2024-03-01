@@ -306,13 +306,14 @@ export class File {
             },
             //track class declarations (.bs and .d.bs only)
             ClassStatement: (cls) => {
+                const annotations = cls.annotations ?? [];
                 this.classDeclarations.push({
                     name: cls.name.text,
                     nameOffset: this.positionToOffset(cls.name.range.start),
                     hasNamespace: !!cls.namespaceName,
                     //Use annotation start position if available, otherwise use class keyword
                     startOffset: this.positionToOffset(
-                        (cls.annotations?.length > 0 ? cls.annotations[0] : cls.classKeyword).range.start
+                        (annotations?.length > 0 ? annotations[0] : cls.classKeyword).range.start
                     ),
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
@@ -346,13 +347,14 @@ export class File {
                 }
             },
             FunctionStatement: (func) => {
+                const annotations = func.annotations ?? [];
                 this.functionDefinitions.push({
                     name: func.name.text,
                     nameOffset: this.positionToOffset(func.name.range.start),
                     hasNamespace: !!func.namespaceName,
                     //Use annotation start position if available, otherwise use keyword
                     startOffset: this.positionToOffset(
-                        (func.annotations?.length > 0 ? func.annotations[0] : func.func.functionType)!.range.start
+                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start
                     ),
                     endOffset: this.positionToOffset(func.func.end.range.end)
                 });

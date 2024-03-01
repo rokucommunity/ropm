@@ -228,7 +228,7 @@ export class RopmModule {
                 '!**/node_modules/**/*'
             ]
         });
-        this.program = builder.program;
+        this.program = builder.program!;
 
         //load all files
         for (const obj of this.fileMaps) {
