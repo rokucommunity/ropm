@@ -272,7 +272,7 @@ export class File {
         file?.parser.ast.walk(createVisitor({
             ImportStatement: (stmt) => {
                 //skip pkg paths, those are collected elsewhere
-                if (!stmt.filePath.startsWith('pkg:/')) {
+                if (stmt.filePath && stmt.filePathToken && !stmt.filePath.startsWith('pkg:/')) {
                     this.fileReferences.push({
                         offset: this.positionToOffset(stmt.filePathToken.range.start),
                         path: stmt.filePath
@@ -322,7 +322,7 @@ export class File {
                     this.addClassRef(
                         cls.parentClassName.getName(ParseMode.BrighterScript),
                         cls.namespaceName?.getName(ParseMode.BrighterScript),
-                        cls.parentClassName.range
+                        cls.parentClassName.range!
                     );
                 }
             },
@@ -362,7 +362,7 @@ export class File {
             NamespaceStatement: (namespace) => {
                 this.namespaces.push({
                     name: namespace.name,
-                    offset: this.positionToOffset(namespace.nameExpression.range.start)
+                    offset: this.positionToOffset(namespace.nameExpression.range!.start)
                 });
             }
         }), {
