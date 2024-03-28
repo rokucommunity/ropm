@@ -4,6 +4,7 @@
         {
             "name": "Debug Tests",
             "type": "node",
+            "runtimeVersion": "10",
             "request": "launch",
             "smartStep": false,
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
