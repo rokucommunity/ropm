@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.24](https://github.com/rokucommunity/ropm/compare/v0.10.23...0.10.24) - 2024-05-17
+### Changed
+ - fix node14 ([#74](https://github.com/rokucommunity/ropm/pull/74))
+ - Fix some spelling mistakes in readme ([362fb83](https://github.com/rokucommunity/ropm/commit/362fb83))
+ - upgrade to [brighterscript@0.67.1](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0671---2024-05-16). Notable changes since 0.65.25:
+     - Fix crash when diagnostic is missing range ([brighterscript#1174](https://github.com/rokucommunity/brighterscript/pull/1174))
+     - Move function calls to separate diagnostic ([brighterscript#1169](https://github.com/rokucommunity/brighterscript/pull/1169))
+     - fix: resolve the stagingDir option relative to the bsconfig.json file ([brighterscript#1148](https://github.com/rokucommunity/brighterscript/pull/1148))
+     - Increase max param count to 63 ([brighterscript#1112](https://github.com/rokucommunity/brighterscript/pull/1112))
+     - Prevent unused variable warnings on ternary and null coalescence expressions ([brighterscript#1101](https://github.com/rokucommunity/brighterscript/pull/1101))
+
+
+
 ## [0.10.23](https://github.com/rokucommunity/ropm/compare/v0.10.22...v0.10.23) - 2024-03-07
 ### Changed
  - upgrade to [brighterscript@0.65.25](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06525---2024-03-07). Notable changes since 0.65.23:
