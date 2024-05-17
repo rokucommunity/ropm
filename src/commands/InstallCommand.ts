@@ -116,13 +116,13 @@ export class InstallCommand {
                 cwd: this.cwd
             }).toString();
         } catch (e) {
-            stdout = e.stdout.toString();
-            const stderr: string = e.stderr.toString();
+            stdout = (e as any).stdout.toString();
+            const stderr: string = (e as any).stderr.toString();
             //sometimes the unit tests absorb stderr...so as long as we have stdout, assume it's valid (and ignore the stderr)
             if (stderr.includes('npm ERR! extraneous:')) {
                 //ignore errors
             } else {
-                throw new Error('Failed to compute prod dependencies: ' + e.message);
+                throw new Error('Failed to compute prod dependencies: ' +  (e as any).message);
             }
         }
 
