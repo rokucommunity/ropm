@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.25](https://github.com/rokucommunity/ropm/compare/v0.10.24...v0.10.25) - 2024-08-01
+### Changed
+ - Maintenance (lint fixes, bsc upgrades, npm audit fixes) ([#75](https://github.com/rokucommunity/ropm/pull/75))
+ - upgrade to [brighterscript@0.67.5](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0675---2024-07-31). Notable changes since 0.67.1:
+     - Add templatestring support for annotation.getArguments() ([brighterscript#1264](https://github.com/rokucommunity/brighterscript/pull/1264))
+     - Update Digitial Picture Frame url and img ([brighterscript#1237](https://github.com/rokucommunity/brighterscript/pull/1237))
+     - Fix crash with missing scope ([brighterscript#1234](https://github.com/rokucommunity/brighterscript/pull/1234))
+     - Bump braces from 3.0.2 to 3.0.3 in /benchmarks ([brighterscript#1229](https://github.com/rokucommunity/brighterscript/pull/1229))
+     - fix: conform bsconfig.schema.json to strict types ([brighterscript#1205](https://github.com/rokucommunity/brighterscript/pull/1205))
+     - Flag using devDependency in production code ([brighterscript#1222](https://github.com/rokucommunity/brighterscript/pull/1222))
+     - Fix crash with optional chaining in signature help ([brighterscript#1207](https://github.com/rokucommunity/brighterscript/pull/1207))
+ - upgrade to [roku-deploy@3.12.1](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3121---2024-07-19). Notable changes since 3.12.0:
+     - Fix bug with absolute paths and getDestPath ([roku-deploy#171](https://github.com/rokucommunity/roku-deploy/pull/171))
+     - fix-node14 ([roku-deploy#165](https://github.com/rokucommunity/roku-deploy/pull/165))
+
+
+
 ## [0.10.24](https://github.com/rokucommunity/ropm/compare/v0.10.23...0.10.24) - 2024-05-17
 ### Changed
  - fix node14 ([#74](https://github.com/rokucommunity/ropm/pull/74))
