@@ -1,6 +1,6 @@
 {
   "name": "ropm",
-  "version": "0.10.23",
+  "version": "0.10.24",
   "description": "",
   "scripts": {
     "preversion": "npm run build && npm run lint && npm run test",
@@ -53,18 +53,18 @@
     "@types/yargs": "^16.0.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
-    "chai": "^4.3.0",
-    "coveralls": "^3.1.0",
+    "chai": "^4.3.4",
+    "coveralls-next": "^4.2.0",
     "eslint": "^8.16.0",
     "eslint-plugin-github": "^4.1.1",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsdoc": "^39.3.6",
-    "eslint-plugin-no-only-tests": "2.6.0",
+    "eslint-plugin-no-only-tests": "^2.6.0",
     "mocha": "^9.2.0",
     "nyc": "^15.1.0",
     "sinon": "^9.2.4",
-    "source-map-support": "^0.5.19",
-    "ts-node": "^9.1.1",
+    "source-map-support": "^0.5.20",
+    "ts-node": "^10.4.0",
     "typescript": "^5.4.5"
   },
   "mocha": {
