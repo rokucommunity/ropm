@@ -143,7 +143,7 @@ describe('RopmModule', () => {
                 sinon.stub(util, 'getModuleDependencies').returns(Promise.resolve([{ npmAlias: 'alias', npmModuleName: 'real-name', version: '1.0.0' } as any]));
                 await logger.createPrefixMap([{ npmModuleName: 'logger' } as Dependency]);
             } catch (e) {
-                error = e;
+                error = e as unknown as Error;
             }
             expect(error?.message).to.include('alias(real-name)');
         });

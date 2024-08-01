@@ -115,7 +115,7 @@ export class InstallCommand {
             stdout = childProcess.execSync('npm ls --parseable --prod --depth=Infinity', {
                 cwd: this.cwd
             }).toString();
-        } catch (e) {
+        } catch (e: any) {
             stdout = e.stdout.toString();
             const stderr: string = e.stderr.toString();
             //sometimes the unit tests absorb stderr...so as long as we have stdout, assume it's valid (and ignore the stderr)

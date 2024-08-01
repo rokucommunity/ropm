@@ -281,7 +281,7 @@ export class Util {
      */
     public mockProgramValidate() {
         if (Program.prototype.validate !== mockProgramValidate) {
-            Program.prototype.validate = mockProgramValidate;
+            Program.prototype.validate = mockProgramValidate as any;
         }
     }
 
