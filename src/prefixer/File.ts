@@ -1,4 +1,3 @@
-/* eslint-disable no-cond-assign */
 import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
 import type { XMLDocument, XMLElement } from '@xml-tools/ast';
@@ -200,7 +199,7 @@ export class File {
             const regexp = /(\r?\n)/g;
             let lineIndex = 1;
             let match: RegExpExecArray | null;
-            while (match = regexp.exec(this.bscFile.fileContents)) {
+            while ((match = regexp.exec(this.bscFile.fileContents))) {
                 this.lineOffsetMap[lineIndex++] = match.index + match[1].length;
             }
         }
@@ -436,7 +435,7 @@ export class File {
         const regexp = /(\.observeField(?:Scoped)?[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
 
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             //skip multi-line observeField calls (because they are way too hard to parse with regex :D )
             if (util.hasMatchingParenCount(match[0]) === false) {
                 continue;
@@ -519,7 +518,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -541,7 +540,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -593,7 +592,7 @@ export class File {
         //look for any string containing `pkg:/`
         const regexp = /"(pkg:\/[^"]+)"/gi;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             this.fileReferences.push({
                 //+1 to step past opening quote
                 offset: match.index + 1,
@@ -640,7 +639,7 @@ export class File {
         //look for any string containing `m.top.functionName = "<anything>"`
         const regexp = /(m\s*\.\s*top\s*\.\s*functionName\s*=\s*")(.*?)"/gi;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             this.taskFunctionNameAssignments.push({
                 offset: match.index + match[1].length,
                 name: match[2]

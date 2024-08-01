@@ -17,7 +17,7 @@ export class RopmModule {
          */
         public readonly moduleDir: string
     ) {
-        this.npmAliasName = util.getModuleName(this.moduleDir) as string;
+        this.npmAliasName = util.getModuleName(this.moduleDir)! as string;
 
         //compute the ropm name for this alias. This name has all invalid chars removed, and can be used as a brightscript variable/namespace
         this.ropmModuleName = util.getRopmNameFromModuleName(this.npmAliasName);
@@ -203,7 +203,7 @@ export class RopmModule {
     private program!: Program;
 
     /**
-     * @param noprefix a list of npm aliases of modules that should NOT be prefixed
+     * @param noprefixRopmAliases a list of npm aliases of modules that should NOT be prefixed
      */
     public async transform(noprefixRopmAliases: string[]) {
         const builder = new ProgramBuilder();

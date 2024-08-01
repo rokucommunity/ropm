@@ -32,9 +32,7 @@ export class ModuleManager {
 
     /**
      * Add a new project to the prefixer
-     * @param filePaths the list of absolute file paths for this project
-     * @param prefix the prefix to give all of this module's own functions and components (and their internal usage)
-     * @param prefixMap if this module has its own dependencies, then this prefix map allows us to rename those prefixes
+     * @param modulePath the path to the module
      */
     public addModule(modulePath: string) {
         this.modules.push(
@@ -141,8 +139,7 @@ export class ModuleManager {
         //compute the list of unique aliases
         for (const moduleName in moduleVersions) {
             const dominantVersions = Object.keys(moduleVersions[moduleName]).sort();
-            for (let i = 0; i < dominantVersions.length; i++) {
-                const dominantVersion = dominantVersions[i];
+            for (const dominantVersion of dominantVersions) {
 
                 const hostDependency = this.hostDependencies.find(
                     dep => dep.npmModuleName === moduleName && util.getDominantVersion(dep.version) === dominantVersion
@@ -158,7 +155,7 @@ export class ModuleManager {
                     version = dominantVersion;
                 } else {
                     //use the highest version within this major range
-                    version = semver.maxSatisfying([obj.highestVersion, hostDependency?.version ?? '0.0.0'], '*') as string;
+                    version = semver.maxSatisfying([obj.highestVersion, hostDependency?.version ?? '0.0.0'], '*')! as string;
                 }
 
                 result.push({

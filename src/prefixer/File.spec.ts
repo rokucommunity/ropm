@@ -45,7 +45,7 @@ describe('prefixer/File', () => {
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    function setFile(value: string, extension: 'brs' | 'xml' | 'd.bs' = 'brs') {
+    function setFile(value: string, extension: 'brs' | 'd.bs' | 'xml' = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
         file.srcPath = f.srcPath.replace('.brs', '.' + extension);
         file.destPath = f.destPath.replace('.brs', '.' + extension);

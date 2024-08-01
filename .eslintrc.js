@@ -13,11 +13,14 @@ module.exports = {
     plugins: [
         '@typescript-eslint',
         'no-only-tests',
-        'github'
+        'github',
+        'jsdoc',
+        'import'
     ],
     extends: [
         'eslint:all',
-        'plugin:@typescript-eslint/all'
+        'plugin:@typescript-eslint/all',
+        'plugin:jsdoc/recommended'
     ],
     rules: {
         '@typescript-eslint/array-type': 'off',
@@ -27,6 +30,7 @@ module.exports = {
         '@typescript-eslint/explicit-member-accessibility': 'off',
         '@typescript-eslint/explicit-module-boundary-types': 'off',
         '@typescript-eslint/init-declarations': 'off',
+        '@typescript-eslint/parameter-properties': 'off',
         '@typescript-eslint/lines-around-comment': 'off',
         '@typescript-eslint/lines-between-class-members': 'off',
         '@typescript-eslint/member-ordering': 'off',
@@ -44,6 +48,16 @@ module.exports = {
         '@typescript-eslint/no-magic-numbers': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
         '@typescript-eslint/no-parameter-properties': 'off',
+        //had to add this rule to prevent eslint from crashing
+        '@typescript-eslint/no-restricted-imports': ['off', {}],
+        //mitigating this sometimes results in undesirably verbose code. Should investigate enabling again in the future.
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/non-nullable-type-assertion-style': 'off',
+        'object-curly-spacing': 'off',
+        '@typescript-eslint/object-curly-spacing': [
+            'error',
+            'always'
+        ],
         '@typescript-eslint/no-shadow': 'off',
         '@typescript-eslint/no-this-alias': 'off',
         //possibly disable this once we have converted all throw statements to actual errors
@@ -53,6 +67,7 @@ module.exports = {
         '@typescript-eslint/no-type-alias': 'off',
         '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off',
         '@typescript-eslint/no-unnecessary-condition': 'off',
+        '@typescript-eslint/no-unnecessary-type-assertion': 'off',
         '@typescript-eslint/no-unsafe-argument': 'off',
         '@typescript-eslint/non-nullable-type-assertion-style': 'off',
         '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -67,6 +82,7 @@ module.exports = {
             'always'
         ],
         '@typescript-eslint/no-use-before-define': 'off',
+        '@typescript-eslint/prefer-for-of': 'error',
         '@typescript-eslint/parameter-properties': 'off',
         '@typescript-eslint/prefer-nullish-coalescing': 'off',
         '@typescript-eslint/prefer-for-of': 'off',
@@ -88,10 +104,17 @@ module.exports = {
         '@typescript-eslint/sort-type-constituents': 'off',
         '@typescript-eslint/sort-type-union-intersection-members': 'off',
         '@typescript-eslint/space-before-function-paren': 'off',
+        '@typescript-eslint/space-infix-ops': 'off',
         '@typescript-eslint/strict-boolean-expressions': 'off',
         '@typescript-eslint/typedef': 'off',
         '@typescript-eslint/unbound-method': 'off',
         '@typescript-eslint/unified-signatures': 'off',
+        'jsdoc/require-param': 'off',
+        'jsdoc/require-returns': 'off',
+        'jsdoc/require-param-type': 'off',
+        'jsdoc/newline-after-description': 'off',
+        'jsdoc/require-jsdoc': 'off',
+        'jsdoc/require-returns-type': 'off',
         'array-bracket-newline': 'off',
         'array-element-newline': 'off',
         'array-type': 'off',
@@ -111,9 +134,9 @@ module.exports = {
         'function-call-argument-newline': 'off',
         'function-paren-newline': 'off',
         'getter-return': 'off',
-        'github/array-foreach': 'error',
         'guard-for-in': 'off',
         'id-length': 'off',
+        'import/no-duplicates': 'error',
         'indent': 'off',
         'init-declarations': 'off',
         'line-comment-position': 'off',
@@ -160,10 +183,6 @@ module.exports = {
         'no-useless-escape': 'off',
         'no-void': 'off',
         'no-warning-comments': 'off',
-        'object-curly-spacing': [
-            'error',
-            'always'
-        ],
         'object-property-newline': 'off',
         'object-shorthand': [
             'error',
@@ -186,6 +205,7 @@ module.exports = {
         'sort-imports': 'off',
         'sort-keys': 'off',
         'spaced-comment': 'off',
+        'space-infix-ops': 'off',
         'vars-on-top': 'off',
         'wrap-regex': 'off'
     },
@@ -211,7 +231,7 @@ module.exports = {
             '@typescript-eslint/no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars-experimental': 'off',
             '@typescript-eslint/dot-notation': 'off',
-            'github/array-foreach': 'off',
+            '@typescript-eslint/no-unsafe-argument': 'off',
             'new-cap': 'off',
             'no-shadow': 'off',
             'no-void': 'off'
