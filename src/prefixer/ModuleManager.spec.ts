@@ -1690,7 +1690,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it('wraps top-level functions and classes with a namespace', async () => {
+        it('wraps top-level declarations with a namespace', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
                     trim`
@@ -1698,6 +1698,13 @@ describe('ModuleManager', () => {
                         end function
                         class Person
                         end class
+                        enum Direction
+                            up = "up"
+                        end enum
+                        const PI = 3.14
+                        interface Movie
+                            uri as string
+                        end interface
                     `,
                     trim`
                         namespace logger
@@ -1707,6 +1714,52 @@ describe('ModuleManager', () => {
                         namespace logger
                         class Person
                         end class
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up = "up"
+                        end enum
+                        end namespace
+                        namespace logger
+                        const PI = 3.14
+                        end namespace
+                        namespace logger
+                        interface Movie
+                            uri as string
+                        end interface
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes enums and interfaces in function param types', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        function move(direction as Direction, vid as Video)
+                        end function
+                        enum Direction
+                            up
+                        end enum
+                        interface Video
+                            uri as string
+                        end interface
+                    `,
+                    trim`
+                        namespace logger
+                        function move(direction as logger.Direction, vid as logger.Video)
+                        end function
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up
+                        end enum
+                        end namespace
+                        namespace logger
+                        interface Video
+                            uri as string
+                        end interface
                         end namespace
                     `
                 ]

@@ -392,8 +392,31 @@ export class RopmModule {
                     }
                 }
 
-                //prefix d.bs class references
-                for (const ref of file.classReferences) {
+                //wrap un-namespaced enums with prefix namespace
+                for (const declaration of file.enumDeclarations) {
+                    if (!declaration.hasNamespace) {
+                        file.addEdit(declaration.startOffset, declaration.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                        file.addEdit(declaration.endOffset, declaration.endOffset, `\nend namespace`);
+                    }
+                }
+
+                //wrap un-namespaced consts with prefix namespace
+                for (const declaration of file.constDeclarations) {
+                    if (!declaration.hasNamespace) {
+                        file.addEdit(declaration.startOffset, declaration.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                        file.addEdit(declaration.endOffset, declaration.endOffset, `\nend namespace`);
+                    }
+                }
+
+                for (const declaration of file.interfaceDeclarations) {
+                    if (!declaration.hasNamespace) {
+                        file.addEdit(declaration.startOffset, declaration.startOffset, `namespace ${brighterscriptPrefix}\n`);
+                        file.addEdit(declaration.endOffset, declaration.endOffset, `\nend namespace`);
+                    }
+                }
+
+                //prefix d.bs custom references
+                for (const ref of file.prefixableReferences) {
                     const baseNamespace = util.getBaseNamespace(ref.fullyQualifiedName);
 
                     const alias = getAlias(baseNamespace);
