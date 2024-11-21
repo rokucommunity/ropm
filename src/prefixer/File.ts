@@ -86,7 +86,7 @@ export class File {
         endOffset: number;
     }>;
 
-    public classDeclarations = [] as Array<{
+    public prefixableDeclarations = [] as Array<{
         name: string;
         nameOffset: number;
         hasNamespace: boolean;
@@ -170,48 +170,6 @@ export class File {
     public namespaces = [] as Array<{
         name: string;
         offset: number;
-    }>;
-
-    public enumDeclarations = [] as Array<{
-        name: string;
-        nameOffset: number;
-        hasNamespace: boolean;
-        /**
-         * The starting offset of `enum`
-         */
-        startOffset: number;
-        /**
-         * The end offset of `end enum`
-         */
-        endOffset: number;
-    }>;
-
-    public constDeclarations = [] as Array<{
-        name: string;
-        nameOffset: number;
-        hasNamespace: boolean;
-        /**
-         * The starting offset of `const`
-         */
-        startOffset: number;
-        /**
-         * The end offset of `end const`
-         */
-        endOffset: number;
-    }>;
-
-    public interfaceDeclarations = [] as Array<{
-        name: string;
-        nameOffset: number;
-        hasNamespace: boolean;
-        /**
-         * The starting offset of `interface`
-         */
-        startOffset: number;
-        /**
-         * The end offset of `end interface`
-         */
-        endOffset: number;
     }>;
 
     private edits = [] as Edit[];
@@ -385,7 +343,7 @@ export class File {
             //track class declarations (.bs and .d.bs only)
             ClassStatement: (cls) => {
                 const annotations = cls.annotations ?? [];
-                this.classDeclarations.push({
+                this.prefixableDeclarations.push({
                     name: cls.name.text,
                     nameOffset: this.positionToOffset(cls.name.range.start),
                     hasNamespace: !!cls.namespaceName,
@@ -419,7 +377,7 @@ export class File {
             //track enum declarations (.bs and .d.bs only)
             EnumStatement: (node) => {
                 const annotations = node.annotations ?? [];
-                this.enumDeclarations.push({
+                this.prefixableDeclarations.push({
                     name: node.tokens.name.text,
                     nameOffset: this.positionToOffset(node.tokens.name.range.start),
                     hasNamespace: !!node.namespaceName,
@@ -433,7 +391,7 @@ export class File {
             //track enum declarations (.bs and .d.bs only)
             ConstStatement: (node) => {
                 const annotations = node.annotations ?? [];
-                this.constDeclarations.push({
+                this.prefixableDeclarations.push({
                     name: node.tokens.name.text,
                     nameOffset: this.positionToOffset(node.tokens.name.range.start),
                     hasNamespace: !!node.findAncestor(isNamespaceStatement),
@@ -447,7 +405,7 @@ export class File {
             //track enum declarations (.bs and .d.bs only)
             InterfaceStatement: (node) => {
                 const annotations = node.annotations ?? [];
-                this.interfaceDeclarations.push({
+                this.prefixableDeclarations.push({
                     name: node.tokens.name.text,
                     nameOffset: this.positionToOffset(node.tokens.name.range.start),
                     hasNamespace: !!node.findAncestor(isNamespaceStatement),

@@ -384,34 +384,11 @@ export class RopmModule {
                     }
                 }
 
-                //wrap un-namespaced classes with prefix namespace
-                for (const cls of file.classDeclarations) {
+                //wrap un-namespaced classes, enums, namespaces, etc... with prefix namespace
+                for (const cls of file.prefixableDeclarations) {
                     if (!cls.hasNamespace) {
                         file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
                         file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
-                    }
-                }
-
-                //wrap un-namespaced enums with prefix namespace
-                for (const declaration of file.enumDeclarations) {
-                    if (!declaration.hasNamespace) {
-                        file.addEdit(declaration.startOffset, declaration.startOffset, `namespace ${brighterscriptPrefix}\n`);
-                        file.addEdit(declaration.endOffset, declaration.endOffset, `\nend namespace`);
-                    }
-                }
-
-                //wrap un-namespaced consts with prefix namespace
-                for (const declaration of file.constDeclarations) {
-                    if (!declaration.hasNamespace) {
-                        file.addEdit(declaration.startOffset, declaration.startOffset, `namespace ${brighterscriptPrefix}\n`);
-                        file.addEdit(declaration.endOffset, declaration.endOffset, `\nend namespace`);
-                    }
-                }
-
-                for (const declaration of file.interfaceDeclarations) {
-                    if (!declaration.hasNamespace) {
-                        file.addEdit(declaration.startOffset, declaration.startOffset, `namespace ${brighterscriptPrefix}\n`);
-                        file.addEdit(declaration.endOffset, declaration.endOffset, `\nend namespace`);
                     }
                 }
 
