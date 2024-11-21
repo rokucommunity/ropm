@@ -5,8 +5,15 @@ import { buildAst } from '@xml-tools/ast';
 import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, Range, XmlFile } from 'brighterscript';
-import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement } from 'brighterscript';
+import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
+import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
+
+/**
+ * List of all declaralbe types in BrighterScript (i.e. the native types), stored in lower case for reference
+ */
+const nativeTypes = new Set(
+    DeclarableTypes.map(x => x.toLowerCase())
+);
 
 export class File {
     constructor(
@@ -285,10 +292,23 @@ export class File {
         }
     }
 
-    private addPrefixableRef(name: string, containingNamespace: string | undefined, range: Range) {
+    private tryAddPrefixableRef(options: {
+        name: string | undefined;
+        containingNamespace: string | undefined;
+        range: Range | undefined;
+    }) {
+        //skip if we don't have a name or a range
+        if (!options.name || !options.range) {
+            return;
+        }
 
-        const lowerName = name.toLowerCase();
-        const lowerContainingNamespace = containingNamespace?.toLowerCase();
+        //skip if this is a native type, don't prefix it
+        if (options.name.trim().length > 0 && nativeTypes.has(options.name.toLowerCase())) {
+            return;
+        }
+
+        const lowerName = options.name.toLowerCase();
+        const lowerContainingNamespace = options.containingNamespace?.toLowerCase();
 
         const scopes = this.bscFile.program.getScopesForFile(this.bscFile);
         let fullyQualifiedName: string | undefined;
@@ -315,9 +335,9 @@ export class File {
         }
 
         this.prefixableReferences.push({
-            fullyQualifiedName: fullyQualifiedName ?? bsUtil.getFullyQualifiedClassName(name, containingNamespace),
-            offsetBegin: this.positionToOffset(range.start),
-            offsetEnd: this.positionToOffset(range.end)
+            fullyQualifiedName: fullyQualifiedName ?? bsUtil.getFullyQualifiedClassName(options.name, options.containingNamespace),
+            offsetBegin: this.positionToOffset(options.range.start),
+            offsetEnd: this.positionToOffset(options.range.end)
         });
     }
 
@@ -376,13 +396,25 @@ export class File {
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
 
-                if (cls.parentClassName) {
-                    this.addPrefixableRef(
-                        cls.parentClassName.getName(ParseMode.BrighterScript),
-                        cls.namespaceName?.getName(ParseMode.BrighterScript),
-                        cls.parentClassName.range!
-                    );
-                }
+                this.tryAddPrefixableRef({
+                    name: cls.parentClassName?.getName(ParseMode.BrighterScript),
+                    containingNamespace: cls.namespaceName?.getName(ParseMode.BrighterScript),
+                    range: cls.parentClassName?.range
+                });
+            },
+            FieldStatement: (node) => {
+                this.tryAddPrefixableRef({
+                    name: node.type?.text,
+                    containingNamespace: node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript),
+                    range: node.type?.range
+                });
+            },
+            InterfaceFieldStatement: (node) => {
+                this.tryAddPrefixableRef({
+                    name: node.tokens.type?.text,
+                    containingNamespace: node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript),
+                    range: node.tokens.type?.range
+                });
             },
             //track enum declarations (.bs and .d.bs only)
             EnumStatement: (node) => {
@@ -430,20 +462,18 @@ export class File {
                 const namespaceName = func.namespaceName?.getName(ParseMode.BrighterScript);
                 //any parameters containing custom types
                 for (const param of func.parameters) {
-                    if (isCustomType(param.type)) {
-                        this.addPrefixableRef(
-                            param.type.name,
-                            namespaceName,
-                            param.typeToken!.range
-                        );
-                    }
+                    this.tryAddPrefixableRef({
+                        name: param.typeToken?.text,
+                        containingNamespace: namespaceName,
+                        range: param.typeToken?.range
+                    });
                 }
                 if (isCustomType(func.returnType)) {
-                    this.addPrefixableRef(
-                        func.returnType.name,
-                        namespaceName,
-                        func.returnTypeToken!.range
-                    );
+                    this.tryAddPrefixableRef({
+                        name: func.returnTypeToken?.text,
+                        containingNamespace: namespaceName,
+                        range: func.returnTypeToken?.range
+                    });
                 }
             },
             FunctionStatement: (func) => {
@@ -454,7 +484,7 @@ export class File {
                     hasNamespace: !!func.namespaceName,
                     //Use annotation start position if available, otherwise use keyword
                     startOffset: this.positionToOffset(
-                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start
+                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start as Position
                     ),
                     endOffset: this.positionToOffset(func.func.end.range.end)
                 });
