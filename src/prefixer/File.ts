@@ -5,8 +5,15 @@ import { buildAst } from '@xml-tools/ast';
 import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, Range, XmlFile } from 'brighterscript';
-import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil } from 'brighterscript';
+import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
+import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
+
+/**
+ * List of all declaralbe types in BrighterScript (i.e. the native types), stored in lower case for reference
+ */
+const nativeTypes = new Set(
+    DeclarableTypes.map(x => x.toLowerCase())
+);
 
 export class File {
     constructor(
@@ -79,7 +86,7 @@ export class File {
         endOffset: number;
     }>;
 
-    public classDeclarations = [] as Array<{
+    public prefixableDeclarations = [] as Array<{
         name: string;
         nameOffset: number;
         hasNamespace: boolean;
@@ -94,9 +101,9 @@ export class File {
     }>;
 
     /**
-     * Anywhere that a class is used as a type (like in class `extends` or function parameters)
+     * Anywhere that a prefixable reference (i.e. class, enum, etc...) is used as a type (like in class `extends` or function parameters)
      */
-    public classReferences = [] as Array<{
+    public prefixableReferences = [] as Array<{
         fullyQualifiedName: string;
         offsetBegin: number;
         offsetEnd: number;
@@ -241,24 +248,54 @@ export class File {
             this.findComponentInterfaceFunctions();
             this.findComponentFieldOnChangeFunctions();
         }
-
     }
 
-    private addClassRef(className: string, containingNamespace: string | undefined, range: Range) {
-        //look up the class. If we can find it, use it
-        const cls = (this.bscFile as BrsFile).getClassFileLink(className, containingNamespace)?.item;
-
-        let fullyQualifiedName: string;
-        if (cls) {
-            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(cls.getName(ParseMode.BrighterScript), cls.namespaceName?.getName(ParseMode.BrighterScript));
-        } else {
-            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(className, containingNamespace);
+    private tryAddPrefixableRef(options: {
+        name: string | undefined;
+        containingNamespace: string | undefined;
+        range: Range | undefined;
+    }) {
+        //skip if we don't have a name or a range
+        if (!options.name || !options.range) {
+            return;
         }
 
-        this.classReferences.push({
-            fullyQualifiedName: fullyQualifiedName,
-            offsetBegin: this.positionToOffset(range.start),
-            offsetEnd: this.positionToOffset(range.end)
+        //skip if this is a native type, don't prefix it
+        if (options.name.trim().length > 0 && nativeTypes.has(options.name.toLowerCase())) {
+            return;
+        }
+
+        const lowerName = options.name.toLowerCase();
+        const lowerContainingNamespace = options.containingNamespace?.toLowerCase();
+
+        const scopes = this.bscFile.program.getScopesForFile(this.bscFile);
+        let fullyQualifiedName: string | undefined;
+
+        //find the first item in the first scope that has it
+        for (let scope of scopes) {
+            const enumLink = scope.getEnumFileLink(lowerName, lowerContainingNamespace);
+            if (enumLink) {
+                fullyQualifiedName = enumLink.item.fullName;
+                break;
+            }
+
+            const link =
+                scope.getClassFileLink(lowerName, lowerContainingNamespace) ??
+                scope.getInterfaceFileLink(lowerName, lowerContainingNamespace) ??
+                scope.getConstFileLink(lowerName, lowerContainingNamespace);
+            if (link) {
+                fullyQualifiedName = bsUtil.getFullyQualifiedClassName(
+                    link.item.getName(ParseMode.BrighterScript),
+                    link.item.namespaceName?.getName(ParseMode.BrighterScript)
+                );
+                break;
+            }
+        }
+
+        this.prefixableReferences.push({
+            fullyQualifiedName: fullyQualifiedName ?? bsUtil.getFullyQualifiedClassName(options.name, options.containingNamespace),
+            offsetBegin: this.positionToOffset(options.range.start),
+            offsetEnd: this.positionToOffset(options.range.end)
         });
     }
 
@@ -306,7 +343,7 @@ export class File {
             //track class declarations (.bs and .d.bs only)
             ClassStatement: (cls) => {
                 const annotations = cls.annotations ?? [];
-                this.classDeclarations.push({
+                this.prefixableDeclarations.push({
                     name: cls.name.text,
                     nameOffset: this.positionToOffset(cls.name.range.start),
                     hasNamespace: !!cls.namespaceName,
@@ -317,32 +354,84 @@ export class File {
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
 
-                if (cls.parentClassName) {
-                    this.addClassRef(
-                        cls.parentClassName.getName(ParseMode.BrighterScript),
-                        cls.namespaceName?.getName(ParseMode.BrighterScript),
-                        cls.parentClassName.range!
-                    );
-                }
+                this.tryAddPrefixableRef({
+                    name: cls.parentClassName?.getName(ParseMode.BrighterScript),
+                    containingNamespace: cls.namespaceName?.getName(ParseMode.BrighterScript),
+                    range: cls.parentClassName?.range
+                });
+            },
+            FieldStatement: (node) => {
+                this.tryAddPrefixableRef({
+                    name: node.type?.text,
+                    containingNamespace: node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript),
+                    range: node.type?.range
+                });
+            },
+            InterfaceFieldStatement: (node) => {
+                this.tryAddPrefixableRef({
+                    name: node.tokens.type?.text,
+                    containingNamespace: node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript),
+                    range: node.tokens.type?.range
+                });
+            },
+            //track enum declarations (.bs and .d.bs only)
+            EnumStatement: (node) => {
+                const annotations = node.annotations ?? [];
+                this.prefixableDeclarations.push({
+                    name: node.tokens.name.text,
+                    nameOffset: this.positionToOffset(node.tokens.name.range.start),
+                    hasNamespace: !!node.namespaceName,
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (annotations?.length > 0 ? annotations[0] : node.tokens.enum).range.start
+                    ),
+                    endOffset: this.positionToOffset(node.tokens.endEnum.range.end)
+                });
+            },
+            //track enum declarations (.bs and .d.bs only)
+            ConstStatement: (node) => {
+                const annotations = node.annotations ?? [];
+                this.prefixableDeclarations.push({
+                    name: node.tokens.name.text,
+                    nameOffset: this.positionToOffset(node.tokens.name.range.start),
+                    hasNamespace: !!node.findAncestor(isNamespaceStatement),
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (annotations?.length > 0 ? annotations[0] : node.tokens.const).range.start
+                    ),
+                    endOffset: this.positionToOffset(node.value.range!.end ?? node.tokens.equals.range.end)
+                });
+            },
+            //track enum declarations (.bs and .d.bs only)
+            InterfaceStatement: (node) => {
+                const annotations = node.annotations ?? [];
+                this.prefixableDeclarations.push({
+                    name: node.tokens.name.text,
+                    nameOffset: this.positionToOffset(node.tokens.name.range.start),
+                    hasNamespace: !!node.findAncestor(isNamespaceStatement),
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (annotations?.length > 0 ? annotations[0] : node.tokens.interface).range.start
+                    ),
+                    endOffset: this.positionToOffset(node.tokens.endInterface.range.end)
+                });
             },
             FunctionExpression: (func) => {
                 const namespaceName = func.namespaceName?.getName(ParseMode.BrighterScript);
                 //any parameters containing custom types
                 for (const param of func.parameters) {
-                    if (isCustomType(param.type)) {
-                        this.addClassRef(
-                            param.type.name,
-                            namespaceName,
-                            param.typeToken!.range
-                        );
-                    }
+                    this.tryAddPrefixableRef({
+                        name: param.typeToken?.text,
+                        containingNamespace: namespaceName,
+                        range: param.typeToken?.range
+                    });
                 }
                 if (isCustomType(func.returnType)) {
-                    this.addClassRef(
-                        func.returnType.name,
-                        namespaceName,
-                        func.returnTypeToken!.range
-                    );
+                    this.tryAddPrefixableRef({
+                        name: func.returnTypeToken?.text,
+                        containingNamespace: namespaceName,
+                        range: func.returnTypeToken?.range
+                    });
                 }
             },
             FunctionStatement: (func) => {
@@ -353,7 +442,7 @@ export class File {
                     hasNamespace: !!func.namespaceName,
                     //Use annotation start position if available, otherwise use keyword
                     startOffset: this.positionToOffset(
-                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start
+                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start as Position
                     ),
                     endOffset: this.positionToOffset(func.func.end.range.end)
                 });
@@ -646,6 +735,7 @@ export class File {
             });
         }
     }
+
 }
 
 export interface Edit {
