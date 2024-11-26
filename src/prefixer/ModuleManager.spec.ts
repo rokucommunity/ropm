@@ -1690,7 +1690,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it('wraps top-level functions and classes with a namespace', async () => {
+        it('wraps top-level declarations with a namespace', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
                     trim`
@@ -1698,6 +1698,13 @@ describe('ModuleManager', () => {
                         end function
                         class Person
                         end class
+                        enum Direction
+                            up = "up"
+                        end enum
+                        const PI = 3.14
+                        interface Movie
+                            uri as string
+                        end interface
                     `,
                     trim`
                         namespace logger
@@ -1707,6 +1714,138 @@ describe('ModuleManager', () => {
                         namespace logger
                         class Person
                         end class
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up = "up"
+                        end enum
+                        end namespace
+                        namespace logger
+                        const PI = 3.14
+                        end namespace
+                        namespace logger
+                        interface Movie
+                            uri as string
+                        end interface
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes enums, classes, and interfaces in function param types', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        function move(direction as Direction, vid as Video, mov as Movie)
+                        end function
+                        enum Direction
+                            up
+                        end enum
+                        interface Video
+                            uri as string
+                        end interface
+                        class Movie
+                            uri as string
+                        end class
+                    `,
+                    trim`
+                        namespace logger
+                        function move(direction as logger.Direction, vid as logger.Video, mov as logger.Movie)
+                        end function
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up
+                        end enum
+                        end namespace
+                        namespace logger
+                        interface Video
+                            uri as string
+                        end interface
+                        end namespace
+                        namespace logger
+                        class Movie
+                            uri as string
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes enums, classes, and interfaces in interface members', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        interface Video
+                            whichWay as Direction
+                            thingToPlay as Video
+                            parent as Movie
+                        end interface
+                        enum Direction
+                            up
+                        end enum
+                        class Movie
+                            uri as string
+                        end class
+                    `,
+                    trim`
+                        namespace logger
+                        interface Video
+                            whichWay as logger.Direction
+                            thingToPlay as logger.Video
+                            parent as logger.Movie
+                        end interface
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up
+                        end enum
+                        end namespace
+                        namespace logger
+                        class Movie
+                            uri as string
+                        end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes enums, classes, and interfaces in class members', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        class Movie
+                            whichWay as Direction
+                            thingToPlay as Video
+                            parent as Movie
+                        end class
+                        enum Direction
+                            up
+                        end enum
+                        interface Video
+                            uri as string
+                        end interface
+                    `,
+                    trim`
+                        namespace logger
+                        class Movie
+                            whichWay as logger.Direction
+                            thingToPlay as logger.Video
+                            parent as logger.Movie
+                        end class
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up
+                        end enum
+                        end namespace
+                        namespace logger
+                        interface Video
+                            uri as string
+                        end interface
                         end namespace
                     `
                 ]

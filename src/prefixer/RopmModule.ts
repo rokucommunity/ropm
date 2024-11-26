@@ -384,16 +384,16 @@ export class RopmModule {
                     }
                 }
 
-                //wrap un-namespaced classes with prefix namespace
-                for (const cls of file.classDeclarations) {
+                //wrap un-namespaced classes, enums, namespaces, etc... with prefix namespace
+                for (const cls of file.prefixableDeclarations) {
                     if (!cls.hasNamespace) {
                         file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
                         file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
                     }
                 }
 
-                //prefix d.bs class references
-                for (const ref of file.classReferences) {
+                //prefix d.bs custom references
+                for (const ref of file.prefixableReferences) {
                     const baseNamespace = util.getBaseNamespace(ref.fullyQualifiedName);
 
                     const alias = getAlias(baseNamespace);
