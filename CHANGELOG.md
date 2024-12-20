@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.28](https://github.com/rokucommunity/ropm/compare/v0.10.27...v0.10.28) - 2024-12-20
+### Changed
+ - Add create-package script ([#81](https://github.com/rokucommunity/ropm/pull/81))
+ - upgrade to [brighterscript@0.68.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0682---2024-12-06). Notable changes since 0.67.8:
+     - Add more convenience exports from vscode-languageserver ([brighterscript#1359](https://github.com/rokucommunity/brighterscript/pull/1359))
+     - Enhance lexer to support long numeric literals with type designators ([brighterscript#1351](https://github.com/rokucommunity/brighterscript/pull/1351))
+     - Fix issues with the ast walkArray function ([brighterscript#1347](https://github.com/rokucommunity/brighterscript/pull/1347))
+ - upgrade to [roku-deploy@3.12.3](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3123---2024-12-06)
+### Fixed
+ - missing prefixes in `.bs` and `d.bs` files for interfaces, enums, and constants ([#80](https://github.com/rokucommunity/ropm/pull/80))
+
+
+
 ## [0.10.27](https://github.com/rokucommunity/ropm/compare/v0.10.26...v0.10.27) - 2024-10-18
 ### Changed
  - upgrade to [brighterscript@0.67.8](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0678---2024-10-18). Notable changes since 0.67.7:
