@@ -25,7 +25,8 @@ export class Util {
             const child = childProcess.spawn(command, args ?? [], {
                 ...(options ?? {}),
                 stdio: 'inherit',
-                shell: true
+                shell: true,
+                windowsHide: true
             });
             child.addListener('error', reject);
             child.addListener('exit', resolve);
