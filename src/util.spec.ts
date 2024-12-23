@@ -81,7 +81,7 @@ describe('Util', () => {
             });
             await util.spawnAsync('noop');
             expect(stub.getCalls()[0].args).to.eql([
-                'noop', [], { stdio: 'inherit' }
+                'noop', [], { stdio: 'inherit', shell: true, windowsHide: true }
             ]);
         });
     });

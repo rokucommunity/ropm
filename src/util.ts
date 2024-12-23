@@ -24,7 +24,9 @@ export class Util {
         return new Promise((resolve, reject) => {
             const child = childProcess.spawn(command, args ?? [], {
                 ...(options ?? {}),
-                stdio: 'inherit'
+                stdio: 'inherit',
+                shell: true,
+                windowsHide: true
             });
             child.addListener('error', reject);
             child.addListener('exit', resolve);
