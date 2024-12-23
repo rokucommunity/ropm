@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.29](https://github.com/rokucommunity/ropm/compare/v0.10.28...v0.10.29) - 2024-12-23
+### Fixed
+ - Fix EINVAL crash ([#82](https://github.com/rokucommunity/ropm/pull/82))
+
+
+
 ## [0.10.28](https://github.com/rokucommunity/ropm/compare/v0.10.27...v0.10.28) - 2024-12-20
 ### Changed
  - Add create-package script ([#81](https://github.com/rokucommunity/ropm/pull/81))
