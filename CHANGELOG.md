@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.30](https://github.com/rokucommunity/ropm/compare/v0.10.29...v0.10.30) - 2025-01-13
+### Changed
+ - upgrade to [brighterscript@0.68.3](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0683---2025-01-13). Notable changes since 0.68.2:
+     - Fix class transpile issue with child class constructor not inherriting parent params ([brighterscript#1390](https://github.com/rokucommunity/brighterscript/pull/1390))
+     - Export more items ([brighterscript#1394](https://github.com/rokucommunity/brighterscript/pull/1394))
+
+
+
 ## [0.10.29](https://github.com/rokucommunity/ropm/compare/v0.10.28...v0.10.29) - 2024-12-23
 ### Fixed
  - Fix EINVAL crash ([#82](https://github.com/rokucommunity/ropm/pull/82))
