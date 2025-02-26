@@ -171,21 +171,23 @@ describe('RopmModule', () => {
     });
 
     describe('getDistinctComponentReferenceNames', () => {
-        const [logger] = createProjects(hostDir, hostDir, {
-            name: 'host',
-            dependencies: [{
-                name: 'logger'
-            }]
+        it('finds component1', () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger'
+                }]
+            });
+            logger.files = [{
+                componentReferences: [{
+                    name: 'Component1'
+                }]
+            }, {
+                componentReferences: [{
+                    name: 'Component1'
+                }]
+            }] as any[];
+            expect(logger.getDistinctComponentReferenceNames()).to.eql(['component1']);
         });
-        logger.files = [{
-            componentReferences: [{
-                name: 'Component1'
-            }]
-        }, {
-            componentReferences: [{
-                name: 'Component1'
-            }]
-        }] as any[];
-        expect(logger.getDistinctComponentReferenceNames()).to.eql(['component1']);
     });
 });
