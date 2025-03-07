@@ -515,7 +515,6 @@ export class File {
         }
     }
 
-
     /**
      * Find all occurances of *.observeField and *.observeFieldScoped function calls that have a string literal as the second parameter
      */
@@ -584,7 +583,7 @@ export class File {
     private findComponentFieldOnChangeFunctions() {
         const interfaceEntries = this.xmlAst?.rootElement?.subElements.find(x => x.name?.toLowerCase() === 'interface')?.subElements ?? [];
         for (const interfaceEntry of interfaceEntries) {
-            const nameAttribute = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'name');
+            const nameAttribute = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'id');
             if (interfaceEntry.name?.toLowerCase() === 'field' && nameAttribute) {
                 const onchange = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'onchange');
                 if (onchange) {

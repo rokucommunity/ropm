@@ -1189,7 +1189,7 @@ describe('ModuleManager', () => {
                         <component name="LoggerComponent">
                             <script uri="LoggerComponent.brs" />
                             <interface>
-                                <field name="logMessage" onchange="logMessageChanged"/>
+                                <field id="logMessage" onchange="logMessageChanged"/>
                             </interface>
                         </component>
                     `,
@@ -1198,7 +1198,7 @@ describe('ModuleManager', () => {
                         <component name="logger_LoggerComponent">
                             <script uri="pkg:/components/roku_modules/logger/LoggerComponent.brs" />
                             <interface>
-                                <field name="logMessage" onchange="logger_logMessageChanged"/>
+                                <field id="logMessage" onchange="logger_logMessageChanged"/>
                             </interface>
                         </component>
                     `
