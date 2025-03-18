@@ -1,0 +1,20 @@
+name: Publish Release
+
+on:
+  pull_request:
+    types:
+        - closed
+    paths:
+        - 'package.json'
+        - 'package-lock.json'
+
+jobs:
+  run:
+    if: startsWith( github.head_ref, 'release/') && (github.event.pull_request.merged == true)
+    uses: rokucommunity/.github/.github/workflows/publish-release.yml@master
+    with:
+      branch: ${{ github.event.pull_request.head.ref }}
+      release-type: "npm" # "vsce"
+    secrets: inherit
+
+    
