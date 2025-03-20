@@ -8,7 +8,8 @@
     "lint": "eslint \"src/**\"",
     "test": "nyc mocha",
     "test:nocover": "mocha",
-    "publish-coverage": "nyc report --reporter=text-lcov | coveralls"
+    "publish-coverage": "nyc report --reporter=text-lcov | coveralls",
+    "package": "npm ci && npm run build && npm pack"
   },
   "engines": {
     "node": ">=8.1.10"
