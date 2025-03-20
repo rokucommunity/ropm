@@ -16,5 +16,3 @@ jobs:
       branch: ${{ github.event.pull_request.head.ref }}
       release-type: "npm" # "vsce"
     secrets: inherit
-
-    
