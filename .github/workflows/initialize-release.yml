@@ -20,7 +20,7 @@ on:
 
 jobs:
   run:
-    uses: rokucommunity/.github/.github/workflows/initialize-release.yml@master
+    uses: rokucommunity/workflows/.github/workflows/initialize-release.yml@master
     with:
       branch: ${{ github.event.inputs.branch }}
       releaseType: ${{ github.event.inputs.releaseType }}

@@ -12,7 +12,7 @@ on:
 
 jobs:
   run:
-      uses: rokucommunity/.github/.github/workflows/create-release-artifacts.yml@master
+      uses: rokucommunity/workflows/.github/workflows/create-release-artifacts.yml@master
       with:
         branch: ${{ github.event.pull_request.head.ref }}
         node-version: "14.18.1"
