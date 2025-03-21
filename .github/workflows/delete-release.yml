@@ -1,0 +1,16 @@
+name: Delete Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: "The version to delete"
+        required: true
+
+jobs:
+  run:
+    uses: rokucommunity/workflows/.github/workflows/delete-release.yml@master
+    with:
+      version: ${{ github.event.inputs.version }}
+    secrets: inherit
