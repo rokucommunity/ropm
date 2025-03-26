@@ -17,6 +17,7 @@ export class InstallCommand {
     private hostPackageJson?: RopmPackageJson;
 
     public logger = util.createLogger();
+
     private moduleManager = new ModuleManager({ logger: this.logger });
 
 

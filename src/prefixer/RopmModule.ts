@@ -113,6 +113,7 @@ export class RopmModule {
     public dominantVersion!: string;
 
     public isValid = true;
+
     public isRopmModule = false;
 
     public async init() {
