@@ -23,7 +23,7 @@ describe('prefixer/File', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath, rootDir);
+        file = new File({ srcPath: srcPath, destPath: destPath, rootDir: rootDir });
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
@@ -172,7 +172,7 @@ describe('prefixer/File', () => {
 
     describe('findIdentifiers', () => {
         function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
-            file = new File(srcPath, destPath, rootDir);
+            file = new File({ srcPath: srcPath, destPath: destPath, rootDir: rootDir });
             f = file;
             initProgram();
             setFile(`

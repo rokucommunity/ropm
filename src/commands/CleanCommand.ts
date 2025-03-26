@@ -1,9 +1,10 @@
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
-import type { RopmPackageJson } from '../util';
+import type { CommandArgs, RopmPackageJson } from '../util';
 import { util } from '../util';
 import { InitCommand } from './InitCommand';
 import * as del from 'del';
+import logger from '@rokucommunity/logger';
 
 export class CleanCommand {
     constructor(
@@ -41,16 +42,23 @@ export class CleanCommand {
         if (this.skipLoadHostPackageJson === false) {
             //if the host doesn't currently have a package.json
             if (await fsExtra.pathExists(path.resolve(this.cwd, 'package.json')) === false) {
-                console.log('Creating package.json');
+                this.logger.log('Creating package.json');
                 //init package.json for the host
-                await new InitCommand({ cwd: this.cwd, force: true }).run();
+                await new InitCommand({ cwd: this.cwd, force: true, logLevel: this.args.logLevel }).run();
             }
             this.hostPackageJson = await util.getPackageJson(this.cwd);
         }
     }
 
+    public logger = logger.createLogger(`ropm: `);
+    private updateLogLevel() {
+        //set the logLevel provided by the RopmOptions
+        logger.logLevel = this.args.logLevel ?? this.hostPackageJson?.ropm?.logLevel ?? 'log';
+    }
+
     public async run() {
         await this.loadHostPackageJson();
+        this.updateLogLevel();
         await this.deleteAllRokuModulesFolders();
     }
 
@@ -66,7 +74,7 @@ export class CleanCommand {
         //delete the roku_modules folders
         await Promise.all(
             rokuModulesFolders.map(async (rokuModulesDir) => {
-                console.log(`ropm: deleting ${rokuModulesDir}`);
+                this.logger.log(`deleting ${rokuModulesDir}`);
                 await del(rokuModulesDir, {
                     force: true
                 });
@@ -74,7 +82,7 @@ export class CleanCommand {
                 //if the parent dir is now empty, delete that folder too
                 const parentDir = path.dirname(rokuModulesDir);
                 if (await util.isEmptyDir(parentDir)) {
-                    console.log(`ropm: deleting empty ${parentDir}`);
+                    this.logger.log(`deleting empty ${parentDir}`);
                     await del(parentDir, {
                         force: true
                     });
@@ -92,11 +100,7 @@ export class CleanCommand {
     }
 }
 
-export interface CleanCommandArgs {
-    /**
-     * The current working directory for the command.
-     */
-    cwd?: string;
+export interface CleanCommandArgs extends CommandArgs {
     /**
      * The path to the root directory for the project that should be cleaned
      */

@@ -8,6 +8,8 @@ import type { Dependency } from './ModuleManager';
 import type { Program } from 'brighterscript';
 import { ProgramBuilder } from 'brighterscript';
 import { LogLevel } from 'brighterscript/dist/Logger';
+import type { Logger } from '@rokucommunity/logger';
+import logger from '@rokucommunity/logger';
 
 export class RopmModule {
     constructor(
@@ -15,13 +17,22 @@ export class RopmModule {
         /**
          * The directory at the root of the module. This is the folder where the package.json resides
          */
-        public readonly moduleDir: string
+        public readonly moduleDir: string,
+
+        public options: {
+            logger: Logger;
+        }
     ) {
+        //set the logLevel provided by the RopmOptions
+        this.logger = options?.logger ?? logger.createLogger(`ropm: `);
+
         this.npmAliasName = util.getModuleName(this.moduleDir)! as string;
 
         //compute the ropm name for this alias. This name has all invalid chars removed, and can be used as a brightscript variable/namespace
         this.ropmModuleName = util.getRopmNameFromModuleName(this.npmAliasName);
     }
+
+    public logger: Logger;
 
     /**
      * A list of globs that will always be ignored during copy from node_modules to roku_modules
@@ -107,7 +118,7 @@ export class RopmModule {
     public async init() {
         //skip modules we can't derive a name from
         if (!this.npmAliasName) {
-            console.error(`ropm: cannot compute npm package name for "${this.moduleDir}"`);
+            this.logger.error(`cannot compute npm package name for "${this.moduleDir}"`);
             this.isValid = false;
             return;
         }
@@ -117,7 +128,7 @@ export class RopmModule {
         this.dominantVersion = util.getDominantVersion(this.packageJson.version);
 
         if (!this.packageJson.name) {
-            console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
+            this.logger.error(`missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
             this.isValid = false;
             return;
         }
@@ -126,14 +137,14 @@ export class RopmModule {
 
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
         if ((this.packageJson.keywords ?? []).includes('ropm') === false) {
-            console.error(`ropm: skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
+            this.logger.debug(`skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
             this.isValid = false;
             return;
         }
 
         //disallow using `noprefix` within dependencies
         if (this.packageJson.ropm?.noprefix) {
-            console.error(`ropm: using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
+            this.logger.error(`using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
             this.isValid = false;
             return;
         }
@@ -145,7 +156,7 @@ export class RopmModule {
     public async copyFiles() {
         const packageLogText = `${this.npmAliasName}${this.npmAliasName !== this.npmModuleName ? `(${this.npmModuleName})` : ''}`;
 
-        console.log(`ropm: copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
+        this.logger.log(`copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
             path: this.packageRootDir
@@ -235,7 +246,7 @@ export class RopmModule {
             //only load source code files
             if (['.xml', '.brs', '.bs'].includes(path.extname(obj.dest).toLowerCase())) {
                 this.files.push(
-                    new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm)
+                    new File({ srcPath: obj.src, destPath: obj.dest, rootDir: this.packageRootDir, logger: this.logger })
                 );
             }
         }

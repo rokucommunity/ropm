@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/consistent-indexed-object-style */
 import { RopmModule } from './RopmModule';
 import * as semver from 'semver';
-import type { ModuleDependency } from '../util';
+import type { ModuleDependency, RopmOptions } from '../util';
 import { util } from '../util';
+import { logger, type Logger } from '@rokucommunity/logger';
 
 export class ModuleManager {
+    constructor(public options: {
+        logger: Logger;
+    }) {
+        this.logger = options?.logger ?? logger.createLogger(`ropm: `);
+    }
     public modules = [] as RopmModule[];
+
+    private logger: Logger;
 
     /**
      * A list of all direct dependencies of the host application.
@@ -36,7 +44,7 @@ export class ModuleManager {
      */
     public addModule(modulePath: string) {
         this.modules.push(
-            new RopmModule(this.hostRootDir, modulePath)
+            new RopmModule(this.hostRootDir, modulePath, { logger: this.logger })
         );
     }
 

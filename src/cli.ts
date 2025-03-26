@@ -15,6 +15,7 @@ new Promise((resolve, reject) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
                 .option('force', { type: 'boolean', description: 'Skip all questions', default: false })
+                .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] })
                 .alias('f', 'force')
                 .alias('yes', 'force')
                 .alias('y', 'force');
@@ -29,16 +30,17 @@ new Promise((resolve, reject) => {
             'i'
         ], 'Download Roku dependencies into the roku_modules folder', (builder) => {
             return builder
-                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
+                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
-            console.error('running');
             const command = new InstallCommand(args);
             command.run().then(resolve, reject);
         })
 
         .command('clean', 'Remove all roku_module files and folders from the root directory', (builder) => {
             return builder
-                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
+                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new CleanCommand(args);
             command.run().then(resolve, reject);
@@ -46,7 +48,8 @@ new Promise((resolve, reject) => {
 
         .command('copy', 'Runs `clean` and then installs all ropm modules. Operates solely with the modules already downloaded, and will not download new modules from the registry.', (builder) => {
             return builder
-                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
+                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new CopyCommand(args);
             command.run().then(resolve, reject);
@@ -57,7 +60,8 @@ new Promise((resolve, reject) => {
             'un', 'unlink', 'remove', 'rm', 'r'
         ], 'Uninstall the specified dependencies', (builder) => {
             return builder
-                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' });
+                .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new UninstallCommand(args);
             command.run().then(resolve, reject);

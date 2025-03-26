@@ -1,3 +1,4 @@
+import type { CommandArgs } from '../util';
 import { util } from '../util';
 import * as path from 'path';
 import { InstallCommand } from './InstallCommand';
@@ -38,17 +39,14 @@ export class UninstallCommand {
     private async npmInstall() {
         const installCommand = new InstallCommand({
             cwd: this.cwd,
-            packages: []
+            packages: [],
+            logLevel: this.args.logLevel
         });
         await installCommand.run();
     }
 }
 
-export interface UninstallCommandArgs {
-    /**
-     * The current working directory for the command.
-     */
-    cwd?: string;
+export interface UninstallCommandArgs extends CommandArgs {
     /**
      * The list of packages that should be uninstalled
      */

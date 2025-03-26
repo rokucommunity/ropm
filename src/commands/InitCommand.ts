@@ -1,5 +1,5 @@
 import * as path from 'path';
-import type { RopmPackageJson } from '../util';
+import type { CommandArgs, RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as fsExtra from 'fs-extra';
 
@@ -70,11 +70,7 @@ export class InitCommand {
     }
 }
 
-export interface InitCommandArgs {
-    /**
-     * The current working directory for the command.
-     */
-    cwd?: string;
+export interface InitCommandArgs extends CommandArgs {
     /**
      * If true, then generate without any questions
      */
