@@ -47,8 +47,8 @@ export class File {
 
     private logger: Logger;
     /**
-         * The path to the file's original location
-         */
+     * The path to the file's original location
+     */
     public srcPath: string;
     /**
      * The path to the file's new location
