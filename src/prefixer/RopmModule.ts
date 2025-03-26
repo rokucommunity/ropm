@@ -120,7 +120,7 @@ export class RopmModule {
 
         // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
         if ((this.packageJson?.keywords ?? []).includes('ropm') === false) {
-            this.logger.debug(`skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
+            this.logger.debug(`Skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
             this.isValid = false;
             return;
         }
@@ -129,7 +129,7 @@ export class RopmModule {
 
         //skip modules we can't derive a name from
         if (!this.npmAliasName) {
-            this.logger.error(`cannot compute npm package name for "${this.moduleDir}"`);
+            this.logger.error(`Cannot compute npm package name for "${this.moduleDir}"`);
             this.isValid = false;
             return;
         }
@@ -138,7 +138,7 @@ export class RopmModule {
         this.dominantVersion = util.getDominantVersion(this.packageJson.version);
 
         if (!this.packageJson.name) {
-            this.logger.error(`missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
+            this.logger.error(`Missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
             this.isValid = false;
             return;
         }
@@ -147,7 +147,7 @@ export class RopmModule {
 
         //disallow using `noprefix` within dependencies
         if (this.packageJson.ropm?.noprefix) {
-            this.logger.error(`using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
+            this.logger.error(`Using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
             this.isValid = false;
             return;
         }
@@ -159,7 +159,7 @@ export class RopmModule {
     public async copyFiles() {
         const packageLogText = `${this.npmAliasName}${this.npmAliasName !== this.npmModuleName ? `(${this.npmModuleName})` : ''}`;
 
-        this.logger.log(`copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
+        this.logger.log(`Copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
             path: this.packageRootDir

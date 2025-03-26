@@ -299,8 +299,8 @@ export class Util {
         }
     }
 
-    public createLogger(prefix = 'ropm: '): Logger {
-        return logger.createLogger({ prefix: prefix, printLogLevel: false });
+    public createLogger(prefix = 'ropm:'): Logger {
+        return logger.createLogger({ prefix: prefix, printLogLevel: false, printTimestamp: false });
     }
 
 }
