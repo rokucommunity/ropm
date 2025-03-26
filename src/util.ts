@@ -7,7 +7,8 @@ import * as semver from 'semver';
 import type { IOptions } from 'glob';
 import { Program } from 'brighterscript';
 import * as readline from 'readline';
-import type { LogLevel } from '@rokucommunity/logger';
+import { logger } from '@rokucommunity/logger';
+import type { Logger, LogLevel } from '@rokucommunity/logger';
 
 export class Util {
 
@@ -296,6 +297,10 @@ export class Util {
         if (parts.length > 1) {
             return parts[0];
         }
+    }
+
+    public createLogger(prefix = 'ropm: '): Logger {
+        return logger.createLogger({ prefix: prefix, printLogLevel: false });
     }
 
 }

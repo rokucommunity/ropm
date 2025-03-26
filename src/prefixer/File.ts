@@ -7,7 +7,6 @@ import * as path from 'path';
 import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
 import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
 import type { Logger } from '@rokucommunity/logger';
-import logger from '@rokucommunity/logger';
 
 /**
  * List of all declaralbe types in BrighterScript (i.e. the native types), stored in lower case for reference
@@ -36,7 +35,7 @@ export class File {
         this.srcPath = options.srcPath;
         this.destPath = options.destPath;
         this.rootDir = options.rootDir;
-        this.logger = options.logger ?? logger.createLogger(`ropm: `);
+        this.logger = options.logger ?? util.createLogger();
 
 
         this.pkgPath = path.posix.normalize(

@@ -6,7 +6,6 @@ import * as fsExtra from 'fs-extra';
 import { InitCommand } from './InitCommand';
 import { CleanCommand } from './CleanCommand';
 import { ModuleManager } from '../prefixer/ModuleManager';
-import logger from '@rokucommunity/logger';
 
 export class InstallCommand {
     constructor(
@@ -17,7 +16,7 @@ export class InstallCommand {
 
     private hostPackageJson?: RopmPackageJson;
 
-    public logger = logger.createLogger(`ropm: `);
+    public logger = util.createLogger();
     private moduleManager = new ModuleManager({ logger: this.logger });
 
 

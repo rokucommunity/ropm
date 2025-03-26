@@ -50,7 +50,7 @@ export class CleanCommand {
         }
     }
 
-    public logger = logger.createLogger(`ropm: `);
+    public logger = util.createLogger();
     private updateLogLevel() {
         //set the logLevel provided by the RopmOptions
         logger.logLevel = this.args.logLevel ?? this.hostPackageJson?.ropm?.logLevel ?? 'log';

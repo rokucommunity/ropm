@@ -9,7 +9,6 @@ import type { Program } from 'brighterscript';
 import { ProgramBuilder } from 'brighterscript';
 import { LogLevel } from 'brighterscript/dist/Logger';
 import type { Logger } from '@rokucommunity/logger';
-import logger from '@rokucommunity/logger';
 
 export class RopmModule {
     constructor(
@@ -24,7 +23,7 @@ export class RopmModule {
         }
     ) {
         //set the logLevel provided by the RopmOptions
-        this.logger = options?.logger ?? logger.createLogger(`ropm: `);
+        this.logger = options?.logger ?? util.createLogger();
 
         this.npmAliasName = util.getModuleName(this.moduleDir)! as string;
 
@@ -114,8 +113,20 @@ export class RopmModule {
     public dominantVersion!: string;
 
     public isValid = true;
+    public isRopmModule = false;
 
     public async init() {
+        this.packageJson = await util.getPackageJson(this.moduleDir);
+
+        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
+        if ((this.packageJson?.keywords ?? []).includes('ropm') === false) {
+            this.logger.debug(`skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
+            this.isValid = false;
+            return;
+        }
+
+        this.isRopmModule = true;
+
         //skip modules we can't derive a name from
         if (!this.npmAliasName) {
             this.logger.error(`cannot compute npm package name for "${this.moduleDir}"`);
@@ -123,7 +134,6 @@ export class RopmModule {
             return;
         }
 
-        this.packageJson = await util.getPackageJson(this.moduleDir);
         this.version = this.packageJson.version;
         this.dominantVersion = util.getDominantVersion(this.packageJson.version);
 
@@ -134,13 +144,6 @@ export class RopmModule {
         }
 
         this.npmModuleName = this.packageJson.name;
-
-        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
-        if ((this.packageJson.keywords ?? []).includes('ropm') === false) {
-            this.logger.debug(`skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
-            this.isValid = false;
-            return;
-        }
 
         //disallow using `noprefix` within dependencies
         if (this.packageJson.ropm?.noprefix) {
