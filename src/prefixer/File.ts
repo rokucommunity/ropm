@@ -2,7 +2,6 @@ import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
 import type { XMLDocument, XMLElement } from '@xml-tools/ast';
 import { buildAst } from '@xml-tools/ast';
-import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
 import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';

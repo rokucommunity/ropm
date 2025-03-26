@@ -19,7 +19,7 @@ export class RopmModule {
          */
         public readonly moduleDir: string,
 
-        public options: {
+        public options?: {
             logger: Logger;
         }
     ) {
