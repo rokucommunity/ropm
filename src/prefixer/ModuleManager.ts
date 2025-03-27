@@ -3,9 +3,17 @@ import { RopmModule } from './RopmModule';
 import * as semver from 'semver';
 import type { ModuleDependency } from '../util';
 import { util } from '../util';
+import type { Logger } from '@rokucommunity/logger';
 
 export class ModuleManager {
+    constructor(public options?: {
+        logger: Logger;
+    }) {
+        this.logger = options?.logger ?? util.createLogger();
+    }
     public modules = [] as RopmModule[];
+
+    private logger: Logger;
 
     /**
      * A list of all direct dependencies of the host application.
@@ -36,7 +44,7 @@ export class ModuleManager {
      */
     public addModule(modulePath: string) {
         this.modules.push(
-            new RopmModule(this.hostRootDir, modulePath)
+            new RopmModule(this.hostRootDir, modulePath, { logger: this.logger })
         );
     }
 
@@ -68,10 +76,16 @@ export class ModuleManager {
      * Then, remove unnecessary dependencies
      */
     public async reduceModulesAndCreatePrefixMaps() {
+        const nonRopmCount = this.modules.filter(x => !x.isRopmModule).length;
+        const skippedRopmCount = this.modules.filter(x => x.isRopmModule && !x.isValid).length;
+
         //remove non-valid dependencies
         this.modules = this.modules.filter(x => x.isValid);
 
         const reducedDependencies = this.getReducedDependencies();
+        const installedCount = reducedDependencies.length;
+
+        this.logger.log(this.getInstalledMessage(installedCount, skippedRopmCount, nonRopmCount));
 
         //discard any modules that are not in the list
         for (let i = this.modules.length - 1; i >= 0; i--) {
@@ -93,6 +107,23 @@ export class ModuleManager {
         await Promise.all(
             this.modules.map(x => x.createPrefixMap(reducedDependencies))
         );
+    }
+
+    private getInstalledMessage(installedCount, skippedRopmCount, nonRopmCount): string {
+        if (installedCount === 0 && skippedRopmCount === 0 && nonRopmCount === 0) {
+            return 'No modules installed';
+        }
+
+        const getPluralModuleString = (count: number) => count > 1 ? 'modules' : 'module';
+
+        let messageString = [
+            installedCount > 0 ? `installed ${installedCount} ${getPluralModuleString(installedCount)}` : '',
+            skippedRopmCount > 0 ? `skipped ${skippedRopmCount} ${getPluralModuleString(skippedRopmCount)} with errors` : '',
+            nonRopmCount > 0 ? `skipped ${nonRopmCount} non-ropm ${getPluralModuleString(nonRopmCount)}` : ''
+        ].filter(x => x.length > 0).join(', ');
+
+        // capitalize the first letter and return the message
+        return messageString.charAt(0).toUpperCase() + messageString.slice(1);
     }
 
     /**

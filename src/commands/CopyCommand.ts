@@ -1,3 +1,4 @@
+import type { CommandArgs } from '../util';
 import { InstallCommand } from './InstallCommand';
 
 export class CopyCommand {
@@ -13,11 +14,7 @@ export class CopyCommand {
     }
 }
 
-export interface CopyCommandArgs {
-    /**
-     * The current working directory for the command.
-     */
-    cwd?: string;
+export interface CopyCommandArgs extends CommandArgs {
     /**
      * Dependencies installation location
      */

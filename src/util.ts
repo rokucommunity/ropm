@@ -7,6 +7,8 @@ import * as semver from 'semver';
 import type { IOptions } from 'glob';
 import { Program } from 'brighterscript';
 import * as readline from 'readline';
+import { logger } from '@rokucommunity/logger';
+import type { Logger, LogLevel } from '@rokucommunity/logger';
 
 export class Util {
 
@@ -297,6 +299,10 @@ export class Util {
         }
     }
 
+    public createLogger(prefix = 'ropm:'): Logger {
+        return logger.createLogger({ prefix: prefix, printLogLevel: false, printTimestamp: false });
+    }
+
 }
 
 function mockProgramValidate() {
@@ -326,6 +332,11 @@ export interface RopmOptions {
      * An array of module aliases that should not be prefixed when installed into `rootDir`. Use this with caution.
      */
     noprefix?: string[];
+
+    /**
+     * What level of ropm's internal logging should be performed
+     */
+    logLevel?: LogLevel;
 }
 
 export interface ModuleDependency {
@@ -333,4 +344,16 @@ export interface ModuleDependency {
     ropmModuleName: string;
     npmModuleName: string;
     version: string;
+}
+
+export interface CommandArgs {
+    /**
+     * The current working directory for the command.
+     */
+    cwd?: string;
+
+    /**
+     * What level of ropm's internal logging should be performed
+     */
+    logLevel?: LogLevel;
 }

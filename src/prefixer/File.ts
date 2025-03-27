@@ -2,11 +2,11 @@ import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
 import type { XMLDocument, XMLElement } from '@xml-tools/ast';
 import { buildAst } from '@xml-tools/ast';
-import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
 import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
 import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
+import type { Logger } from '@rokucommunity/logger';
 
 /**
  * List of all declaralbe types in BrighterScript (i.e. the native types), stored in lower case for reference
@@ -16,27 +16,48 @@ const nativeTypes = new Set(
 );
 
 export class File {
-    constructor(
+    constructor(options: {
         /**
          * The path to the file's original location
          */
-        public srcPath: string,
+        srcPath: string;
         /**
          * The path to the file's new location
          */
-        public destPath: string,
+        destPath: string;
         /**
          * The absolute path to the rootDir for this file
          */
-        public rootDir: string,
-        public options: RopmOptions = {}
-    ) {
+        rootDir: string;
+        logger?: Logger;
+    }) {
+
+        this.srcPath = options.srcPath;
+        this.destPath = options.destPath;
+        this.rootDir = options.rootDir;
+        this.logger = options.logger ?? util.createLogger();
+
+
         this.pkgPath = path.posix.normalize(
             util.removeLeadingSlash(
-                util.replaceCaseInsensitive(rootDir, srcPath, '').replace(/\\/g, '/')
+                util.replaceCaseInsensitive(this.rootDir, this.srcPath, '').replace(/\\/g, '/')
             )
         );
     }
+
+    private logger: Logger;
+    /**
+     * The path to the file's original location
+     */
+    public srcPath: string;
+    /**
+     * The path to the file's new location
+     */
+    public destPath: string;
+    /**
+     * The absolute path to the rootDir for this file
+     */
+    public rootDir: string;
 
     /**
      * Is this file a `.brs` file?
@@ -184,10 +205,10 @@ export class File {
             const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.bscFile.fileContents);
             //print every lex and parse error to the console
             for (const lexError of lexErrors) {
-                console.error(`XML parse error "${lexError.message}" at ${this.destPath}:${lexError.line}:${lexError.column}`);
+                this.logger.error(`XML parse error "${lexError.message}" at ${this.destPath}:${lexError.line}:${lexError.column}`);
             }
             for (const parseError of parseErrors) {
-                console.error(`XML parse error "${parseError.message}" at ${this.destPath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
+                this.logger.error(`XML parse error "${parseError.message}" at ${this.destPath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
             }
             this.xmlAst = buildAst(cst as any, tokenVector);
         }
