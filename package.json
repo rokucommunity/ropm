@@ -1,6 +1,6 @@
 {
   "name": "ropm",
-  "version": "0.10.31",
+  "version": "0.10.32",
   "description": "",
   "scripts": {
     "preversion": "npm run build && npm run lint && npm run test",
@@ -32,7 +32,7 @@
     "@rokucommunity/logger": "^0.3.10",
     "@xml-tools/ast": "^5.0.5",
     "@xml-tools/parser": "1.0.10",
-    "brighterscript": "^0.69.0",
+    "brighterscript": "^0.69.3",
     "del": "6.0.0",
     "fs-extra": "9.1.0",
     "glob-all": "3.2.1",
