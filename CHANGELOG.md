@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.32](https://github.com/rokucommunity/ropm/compare/v0.10.31...v0.10.32) - 2025-03-31
+### Added
+ - log level support ([#92](https://github.com/rokucommunity/ropm/pull/92))
+### Changed
+ - (chore) Migration to shared ci ([#87](https://github.com/rokucommunity/ropm/pull/87))
+ - added [@rokucommunity/logger@0.3.10](https://github.com/rokucommunity/logger)
+ - upgrade to [brighterscript@0.69.3](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0693---2025-03-20). Notable changes since 0.68.4:
+     - Fixed `getClosestExpression` bug to return undefined when position not found ([brighterscript#1433](https://github.com/rokucommunity/brighterscript/pull/1433))
+     - Adds Alias statement syntax from v1 to v0 ([brighterscript#1430](https://github.com/rokucommunity/brighterscript/pull/1430))
+     - Significantly improve the performance of standardizePath ([brighterscript#1425](https://github.com/rokucommunity/brighterscript/pull/1425))
+     - Backport v1 typecast syntax to v0 ([brighterscript#1421](https://github.com/rokucommunity/brighterscript/pull/1421))
+### Fixed
+ - issue with field ID ([#86](https://github.com/rokucommunity/ropm/pull/86))
+ - test not in a describe, upgrade to bsc `v0.69.0` ([#84](https://github.com/rokucommunity/ropm/pull/84))
+
+
+
 ## [0.10.31](https://github.com/rokucommunity/ropm/compare/v0.10.30...v0.10.31) - 2025-01-31
 ### Changed
  - upgrade to [brighterscript@0.68.4](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0684---2025-01-22). Notable changes since 0.68.3:
