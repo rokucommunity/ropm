@@ -13,15 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - (chore) Migration to shared ci ([#87](https://github.com/rokucommunity/ropm/pull/87))
  - added [@rokucommunity/logger@0.3.10](https://github.com/rokucommunity/logger)
  - upgrade to [brighterscript@0.69.3](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0693---2025-03-20). Notable changes since 0.68.4:
-     - Fixed getClosestExpression bug to return undefined when position not found ([brighterscript#1433](https://github.com/rokucommunity/brighterscript/pull/1433))
+     - Fixed `getClosestExpression` bug to return undefined when position not found ([brighterscript#1433](https://github.com/rokucommunity/brighterscript/pull/1433))
      - Adds Alias statement syntax from v1 to v0 ([brighterscript#1430](https://github.com/rokucommunity/brighterscript/pull/1430))
-     - Remove temporary code that was accidentally committed ([brighterscript#1432](https://github.com/rokucommunity/brighterscript/pull/1432))
      - Significantly improve the performance of standardizePath ([brighterscript#1425](https://github.com/rokucommunity/brighterscript/pull/1425))
-     - Bump @babel/runtime from 7.24.5 to 7.26.10 ([brighterscript#1426](https://github.com/rokucommunity/brighterscript/pull/1426))
      - Backport v1 typecast syntax to v0 ([brighterscript#1421](https://github.com/rokucommunity/brighterscript/pull/1421))
-     - Prevent running the lsp project in a worker thread ([brighterscript#1423](https://github.com/rokucommunity/brighterscript/pull/1423))
-     - Language Server Rewrite ([brighterscript#993](https://github.com/rokucommunity/brighterscript/pull/993))
-     - Add `validate` flag to ProgramBuilder.run() ([brighterscript#1409](https://github.com/rokucommunity/brighterscript/pull/1409))
 ### Fixed
  - issue with field ID ([#86](https://github.com/rokucommunity/ropm/pull/86))
  - test not in a describe, upgrade to bsc `v0.69.0` ([#84](https://github.com/rokucommunity/ropm/pull/84))
