@@ -7,21 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [0.10.32](https://github.com/rokucommunity/ropm/compare/v0.10.31...v0.10.32) - 2025-03-31
+### Added
+ - log level support ([#92](https://github.com/rokucommunity/ropm/pull/92))
 ### Changed
- - Create make-release-artifacts.yml ([fde993b](https://github.com/rokucommunity/ropm/commit/fde993b))
- - Delete .github/workflows/make-release-artifacts.yml ([0524afc](https://github.com/rokucommunity/ropm/commit/0524afc))
- - Remove triggers for push on build.yml ([af45cec](https://github.com/rokucommunity/ropm/commit/af45cec))
- - Create publish-release.yml ([f36547b](https://github.com/rokucommunity/ropm/commit/f36547b))
- - Create make-release-artifacts.yml ([01525f8](https://github.com/rokucommunity/ropm/commit/01525f8))
- - Create initialize-release.yml ([666cc13](https://github.com/rokucommunity/ropm/commit/666cc13))
- - Remove old template files ([1837019](https://github.com/rokucommunity/ropm/commit/1837019))
- - Added log level support ([#92](https://github.com/rokucommunity/ropm/pull/92))
- - Create initialize-release.yml ([89e5cc2](https://github.com/rokucommunity/ropm/commit/89e5cc2))
- - Delete .github/workflows/initialize-release.yml ([bb3cba2](https://github.com/rokucommunity/ropm/commit/bb3cba2))
- - Migration to shared ci ([#87](https://github.com/rokucommunity/ropm/pull/87))
- - Fixing issue with field ID ([#86](https://github.com/rokucommunity/ropm/pull/86))
- - Fix test not in a describe, upgrade to bsc `v0.69.0` ([#84](https://github.com/rokucommunity/ropm/pull/84))
- - Bump serialize-javascript and mocha ([#83](https://github.com/rokucommunity/ropm/pull/83))
+ - (chore) Migration to shared ci ([#87](https://github.com/rokucommunity/ropm/pull/87))
  - added [@rokucommunity/logger@0.3.10](https://github.com/rokucommunity/logger)
  - upgrade to [brighterscript@0.69.3](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0693---2025-03-20). Notable changes since 0.68.4:
      - Fixed getClosestExpression bug to return undefined when position not found ([brighterscript#1433](https://github.com/rokucommunity/brighterscript/pull/1433))
@@ -33,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
      - Prevent running the lsp project in a worker thread ([brighterscript#1423](https://github.com/rokucommunity/brighterscript/pull/1423))
      - Language Server Rewrite ([brighterscript#993](https://github.com/rokucommunity/brighterscript/pull/993))
      - Add `validate` flag to ProgramBuilder.run() ([brighterscript#1409](https://github.com/rokucommunity/brighterscript/pull/1409))
+### Fixed
+ - issue with field ID ([#86](https://github.com/rokucommunity/ropm/pull/86))
+ - test not in a describe, upgrade to bsc `v0.69.0` ([#84](https://github.com/rokucommunity/ropm/pull/84))
 
 
 
