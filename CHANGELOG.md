@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.33](https://github.com/rokucommunity/ropm/compare/0.10.32...v0.10.33) - 2025-05-15
+### Changed
+ - upgrade to [@rokucommunity/logger@0.3.11](https://github.com/rokucommunity/logger/blob/master/CHANGELOG.md#0311---2025-05-05). Notable changes since 0.3.10:
+ - upgrade to [brighterscript@0.69.9](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0699---2025-05-09). Notable changes since 0.69.3:
+ - upgrade to [roku-deploy@3.12.5](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3125---2025-05-05). Notable changes since 3.12.4:
+
+
+
 ## [0.10.32](https://github.com/rokucommunity/ropm/compare/v0.10.31...v0.10.32) - 2025-03-31
 ### Added
  - log level support ([#92](https://github.com/rokucommunity/ropm/pull/92))
