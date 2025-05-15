@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.33](https://github.com/rokucommunity/ropm/compare/0.10.32...v0.10.33) - 2025-05-15
+### Added
+ - Create publish-release.yml ([ff018c2](https://github.com/rokucommunity/ropm/commit/ff018c2))
+### Changed
+ - Update package.json ([#101](https://github.com/rokucommunity/ropm/pull/101))
+ - Shared CI Support Prerelease ([#103](https://github.com/rokucommunity/ropm/pull/103))
+ - Shared CI Support Prerelease ([#102](https://github.com/rokucommunity/ropm/pull/102))
+ - upgrade to [@rokucommunity/logger@0.3.11](https://github.com/rokucommunity/logger/blob/master/CHANGELOG.md#0311---2025-05-05). Notable changes since 0.3.10:
+     - Merge pull request #12 from rokucommunity/migrate-to-shared-ci ([f43e5a4](https://github.com/rokucommunity/ropm/commit/f43e5a4))
+ - upgrade to [brighterscript@0.69.9](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0699---2025-05-09). Notable changes since 0.69.3:
+     - removed no-throw-literal lint rule ([#1489](https://github.com/rokucommunity/ropm/pull/1489))
+     - Add `bsc0` cli binary name ([#1490](https://github.com/rokucommunity/ropm/pull/1490))
+     - Shared CI Support Prerelease ([#1483](https://github.com/rokucommunity/ropm/pull/1483))
+     - Shared CI Support Prerelease ([#1475](https://github.com/rokucommunity/ropm/pull/1475))
+     - Prevent runtime crash for non-referencable funcs in ternary and null coalescing ([#1474](https://github.com/rokucommunity/ropm/pull/1474))
+     - Fix `removeParameterTypes` compile errors for return types ([#1414](https://github.com/rokucommunity/ropm/pull/1414))
+     - Remove `npm ci` from the `package` npm script since it's redundant ([#1461](https://github.com/rokucommunity/ropm/pull/1461))
+     - Flag incorrect return statements in functions and subs ([#1463](https://github.com/rokucommunity/ropm/pull/1463))
+     - Updated the type definition of the `InStr` global callable ([#1456](https://github.com/rokucommunity/ropm/pull/1456))
+     - More safely wrap expressions for template string transpile ([#1445](https://github.com/rokucommunity/ropm/pull/1445))
+     - Migration to the new shared CI ([#1440](https://github.com/rokucommunity/ropm/pull/1440))
+     - Support plugin factory detecting brighterscript version ([#1438](https://github.com/rokucommunity/ropm/pull/1438))
+ - upgrade to [roku-deploy@3.12.5](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3125---2025-05-05). Notable changes since 3.12.4:
+     - Add missing template workflows for shared ci ([#189](https://github.com/rokucommunity/ropm/pull/189))
+     - Shared CI Support Prerelease ([#185](https://github.com/rokucommunity/ropm/pull/185))
+### Removed
+ - Delete .github/workflows/publish-release.yml ([35ea918](https://github.com/rokucommunity/ropm/commit/35ea918))
+
+
+
 ## [0.10.32](https://github.com/rokucommunity/ropm/compare/v0.10.31...v0.10.32) - 2025-03-31
 ### Added
  - log level support ([#92](https://github.com/rokucommunity/ropm/pull/92))
