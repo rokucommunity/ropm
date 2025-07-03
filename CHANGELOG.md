@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.35](https://github.com/rokucommunity/ropm/compare/0.10.34...v0.10.35) - 2025-07-03
+### Changed
+ - upgrade to [brighterscript@0.69.11](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06911---2025-07-03). Notable changes since 0.69.10:
+     - Rename setting to `enableProjectDiscovery` ([#1525](https://github.com/rokucommunity/ropm/pull/1525))
+     - Support projects array in settings ([#1521](https://github.com/rokucommunity/ropm/pull/1521))
+     - Bump brace-expansion from 1.1.11 to 1.1.12 ([#1522](https://github.com/rokucommunity/ropm/pull/1522))
+     - chore: Support dispatch workflows ([#1514](https://github.com/rokucommunity/ropm/pull/1514))
+     - Add `enableDiscovery` language server option ([#1520](https://github.com/rokucommunity/ropm/pull/1520))
+     - Improve manifests discovery ([#1518](https://github.com/rokucommunity/ropm/pull/1518))
+     - Improve `bsconfig.json` auto-discovery ([#1512](https://github.com/rokucommunity/ropm/pull/1512))
+     - Add some docs about ObserveField namespace caveats ([#1513](https://github.com/rokucommunity/ropm/pull/1513))
+
+
+
 ## [0.10.34](https://github.com/rokucommunity/ropm/compare/0.10.33...v0.10.34) - 2025-06-03
 ### Changed
  - upgrade to [brighterscript@0.69.10](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06910---2025-06-03). Notable changes since 0.69.9:
