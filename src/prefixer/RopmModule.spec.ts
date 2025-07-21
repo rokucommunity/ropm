@@ -190,4 +190,25 @@ describe('RopmModule', () => {
             expect(logger.getDistinctComponentReferenceNames()).to.eql(['component1']);
         });
     });
+
+    describe('copyFiles', () => {
+        it('handles non-existent packageRootDir gracefully', async () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    ropm: {
+                        packageRootDir: 'dist' // This directory doesn't exist
+                    }
+                }]
+            });
+            await logger.init();
+            
+            // This should not throw an error
+            await logger.copyFiles();
+            
+            // Verify no files were copied (since the directory doesn't exist)
+            expect(logger.fileMaps).to.be.empty;
+        });
+    });
 });
