@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.37](https://github.com/rokucommunity/ropm/compare/0.10.36...v0.10.37) - 2025-08-04
+### Changed
+ - upgrade to [brighterscript@0.69.13](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06913---2025-08-04). Notable changes since 0.69.12:
+
+
+
 ## [0.10.36](https://github.com/rokucommunity/ropm/compare/0.10.35...v0.10.36) - 2025-07-30
 ### Added
  - Add support for the `create-package` label ([#111](https://github.com/rokucommunity/ropm/pull/111))
@@ -661,3 +667,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+
