@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.37](https://github.com/rokucommunity/ropm/compare/0.10.36...v0.10.37) - 2025-08-04
 ### Changed
  - upgrade to [brighterscript@0.69.13](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06913---2025-08-04). Notable changes since 0.69.12:
-     - Add projectDiscoveryExclude setting and files.watcherExclude support ([#1535](https://github.com/rokucommunity/ropm/pull/1535))
-     - Fix signature help crash on malformed function declarations ([#1536](https://github.com/rokucommunity/ropm/pull/1536))
-     - Add max depth configuration for Roku project discovery ([#1533](https://github.com/rokucommunity/ropm/pull/1533))
-     - chore: Add copilot files ([#1534](https://github.com/rokucommunity/ropm/pull/1534))
 
 
 
@@ -671,3 +667,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+
