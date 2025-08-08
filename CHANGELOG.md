@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.10.37](https://github.com/rokucommunity/ropm/compare/0.10.36...v0.10.37) - 2025-08-04
+### Changed
+ - upgrade to [brighterscript@0.69.13](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06913---2025-08-04). Notable changes since 0.69.12:
+
+
+
+## [0.10.36](https://github.com/rokucommunity/ropm/compare/0.10.35...v0.10.36) - 2025-07-30
+### Added
+ - Add support for the `create-package` label ([#111](https://github.com/rokucommunity/ropm/pull/111))
+### Changed
+ - upgrade to [brighterscript@0.69.12](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06912---2025-07-07). Notable changes since 0.69.11:
+     - Fix discovery when `projects` is empty ([#1529](https://github.com/rokucommunity/ropm/pull/1529))
+### Fixed
+ - Fix packageRootDir crash when directory doesn't exist ([#110](https://github.com/rokucommunity/ropm/pull/110))
+
+
+
+## [0.10.35](https://github.com/rokucommunity/ropm/compare/0.10.34...v0.10.35) - 2025-07-03
+### Changed
+ - upgrade to [brighterscript@0.69.11](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06911---2025-07-03). Notable changes since 0.69.10:
+
+
+
 ## [0.10.34](https://github.com/rokucommunity/ropm/compare/0.10.33...v0.10.34) - 2025-06-03
 ### Changed
  - upgrade to [brighterscript@0.69.10](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06910---2025-06-03). Notable changes since 0.69.9:
@@ -644,3 +667,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+

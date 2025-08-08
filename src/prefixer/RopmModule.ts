@@ -2,6 +2,7 @@ import { File } from './File';
 import type { RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as path from 'path';
+import * as fsExtra from 'fs-extra';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import type { Dependency } from './ModuleManager';
@@ -161,6 +162,14 @@ export class RopmModule {
         const packageLogText = `${this.npmAliasName}${this.npmAliasName !== this.npmModuleName ? `(${this.npmModuleName})` : ''}`;
 
         this.logger.log(`Copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
+        
+        // Check if packageRootDir exists before trying to scan it
+        if (!(await fsExtra.pathExists(this.packageRootDir))) {
+            this.logger.warn(`packageRootDir "${this.packageRootDir}" does not exist for ${packageLogText}@${this.version}. Skipping file copying.`);
+            this.fileMaps = [];
+            return;
+        }
+
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
             path: this.packageRootDir
