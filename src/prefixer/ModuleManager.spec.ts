@@ -1813,6 +1813,122 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('correctly prefixes default param function value', async () => {
+            await testProcess({
+                'logger:source/test.brs': [
+                    trim`
+                        function do_something()
+                        end function
+                        function test(cb1 = do_something, cb2 = do_something)
+                        end function
+                    `,
+                    trim`
+                        function logger_do_something()
+                        end function
+                        function logger_test(cb1 = logger_do_something, cb2 = logger_do_something)
+                        end function
+                    `
+                ]
+            });
+        });
+
+        it('prefixes underscored function name in brs referenced from d.bs', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace alpha
+                            function beta()
+                            end function
+                        end namespace
+                    `,
+                    trim`
+                        namespace logger.alpha
+                            function beta()
+                            end function
+                        end namespace
+                    `
+                ],
+                'logger:source/main.brs': [
+                    trim`
+                        function doSomething()
+                            alpha_beta()
+                        end function
+                    `,
+                    trim`
+                        function logger_doSomething()
+                            logger_alpha_beta()
+                        end function
+                    `
+                ]
+            });
+        });
+
+        it.only('prefixes default param value when it is a namespaced function ref', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace alpha
+                            function beta(p1 = invalid)
+                            end function
+                        end namespace
+
+                        function doSomething(cb1 = alpha.beta, cb2 = alpha_beta, cb3 = alpha.beta(alpha_beta()), cb4 = alpha_beta(alpha.beta()))
+                        end function
+                    `,
+                    trim`
+                        namespace logger.alpha
+                            function beta(p1 = invalid)
+                            end function
+                        end namespace
+
+                        namespace logger
+                        function doSomething(cb1 = logger.alpha.beta, cb2 = logger.alpha.beta, cb3 = logger.alpha.beta(logger.alpha.beta()), cb4 = logger.alpha.beta(logger.alpha.beta)))
+                        end function
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it.skip('prefixes enums, classes, and interfaces in class members', async () => {
+            await testProcess({
+                'rooibos_promises@@rokucommunity/promises:source/promises.d.bs': [
+                    trim`
+                        class Movie
+                            whichWay as Direction
+                            thingToPlay as Video
+                            parent as Movie
+                        end class
+                        enum Direction
+                            up
+                        end enum
+                        interface Video
+                            uri as string
+                        end interface
+                    `,
+                    trim`
+                        namespace logger
+                        class Movie
+                            whichWay as logger.Direction
+                            thingToPlay as logger.Video
+                            parent as logger.Movie
+                        end class
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up
+                        end enum
+                        end namespace
+                        namespace logger
+                        interface Video
+                            uri as string
+                        end interface
+                        end namespace
+                    `
+                ]
+            });
+        });
+
         it('prefixes enums, classes, and interfaces in class members', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [

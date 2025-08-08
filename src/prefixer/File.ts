@@ -4,7 +4,7 @@ import type { XMLDocument, XMLElement } from '@xml-tools/ast';
 import { buildAst } from '@xml-tools/ast';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
+import { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement, isFunctionParameterExpression } from 'brighterscript';
 import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
 import type { Logger } from '@rokucommunity/logger';
 
@@ -337,13 +337,14 @@ export class File {
                 }
             },
             VariableExpression: (variable, parent) => {
-                //skip objects to left of dotted/indexed expressions
-                if ((
-                    isDottedSetStatement(parent) ||
-                    isDottedGetExpression(parent) ||
-                    isIndexedSetStatement(parent) ||
-                    isIndexedGetExpression(parent)
-                ) && parent.obj === variable) {
+                const rootElement = variable.getExpressionChainRoot();
+                //skip variables on the left-hand-side of dotted/indexed sets (i.e. `|thing|.foo = "bar"` or `|thing|[0] = "bar"`)
+                if (rootElement && rootElement.parent && (
+                    isDottedSetStatement(rootElement.parent) ||
+                    isDottedGetExpression(rootElement.parent) ||
+                    isIndexedSetStatement(rootElement.parent) ||
+                    isIndexedGetExpression(rootElement.parent)
+                ) && rootElement.parent.obj === variable) {
                     return;
                 }
 
@@ -353,6 +354,21 @@ export class File {
                         name: variable.name.text,
                         offset: this.positionToOffset(variable.name.range.start)
                     });
+
+                    //default parameter values pointing to namespaced functions (i.e. `p1 = alpha.run`, `p2 = alpha.beta.exec()`)
+                    //this is mostly just for d.bs files since we don't support prefixing .bs files in ropm
+                } else if (isFunctionParameterExpression(rootElement?.parent) && isDottedGetExpression(rootElement)) {
+                    //build the dot-separated name first
+                    const bsName = bsUtil.getAllDottedGetParts(rootElement)?.map(x => x.text).join('.');
+                    const underscoreName = bsName?.replace('.', '_');
+                    if (bsName && underscoreName && rootElement.range) {
+                        this.prefixableReferences.push({
+                            fullyQualifiedName: bsName,
+                            offsetBegin: this.positionToOffset(rootElement.range.start),
+                            offsetEnd: this.positionToOffset(rootElement.range.end)
+                        });
+                    }
+
                 } else {
                     //track identifiers
                     this.identifiers.push({
@@ -439,8 +455,9 @@ export class File {
             },
             FunctionExpression: (func) => {
                 const namespaceName = func.namespaceName?.getName(ParseMode.BrighterScript);
-                //any parameters containing custom types
+
                 for (const param of func.parameters) {
+                    //any parameters containing custom types
                     this.tryAddPrefixableRef({
                         name: param.typeToken?.text,
                         containingNamespace: namespaceName,
@@ -458,7 +475,7 @@ export class File {
             FunctionStatement: (func) => {
                 const annotations = func.annotations ?? [];
                 this.functionDefinitions.push({
-                    name: func.name.text,
+                    name: func.getName(ParseMode.BrightScript),
                     nameOffset: this.positionToOffset(func.name.range.start),
                     hasNamespace: !!func.namespaceName,
                     //Use annotation start position if available, otherwise use keyword

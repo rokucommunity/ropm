@@ -32,7 +32,7 @@
     "@rokucommunity/logger": "^0.3.11",
     "@xml-tools/ast": "^5.0.5",
     "@xml-tools/parser": "1.0.10",
-    "brighterscript": "^0.69.10",
+    "brighterscript": "https://github.com/rokucommunity/brighterscript/releases/download/v0.0.0-packages/brighterscript-0.69.12-get-root-expression.20250725180450.tgz",
     "del": "6.0.0",
     "fs-extra": "9.1.0",
     "glob-all": "3.2.1",
