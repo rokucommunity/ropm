@@ -4,7 +4,8 @@ import type { XMLDocument, XMLElement } from '@xml-tools/ast';
 import { buildAst } from '@xml-tools/ast';
 import { util } from '../util';
 import * as path from 'path';
-import { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement, isFunctionParameterExpression } from 'brighterscript';
+import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
+import { isFunctionParameterExpression } from 'brighterscript';
 import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
 import type { Logger } from '@rokucommunity/logger';
 

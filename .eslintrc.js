@@ -68,8 +68,6 @@ module.exports = {
         '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off',
         '@typescript-eslint/no-unnecessary-condition': 'off',
         '@typescript-eslint/no-unnecessary-type-assertion': 'off',
-        '@typescript-eslint/no-unsafe-argument': 'off',
-        '@typescript-eslint/non-nullable-type-assertion-style': 'off',
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/no-unsafe-call': 'off',
         '@typescript-eslint/no-unsafe-enum-comparison': 'off',
@@ -77,15 +75,9 @@ module.exports = {
         '@typescript-eslint/no-unsafe-return': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         '@typescript-eslint/no-unused-vars-experimental': 'off',
-        '@typescript-eslint/object-curly-spacing': [
-            'error',
-            'always'
-        ],
         '@typescript-eslint/no-use-before-define': 'off',
         '@typescript-eslint/prefer-for-of': 'error',
-        '@typescript-eslint/parameter-properties': 'off',
         '@typescript-eslint/prefer-nullish-coalescing': 'off',
-        '@typescript-eslint/prefer-for-of': 'off',
         //this is a good rule, but using optional chaining causes coverage report misses.
         '@typescript-eslint/prefer-optional-chain': 'off',
         '@typescript-eslint/prefer-readonly': 'off',
@@ -136,7 +128,6 @@ module.exports = {
         'getter-return': 'off',
         'guard-for-in': 'off',
         'id-length': 'off',
-        'import/no-duplicates': 'error',
         'indent': 'off',
         'init-declarations': 'off',
         'line-comment-position': 'off',

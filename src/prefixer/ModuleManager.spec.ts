@@ -1863,7 +1863,7 @@ describe('ModuleManager', () => {
             });
         });
 
-        it.only('prefixes default param value when it is a namespaced function ref', async () => {
+        it('prefixes default param value when it is a namespaced function ref', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
                     trim`
