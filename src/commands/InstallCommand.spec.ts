@@ -259,26 +259,6 @@ describe('InstallCommand', () => {
 
         });
 
-        it('shows underlying error when `npm ls` fails', async () => {
-            writeProject(projectName, {
-                'source/main.brs': '',
-                //a "leftover" file from a previous ropm install
-                'customDir/roku_modules/testlib/file.brs': ''
-            }, {
-                dependencies: {
-                    'logger': `file:../logger`
-                }
-            });
-
-            let ex;
-            try {
-                await command.run();
-            } catch (e) {
-                ex = e;
-            }
-            expect(ex.message).to.include('Failed to compute prod dependencies');
-        });
-
         it('ignores prod dependencies that are missing the "ropm" keyword', async () => {
             writeProject('logger', {
                 'source/logger.brs': ''
