@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.0](https://github.com/rokucommunity/ropm/compare/0.10.37...v0.11.0) - 2025-08-26
+### Changed
+ - upgrade to [brighterscript@0.70.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0700---2025-08-11). Notable changes since 0.69.13:
+     - Support transpiling class methods as named functions ([#1548](https://github.com/rokucommunity/ropm/pull/1548))
+     - chore: update regex-literal docs about escaping the forward slash ([#1549](https://github.com/rokucommunity/ropm/pull/1549))
+ - upgrade to [roku-deploy@3.13.0](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3130---2025-08-04). Notable changes since 3.12.6:
+     - chore: Support dispatch workflows ([#198](https://github.com/rokucommunity/ropm/pull/198))
+     - Add standards-compliant User-Agent header ([#203](https://github.com/rokucommunity/ropm/pull/203))
+### Fixed
+ - Fix Issues with npm-ls ([#118](https://github.com/rokucommunity/ropm/pull/118))
+
+
+
 ## [0.10.37](https://github.com/rokucommunity/ropm/compare/0.10.36...v0.10.37) - 2025-08-04
 ### Changed
  - upgrade to [brighterscript@0.69.13](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#06913---2025-08-04). Notable changes since 0.69.12:
