@@ -98,7 +98,7 @@ export class InstallCommand {
 
         //remove the host module from the list (it should always be the first entry)
         const hostModulePath = modulePaths.splice(0, 1)[0];
-        this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath);
+        this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath, this.logger);
 
         this.moduleManager.hostRootDir = this.hostRootDir;
         this.moduleManager.noprefixNpmAliases = this.hostPackageJson?.ropm?.noprefix ?? [];
@@ -122,18 +122,23 @@ export class InstallCommand {
         }
         let stdout: string;
         try {
-            stdout = childProcess.execSync('npm ls --parseable --prod --depth=Infinity', {
+            const npmLs = `npm ls --parseable --omit=dev --omit=optional --depth=Infinity`;
+            this.logger.debug(`executing command: ${npmLs}`);
+
+            stdout = childProcess.execSync(npmLs, {
                 cwd: this.cwd
             }).toString();
+
         } catch (e) {
             stdout = (e as any).stdout.toString();
-            const stderr: string = (e as any).stderr.toString();
-            //sometimes the unit tests absorb stderr...so as long as we have stdout, assume it's valid (and ignore the stderr)
-            if (stderr.includes('npm ERR! extraneous:')) {
-                //ignore errors
-            } else {
-                throw new Error('Failed to compute prod dependencies: ' +  (e as any).message);
-            }
+
+            // do not throw error, just log a warning
+            // there are a lot of edge cases where npm ls errors don't pose any actual roadblock for ropm packages
+
+            this.logger.warn([
+                'Encountered an error while retrieving the prod dependencies from npm-ls. Attempting to proceed anyways. You can review the error below:\n',
+                (e as any).message
+            ].join('\n'));
         }
 
         return stdout.trim().split(/\r?\n/);
