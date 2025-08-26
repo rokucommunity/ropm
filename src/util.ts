@@ -171,7 +171,7 @@ export class Util {
     /**
      * Given a path to a module within node_modules, return its list of direct dependencies
      */
-    public async getModuleDependencies(moduleDir: string) {
+    public async getModuleDependencies(moduleDir: string, logger = util.createLogger()) {
         const packageJson = await util.getPackageJson(moduleDir);
         const npmAliases = Object.keys(packageJson.dependencies ?? {});
 
@@ -181,7 +181,6 @@ export class Util {
 
         await Promise.all(
             npmAliases.map(async (npmAlias) => {
-
                 const dependencyDir = await this.findDependencyDir(moduleDir, npmAlias);
 
                 if (!dependencyDir) {
@@ -203,11 +202,13 @@ export class Util {
         );
 
         if (unresolved.length > 0) {
-            const err = new Error(`Could not resolve dependencies for the following packages: {\n${unresolved}\n}`) as ModuleDependencyError;
-            err.resolved = resolved;
-            err.unresolved = unresolved;
+            const unresolvedMessage = `Could not resolve dependencies for the following packages: {\n${unresolved}\n}`;
 
-            throw err;
+            if (resolved.length > 0) {
+                logger.warn(unresolvedMessage);
+            } else {
+                throw new Error(unresolvedMessage);
+            }
         }
 
         return resolved;
@@ -350,11 +351,6 @@ export interface RopmOptions {
      * What level of ropm's internal logging should be performed
      */
     logLevel?: LogLevel;
-}
-
-export interface ModuleDependencyError extends Error {
-    resolved: ModuleDependency[];
-    unresolved: string[];
 }
 
 export interface ModuleDependency {

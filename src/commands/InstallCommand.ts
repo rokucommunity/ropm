@@ -1,4 +1,4 @@
-import type { CommandArgs, RopmPackageJson, ModuleDependencyError } from '../util';
+import type { CommandArgs, RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as path from 'path';
 import * as childProcess from 'child_process';
@@ -98,20 +98,7 @@ export class InstallCommand {
 
         //remove the host module from the list (it should always be the first entry)
         const hostModulePath = modulePaths.splice(0, 1)[0];
-
-        try {
-            this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath);
-
-        } catch (e) {
-            const moduleErr = (e as ModuleDependencyError);
-            const resolvedDependencies = moduleErr.resolved;
-            if (resolvedDependencies.length === 0) {
-                throw e;
-            }
-
-            this.logger.warn(moduleErr.message);
-            this.moduleManager.hostDependencies = resolvedDependencies;
-        }
+        this.moduleManager.hostDependencies = await util.getModuleDependencies(hostModulePath, this.logger);
 
         this.moduleManager.hostRootDir = this.hostRootDir;
         this.moduleManager.noprefixNpmAliases = this.hostPackageJson?.ropm?.noprefix ?? [];
@@ -169,6 +156,4 @@ export interface InstallCommandArgs extends CommandArgs {
      * it will override the value from package.json.
      */
     rootDir?: string;
-    depth?: number;
-    omit?: string;
 }
