@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.1](https://github.com/rokucommunity/ropm/compare/0.11.0...v0.11.1) - 2025-10-10
+### Changed
+ - upgrade to [brighterscript@0.70.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0702---2025-10-10). Notable changes since 0.70.0:
+
+
+
 ## [0.11.0](https://github.com/rokucommunity/ropm/compare/0.10.37...v0.11.0) - 2025-08-26
 ### Changed
  - upgrade to [brighterscript@0.70.0](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0700---2025-08-11). Notable changes since 0.69.13:
@@ -676,5 +682,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+
 
 
