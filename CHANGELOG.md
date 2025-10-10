@@ -8,13 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.11.1](https://github.com/rokucommunity/ropm/compare/0.11.0...v0.11.1) - 2025-10-10
 ### Changed
- - Bump brace-expansion from 1.1.11 to 1.1.12 ([#120](https://github.com/rokucommunity/ropm/pull/120))
  - upgrade to [brighterscript@0.70.2](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0702---2025-10-10). Notable changes since 0.70.0:
-     - Add manual entries for roUtils and roRenderThreadQueue ([#1574](https://github.com/rokucommunity/ropm/pull/1574))
-     - Roku sdk updates ([#1573](https://github.com/rokucommunity/ropm/pull/1573))
-     - Flag param names that are reserved words ([#1556](https://github.com/rokucommunity/ropm/pull/1556))
-     - Fix for adding files on beforeProgramValidate ([#1568](https://github.com/rokucommunity/ropm/pull/1568))
-     - Fix typdef generation of default param func ([#1551](https://github.com/rokucommunity/ropm/pull/1551))
 
 
 
@@ -688,5 +682,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+
 
 
