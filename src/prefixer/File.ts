@@ -338,7 +338,7 @@ export class File {
                 }
             },
             VariableExpression: (variable, parent) => {
-                const rootElement = variable.getExpressionChainRoot();
+                let rootElement = variable.getExpressionChainRoot();
                 //skip variables on the left-hand-side of dotted/indexed sets (i.e. `|thing|.foo = "bar"` or `|thing|[0] = "bar"`)
                 if (rootElement && rootElement.parent && (
                     isDottedSetStatement(rootElement.parent) ||
@@ -358,7 +358,9 @@ export class File {
 
                     //default parameter values pointing to namespaced functions (i.e. `p1 = alpha.run`, `p2 = alpha.beta.exec()`)
                     //this is mostly just for d.bs files since we don't support prefixing .bs files in ropm
-                } else if (isFunctionParameterExpression(rootElement?.parent) && isDottedGetExpression(rootElement)) {
+                } else if (isFunctionParameterExpression(rootElement?.parent) && (isDottedGetExpression(rootElement) || isCallExpression(rootElement))) {
+                    rootElement = isCallExpression(rootElement) ? rootElement.callee : rootElement;
+
                     //build the dot-separated name first
                     const bsName = bsUtil.getAllDottedGetParts(rootElement)?.map(x => x.text).join('.');
                     const underscoreName = bsName?.replace('.', '_');

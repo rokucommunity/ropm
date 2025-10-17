@@ -1870,20 +1870,45 @@ describe('ModuleManager', () => {
                         namespace alpha
                             function beta(p1 = invalid)
                             end function
-                        end namespace
-
-                        function doSomething(cb1 = alpha.beta, cb2 = alpha_beta, cb3 = alpha.beta(alpha_beta()), cb4 = alpha_beta(alpha.beta()))
-                        end function
-                    `,
-                    trim`
-                        namespace logger.alpha
-                            function beta(p1 = invalid)
+                            function charlie(p1 = beta, p2 = alpha.beta, p3 = alpha.beta(), p4 = alpha.beta(alpha.beta()))
                             end function
                         end namespace
 
-                        namespace logger
-                        function doSomething(cb1 = logger.alpha.beta, cb2 = logger.alpha.beta, cb3 = logger.alpha.beta(logger.alpha.beta()), cb4 = logger.alpha.beta(logger.alpha.beta)))
+                        function doSomething(cb1 = alpha.beta, cb2 = alpha.beta(alpha.beta()))
                         end function
+                    `,
+                    trim`
+                        namespace alpha
+                            function beta(p1 = invalid)
+                            end function
+                            function charlie(p1 = beta, p2 = logger.alpha.beta, p3 = logger.alpha.beta(), p4 = logger.alpha.beta(logger.alpha.beta()))
+                            end function
+                        end namespace
+
+                        function doSomething(cb1 = logger.alpha.beta, cb2 = logger.alpha.beta(logger.alpha.beta()))
+                        end function
+                    `
+                ]
+            });
+        });
+
+        it('prefixes default param value when it is a namespaced function call', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace alpha
+                            function beta()
+                            end function
+                            function charlie(p1 = alpha.beta())
+                            end function
+                        end namespace
+                    `,
+                    trim`
+                        namespace logger.alpha
+                            function beta()
+                            end function
+                            function charlie(p1 = logger.alpha.beta())
+                            end function
                         end namespace
                     `
                 ]
