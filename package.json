@@ -1,6 +1,6 @@
 {
   "name": "ropm",
-  "version": "0.10.37",
+  "version": "0.11.1",
   "description": "",
   "scripts": {
     "preversion": "npm run build && npm run lint && npm run test",
@@ -38,7 +38,7 @@
     "glob-all": "3.2.1",
     "latinize": "0.5.0",
     "npm-packlist": "2.1.4",
-    "roku-deploy": "^3.12.6",
+    "roku-deploy": "^3.13.0",
     "semver": "^7.6.3",
     "yargs": "16.2.0"
   },

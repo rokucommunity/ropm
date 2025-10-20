@@ -171,23 +171,27 @@ export class Util {
     /**
      * Given a path to a module within node_modules, return its list of direct dependencies
      */
-    public async getModuleDependencies(moduleDir: string) {
+    public async getModuleDependencies(moduleDir: string, logger = util.createLogger()) {
         const packageJson = await util.getPackageJson(moduleDir);
         const npmAliases = Object.keys(packageJson.dependencies ?? {});
 
         //look up the original package name of each alias
-        const result = [] as ModuleDependency[];
+        const resolved = [] as ModuleDependency[];
+        const unresolved = [] as string[];
 
         await Promise.all(
             npmAliases.map(async (npmAlias) => {
-
                 const dependencyDir = await this.findDependencyDir(moduleDir, npmAlias);
+
                 if (!dependencyDir) {
-                    throw new Error(`Could not resolve dependency "${npmAlias}" for "${moduleDir}"`);
+                    unresolved.push(`"${npmAlias}": "${moduleDir}"`);
+                    return;
                 }
+
                 const packageJson = await util.getPackageJson(dependencyDir);
+
                 if ((packageJson.keywords ?? []).includes('ropm')) {
-                    result.push({
+                    resolved.push({
                         npmAlias: npmAlias,
                         ropmModuleName: util.getRopmNameFromModuleName(npmAlias),
                         npmModuleName: packageJson.name,
@@ -197,7 +201,17 @@ export class Util {
             })
         );
 
-        return result;
+        if (unresolved.length > 0) {
+            const unresolvedMessage = `Could not resolve dependencies for the following packages: {\n${unresolved}\n}`;
+
+            if (resolved.length > 0) {
+                logger.warn(unresolvedMessage);
+            } else {
+                throw new Error(unresolvedMessage);
+            }
+        }
+
+        return resolved;
     }
 
     /**
