@@ -248,7 +248,7 @@ export class Util {
     }
 
     /**
-     * Replace the first case-insensitive occurance of {search} in {subject} with {replace}
+     * Replace the first case-insensitive occurrence of {search} in {subject} with {replace}
      */
     public replaceCaseInsensitive(search: string, subject: string, replace: string) {
         const idx = subject.toLowerCase().indexOf(search.toLowerCase());
@@ -295,7 +295,7 @@ export class Util {
 
     /**
      * Replaces the Program.validate call with an empty function.
-     * This allows us to bypass BrighterScript's validation cycle, which speeds up performace
+     * This allows us to bypass BrighterScript's validation cycle, which speeds up performance
      */
     public mockProgramValidate() {
         if (Program.prototype.validate !== mockProgramValidate) {
@@ -316,7 +316,6 @@ export class Util {
     public createLogger(prefix = 'ropm:'): Logger {
         return logger.createLogger({ prefix: prefix, printLogLevel: false, printTimestamp: false });
     }
-
 }
 
 function mockProgramValidate() {
