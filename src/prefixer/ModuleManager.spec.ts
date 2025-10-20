@@ -1870,23 +1870,25 @@ describe('ModuleManager', () => {
                         namespace alpha
                             function beta(p1 = invalid)
                             end function
-                            function charlie(p1 = beta, p2 = alpha.beta, p3 = alpha.beta(), p4 = alpha.beta(alpha.beta()))
+                            function charlie(p1 = beta, p2 = alpha.beta, p3 = alpha.beta, p4 = alpha.beta())
                             end function
                         end namespace
 
-                        function doSomething(cb1 = alpha.beta, cb2 = alpha.beta(alpha.beta()))
+                        function doSomething(cb1 = alpha.beta, cb2 = alpha.beta())
                         end function
                     `,
                     trim`
-                        namespace alpha
+                        namespace logger.alpha
                             function beta(p1 = invalid)
                             end function
-                            function charlie(p1 = beta, p2 = logger.alpha.beta, p3 = logger.alpha.beta(), p4 = logger.alpha.beta(logger.alpha.beta()))
+                            function charlie(p1 = beta, p2 = logger.alpha.beta, p3 = logger.alpha.beta, p4 = logger.alpha.beta())
                             end function
                         end namespace
 
-                        function doSomething(cb1 = logger.alpha.beta, cb2 = logger.alpha.beta(logger.alpha.beta()))
+                        namespace logger
+                        function doSomething(cb1 = logger.alpha.beta, cb2 = logger.alpha.beta())
                         end function
+                        end namespace
                     `
                 ]
             });
