@@ -28,6 +28,14 @@
   ],
   "author": "Bronley Plumb",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rokucommunity/ropm"
+  },
+  "bugs": {
+    "url": "https://github.com/rokucommunity/ropm/issues"
+  },
+  "homepage": "https://github.com/rokucommunity/ropm",
   "dependencies": {
     "@rokucommunity/logger": "^0.3.11",
     "@xml-tools/ast": "^5.0.5",
