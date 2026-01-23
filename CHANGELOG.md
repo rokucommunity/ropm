@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.3](https://github.com/rokucommunity/ropm/compare/0.11.2...v0.11.3) - 2026-01-23
+### Added
+ - Add support for workspace projects ([#67](https://github.com/rokucommunity/ropm/pull/67))
+### Changed
+ - upgrade to [roku-deploy@3.16.1](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3161---2025-12-05). Notable changes since 3.14.4:
+
+
+
 ## [0.11.2](https://github.com/rokucommunity/ropm/compare/0.11.1...v0.11.2) - 2025-10-31
 ### Changed
  - chore: support OIDC for publishing ([#123](https://github.com/rokucommunity/brighterscript/pull/123))
@@ -694,6 +702,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+
 
 
 
