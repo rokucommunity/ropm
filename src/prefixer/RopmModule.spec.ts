@@ -143,7 +143,7 @@ describe('RopmModule', () => {
                 sinon.stub(util, 'getModuleDependencies').returns(Promise.resolve([{ npmAlias: 'alias', npmModuleName: 'real-name', version: '1.0.0' } as any]));
                 await logger.createPrefixMap([{ npmModuleName: 'logger' } as Dependency]);
             } catch (e) {
-                error = e;
+                error = e as unknown as Error;
             }
             expect(error?.message).to.include('alias(real-name)');
         });
@@ -171,21 +171,44 @@ describe('RopmModule', () => {
     });
 
     describe('getDistinctComponentReferenceNames', () => {
-        const [logger] = createProjects(hostDir, hostDir, {
-            name: 'host',
-            dependencies: [{
-                name: 'logger'
-            }]
+        it('finds component1', () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger'
+                }]
+            });
+            logger.files = [{
+                componentReferences: [{
+                    name: 'Component1'
+                }]
+            }, {
+                componentReferences: [{
+                    name: 'Component1'
+                }]
+            }] as any[];
+            expect(logger.getDistinctComponentReferenceNames()).to.eql(['component1']);
         });
-        logger.files = [{
-            componentReferences: [{
-                name: 'Component1'
-            }]
-        }, {
-            componentReferences: [{
-                name: 'Component1'
-            }]
-        }] as any[];
-        expect(logger.getDistinctComponentReferenceNames()).to.eql(['component1']);
+    });
+
+    describe('copyFiles', () => {
+        it('handles non-existent packageRootDir gracefully', async () => {
+            const [logger] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: 'logger',
+                    ropm: {
+                        packageRootDir: 'dist' // This directory doesn't exist
+                    }
+                }]
+            });
+            await logger.init();
+            
+            // This should not throw an error
+            await logger.copyFiles();
+            
+            // Verify no files were copied (since the directory doesn't exist)
+            expect(logger.fileMaps).to.be.empty;
+        });
     });
 });

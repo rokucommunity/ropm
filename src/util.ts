@@ -7,6 +7,8 @@ import * as semver from 'semver';
 import type { IOptions } from 'glob';
 import { Program } from 'brighterscript';
 import * as readline from 'readline';
+import { logger } from '@rokucommunity/logger';
+import type { Logger, LogLevel } from '@rokucommunity/logger';
 
 export class Util {
 
@@ -24,7 +26,9 @@ export class Util {
         return new Promise((resolve, reject) => {
             const child = childProcess.spawn(command, args ?? [], {
                 ...(options ?? {}),
-                stdio: 'inherit'
+                stdio: 'inherit',
+                shell: true,
+                windowsHide: true
             });
             child.addListener('error', reject);
             child.addListener('exit', resolve);
@@ -167,23 +171,27 @@ export class Util {
     /**
      * Given a path to a module within node_modules, return its list of direct dependencies
      */
-    public async getModuleDependencies(moduleDir: string) {
+    public async getModuleDependencies(moduleDir: string, logger = util.createLogger()) {
         const packageJson = await util.getPackageJson(moduleDir);
         const npmAliases = Object.keys(packageJson.dependencies ?? {});
 
         //look up the original package name of each alias
-        const result = [] as ModuleDependency[];
+        const resolved = [] as ModuleDependency[];
+        const unresolved = [] as string[];
 
         await Promise.all(
             npmAliases.map(async (npmAlias) => {
-
                 const dependencyDir = await this.findDependencyDir(moduleDir, npmAlias);
+
                 if (!dependencyDir) {
-                    throw new Error(`Could not resolve dependency "${npmAlias}" for "${moduleDir}"`);
+                    unresolved.push(`"${npmAlias}": "${moduleDir}"`);
+                    return;
                 }
+
                 const packageJson = await util.getPackageJson(dependencyDir);
+
                 if ((packageJson.keywords ?? []).includes('ropm')) {
-                    result.push({
+                    resolved.push({
                         npmAlias: npmAlias,
                         ropmModuleName: util.getRopmNameFromModuleName(npmAlias),
                         npmModuleName: packageJson.name,
@@ -193,7 +201,17 @@ export class Util {
             })
         );
 
-        return result;
+        if (unresolved.length > 0) {
+            const unresolvedMessage = `Could not resolve dependencies for the following packages: {\n${unresolved}\n}`;
+
+            if (resolved.length > 0) {
+                logger.warn(unresolvedMessage);
+            } else {
+                throw new Error(unresolvedMessage);
+            }
+        }
+
+        return resolved;
     }
 
     /**
@@ -281,7 +299,7 @@ export class Util {
      */
     public mockProgramValidate() {
         if (Program.prototype.validate !== mockProgramValidate) {
-            Program.prototype.validate = mockProgramValidate;
+            Program.prototype.validate = mockProgramValidate as any;
         }
     }
 
@@ -293,6 +311,10 @@ export class Util {
         if (parts.length > 1) {
             return parts[0];
         }
+    }
+
+    public createLogger(prefix = 'ropm:'): Logger {
+        return logger.createLogger({ prefix: prefix, printLogLevel: false, printTimestamp: false });
     }
 
 }
@@ -325,6 +347,11 @@ export interface RopmOptions {
      * An array of module aliases that should not be prefixed when installed into `rootDir`. Use this with caution.
      */
     noprefix?: string[];
+
+    /**
+     * What level of ropm's internal logging should be performed
+     */
+    logLevel?: LogLevel;
 }
 
 export interface ModuleDependency {
@@ -332,4 +359,16 @@ export interface ModuleDependency {
     ropmModuleName: string;
     npmModuleName: string;
     version: string;
+}
+
+export interface CommandArgs {
+    /**
+     * The current working directory for the command.
+     */
+    cwd?: string;
+
+    /**
+     * What level of ropm's internal logging should be performed
+     */
+    logLevel?: LogLevel;
 }

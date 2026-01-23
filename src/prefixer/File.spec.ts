@@ -23,7 +23,7 @@ describe('prefixer/File', () => {
     beforeEach(() => {
         fsExtra.ensureDirSync(tmpDir);
         fsExtra.emptyDirSync(tmpDir);
-        file = new File(srcPath, destPath, rootDir);
+        file = new File({ srcPath: srcPath, destPath: destPath, rootDir: rootDir });
         f = file;
         sinon.stub(fsExtra, 'readFile').callsFake(() => {
             return Promise.resolve(Buffer.from(fileContents));
@@ -45,7 +45,7 @@ describe('prefixer/File', () => {
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    function setFile(value: string, extension: 'brs' | 'xml' | 'd.bs' = 'brs') {
+    function setFile(value: string, extension: 'brs' | 'd.bs' | 'xml' = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
         file.srcPath = f.srcPath.replace('.brs', '.' + extension);
         file.destPath = f.destPath.replace('.brs', '.' + extension);
@@ -172,7 +172,7 @@ describe('prefixer/File', () => {
 
     describe('findIdentifiers', () => {
         function verifyIdentifier(text: string, ...expectedIdentifiers: [string, number, number][]) {
-            file = new File(srcPath, destPath, rootDir);
+            file = new File({ srcPath: srcPath, destPath: destPath, rootDir: rootDir });
             f = file;
             initProgram();
             setFile(`

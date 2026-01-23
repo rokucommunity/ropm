@@ -323,7 +323,7 @@ Here's another example:
 
 The npm aliases in this example is `"roku-promise"` and `"r"`.
 
-### Do not use `ropm.prefix` in published packages
+### Do not use `ropm.noprefix` in published packages
 Ropm will reject installing any ropm package that has the `ropm.noprefix` key in its package.json, so package _authors_ should **NOT** use `ropm.noprefix`.
 
 
@@ -470,7 +470,7 @@ Here's an example (**NOTE:** comments are included here for explanation purposes
 ```
 
 ### Syntax parsing using BrighterScript
-`ropm` uses the [BrighterScript parser](https://github.com/rokucommunity/brighterscript) to find and apply the prefixes to `ropm` modules. While fairly comprehensive, there are still a BrightScript syntax bugs that `BrighterScript` does not yet support, and will therefore cause your package to fail during install. Please open an [issue](https://github.com/rokucommunity/brighterscript/issues) if you encounter any syntax issues that prevent your package from working properly.
+`ropm` uses the [BrighterScript parser](https://github.com/rokucommunity/brighterscript) to find and apply the prefixes to `ropm` modules. While fairly comprehensive, there are still a few BrightScript syntax bugs that `BrighterScript` does not yet support, and will therefore cause your package to fail during install. Please open an [issue](https://github.com/rokucommunity/brighterscript/issues) if you encounter any syntax issues that prevent your package from working properly.
 
 ### Finding function references is a package-wide operation
 > *HINT:* do not give local variables the same name as any function in your package

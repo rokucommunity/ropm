@@ -2,12 +2,14 @@ import { File } from './File';
 import type { RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as path from 'path';
+import * as fsExtra from 'fs-extra';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import type { Dependency } from './ModuleManager';
 import type { Program } from 'brighterscript';
 import { ProgramBuilder } from 'brighterscript';
 import { LogLevel } from 'brighterscript/dist/Logger';
+import type { Logger } from '@rokucommunity/logger';
 
 export class RopmModule {
     constructor(
@@ -15,13 +17,22 @@ export class RopmModule {
         /**
          * The directory at the root of the module. This is the folder where the package.json resides
          */
-        public readonly moduleDir: string
+        public readonly moduleDir: string,
+
+        public options?: {
+            logger: Logger;
+        }
     ) {
-        this.npmAliasName = util.getModuleName(this.moduleDir) as string;
+        //set the logLevel provided by the RopmOptions
+        this.logger = options?.logger ?? util.createLogger();
+
+        this.npmAliasName = util.getModuleName(this.moduleDir)! as string;
 
         //compute the ropm name for this alias. This name has all invalid chars removed, and can be used as a brightscript variable/namespace
         this.ropmModuleName = util.getRopmNameFromModuleName(this.npmAliasName);
     }
+
+    public logger: Logger;
 
     /**
      * A list of globs that will always be ignored during copy from node_modules to roku_modules
@@ -104,36 +115,41 @@ export class RopmModule {
 
     public isValid = true;
 
+    public isRopmModule = false;
+
     public async init() {
-        //skip modules we can't derive a name from
-        if (!this.npmAliasName) {
-            console.error(`ropm: cannot compute npm package name for "${this.moduleDir}"`);
+        this.packageJson = await util.getPackageJson(this.moduleDir);
+
+        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
+        if ((this.packageJson?.keywords ?? []).includes('ropm') === false) {
+            this.logger.debug(`Skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
             this.isValid = false;
             return;
         }
 
-        this.packageJson = await util.getPackageJson(this.moduleDir);
+        this.isRopmModule = true;
+
+        //skip modules we can't derive a name from
+        if (!this.npmAliasName) {
+            this.logger.error(`Cannot compute npm package name for "${this.moduleDir}"`);
+            this.isValid = false;
+            return;
+        }
+
         this.version = this.packageJson.version;
         this.dominantVersion = util.getDominantVersion(this.packageJson.version);
 
         if (!this.packageJson.name) {
-            console.error(`ropm: missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
+            this.logger.error(`Missing "name" property from "${path.join(this.moduleDir, 'package.json')}"`);
             this.isValid = false;
             return;
         }
 
         this.npmModuleName = this.packageJson.name;
 
-        // every ropm module MUST have the `ropm` keyword. If not, then this is not a ropm module
-        if ((this.packageJson.keywords ?? []).includes('ropm') === false) {
-            console.error(`ropm: skipping prod dependency "${this.moduleDir}" because it does not have the "ropm" keyword`);
-            this.isValid = false;
-            return;
-        }
-
         //disallow using `noprefix` within dependencies
         if (this.packageJson.ropm?.noprefix) {
-            console.error(`ropm: using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
+            this.logger.error(`Using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
             this.isValid = false;
             return;
         }
@@ -145,7 +161,15 @@ export class RopmModule {
     public async copyFiles() {
         const packageLogText = `${this.npmAliasName}${this.npmAliasName !== this.npmModuleName ? `(${this.npmModuleName})` : ''}`;
 
-        console.log(`ropm: copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
+        this.logger.log(`Copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
+        
+        // Check if packageRootDir exists before trying to scan it
+        if (!(await fsExtra.pathExists(this.packageRootDir))) {
+            this.logger.warn(`packageRootDir "${this.packageRootDir}" does not exist for ${packageLogText}@${this.version}. Skipping file copying.`);
+            this.fileMaps = [];
+            return;
+        }
+
         //use the npm-packlist project to get the list of all files for the entire package...use this as the whitelist
         let allFiles = await packlist({
             path: this.packageRootDir
@@ -203,7 +227,7 @@ export class RopmModule {
     private program!: Program;
 
     /**
-     * @param noprefix a list of npm aliases of modules that should NOT be prefixed
+     * @param noprefixRopmAliases a list of npm aliases of modules that should NOT be prefixed
      */
     public async transform(noprefixRopmAliases: string[]) {
         const builder = new ProgramBuilder();
@@ -228,14 +252,14 @@ export class RopmModule {
                 '!**/node_modules/**/*'
             ]
         });
-        this.program = builder.program;
+        this.program = builder.program!;
 
         //load all files
         for (const obj of this.fileMaps) {
             //only load source code files
             if (['.xml', '.brs', '.bs'].includes(path.extname(obj.dest).toLowerCase())) {
                 this.files.push(
-                    new File(obj.src, obj.dest, this.packageRootDir, this.packageJson.ropm)
+                    new File({ srcPath: obj.src, destPath: obj.dest, rootDir: this.packageRootDir, logger: this.logger })
                 );
             }
         }
@@ -384,16 +408,16 @@ export class RopmModule {
                     }
                 }
 
-                //wrap un-namespaced classes with prefix namespace
-                for (const cls of file.classDeclarations) {
+                //wrap un-namespaced classes, enums, namespaces, etc... with prefix namespace
+                for (const cls of file.prefixableDeclarations) {
                     if (!cls.hasNamespace) {
                         file.addEdit(cls.startOffset, cls.startOffset, `namespace ${brighterscriptPrefix}\n`);
                         file.addEdit(cls.endOffset, cls.endOffset, `\nend namespace`);
                     }
                 }
 
-                //prefix d.bs class references
-                for (const ref of file.classReferences) {
+                //prefix d.bs custom references
+                for (const ref of file.prefixableReferences) {
                     const baseNamespace = util.getBaseNamespace(ref.fullyQualifiedName);
 
                     const alias = getAlias(baseNamespace);

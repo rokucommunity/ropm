@@ -1,36 +1,63 @@
-/* eslint-disable no-cond-assign */
 import * as fsExtra from 'fs-extra';
 import * as xmlParser from '@xml-tools/parser';
 import type { XMLDocument, XMLElement } from '@xml-tools/ast';
 import { buildAst } from '@xml-tools/ast';
-import type { RopmOptions } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, Range, XmlFile } from 'brighterscript';
-import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil } from 'brighterscript';
+import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
+import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
+import type { Logger } from '@rokucommunity/logger';
+
+/**
+ * List of all declaralbe types in BrighterScript (i.e. the native types), stored in lower case for reference
+ */
+const nativeTypes = new Set(
+    DeclarableTypes.map(x => x.toLowerCase())
+);
 
 export class File {
-    constructor(
+    constructor(options: {
         /**
          * The path to the file's original location
          */
-        public srcPath: string,
+        srcPath: string;
         /**
          * The path to the file's new location
          */
-        public destPath: string,
+        destPath: string;
         /**
          * The absolute path to the rootDir for this file
          */
-        public rootDir: string,
-        public options: RopmOptions = {}
-    ) {
+        rootDir: string;
+        logger?: Logger;
+    }) {
+
+        this.srcPath = options.srcPath;
+        this.destPath = options.destPath;
+        this.rootDir = options.rootDir;
+        this.logger = options.logger ?? util.createLogger();
+
+
         this.pkgPath = path.posix.normalize(
             util.removeLeadingSlash(
-                util.replaceCaseInsensitive(rootDir, srcPath, '').replace(/\\/g, '/')
+                util.replaceCaseInsensitive(this.rootDir, this.srcPath, '').replace(/\\/g, '/')
             )
         );
     }
+
+    private logger: Logger;
+    /**
+     * The path to the file's original location
+     */
+    public srcPath: string;
+    /**
+     * The path to the file's new location
+     */
+    public destPath: string;
+    /**
+     * The absolute path to the rootDir for this file
+     */
+    public rootDir: string;
 
     /**
      * Is this file a `.brs` file?
@@ -80,7 +107,7 @@ export class File {
         endOffset: number;
     }>;
 
-    public classDeclarations = [] as Array<{
+    public prefixableDeclarations = [] as Array<{
         name: string;
         nameOffset: number;
         hasNamespace: boolean;
@@ -95,9 +122,9 @@ export class File {
     }>;
 
     /**
-     * Anywhere that a class is used as a type (like in class `extends` or function parameters)
+     * Anywhere that a prefixable reference (i.e. class, enum, etc...) is used as a type (like in class `extends` or function parameters)
      */
-    public classReferences = [] as Array<{
+    public prefixableReferences = [] as Array<{
         fullyQualifiedName: string;
         offsetBegin: number;
         offsetEnd: number;
@@ -178,10 +205,10 @@ export class File {
             const { cst, lexErrors, parseErrors, tokenVector } = xmlParser.parse(this.bscFile.fileContents);
             //print every lex and parse error to the console
             for (const lexError of lexErrors) {
-                console.error(`XML parse error "${lexError.message}" at ${this.destPath}:${lexError.line}:${lexError.column}`);
+                this.logger.error(`XML parse error "${lexError.message}" at ${this.destPath}:${lexError.line}:${lexError.column}`);
             }
             for (const parseError of parseErrors) {
-                console.error(`XML parse error "${parseError.message}" at ${this.destPath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
+                this.logger.error(`XML parse error "${parseError.message}" at ${this.destPath}:${parseError.token[0]?.startLine}:${parseError.token[0]?.startColumn}`);
             }
             this.xmlAst = buildAst(cst as any, tokenVector);
         }
@@ -200,7 +227,7 @@ export class File {
             const regexp = /(\r?\n)/g;
             let lineIndex = 1;
             let match: RegExpExecArray | null;
-            while (match = regexp.exec(this.bscFile.fileContents)) {
+            while ((match = regexp.exec(this.bscFile.fileContents))) {
                 this.lineOffsetMap[lineIndex++] = match.index + match[1].length;
             }
         }
@@ -242,24 +269,54 @@ export class File {
             this.findComponentInterfaceFunctions();
             this.findComponentFieldOnChangeFunctions();
         }
-
     }
 
-    private addClassRef(className: string, containingNamespace: string | undefined, range: Range) {
-        //look up the class. If we can find it, use it
-        const cls = (this.bscFile as BrsFile).getClassFileLink(className, containingNamespace)?.item;
-
-        let fullyQualifiedName: string;
-        if (cls) {
-            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(cls.getName(ParseMode.BrighterScript), cls.namespaceName?.getName(ParseMode.BrighterScript));
-        } else {
-            fullyQualifiedName = bsUtil.getFullyQualifiedClassName(className, containingNamespace);
+    private tryAddPrefixableRef(options: {
+        name: string | undefined;
+        containingNamespace: string | undefined;
+        range: Range | undefined;
+    }) {
+        //skip if we don't have a name or a range
+        if (!options.name || !options.range) {
+            return;
         }
 
-        this.classReferences.push({
-            fullyQualifiedName: fullyQualifiedName,
-            offsetBegin: this.positionToOffset(range.start),
-            offsetEnd: this.positionToOffset(range.end)
+        //skip if this is a native type, don't prefix it
+        if (options.name.trim().length > 0 && nativeTypes.has(options.name.toLowerCase())) {
+            return;
+        }
+
+        const lowerName = options.name.toLowerCase();
+        const lowerContainingNamespace = options.containingNamespace?.toLowerCase();
+
+        const scopes = this.bscFile.program.getScopesForFile(this.bscFile);
+        let fullyQualifiedName: string | undefined;
+
+        //find the first item in the first scope that has it
+        for (let scope of scopes) {
+            const enumLink = scope.getEnumFileLink(lowerName, lowerContainingNamespace);
+            if (enumLink) {
+                fullyQualifiedName = enumLink.item.fullName;
+                break;
+            }
+
+            const link =
+                scope.getClassFileLink(lowerName, lowerContainingNamespace) ??
+                scope.getInterfaceFileLink(lowerName, lowerContainingNamespace) ??
+                scope.getConstFileLink(lowerName, lowerContainingNamespace);
+            if (link) {
+                fullyQualifiedName = bsUtil.getFullyQualifiedClassName(
+                    link.item.getName(ParseMode.BrighterScript),
+                    link.item.namespaceName?.getName(ParseMode.BrighterScript)
+                );
+                break;
+            }
+        }
+
+        this.prefixableReferences.push({
+            fullyQualifiedName: fullyQualifiedName ?? bsUtil.getFullyQualifiedClassName(options.name, options.containingNamespace),
+            offsetBegin: this.positionToOffset(options.range.start),
+            offsetEnd: this.positionToOffset(options.range.end)
         });
     }
 
@@ -272,7 +329,7 @@ export class File {
         file?.parser.ast.walk(createVisitor({
             ImportStatement: (stmt) => {
                 //skip pkg paths, those are collected elsewhere
-                if (!stmt.filePath.startsWith('pkg:/')) {
+                if (stmt.filePath && stmt.filePathToken && !stmt.filePath.startsWith('pkg:/')) {
                     this.fileReferences.push({
                         offset: this.positionToOffset(stmt.filePathToken.range.start),
                         path: stmt.filePath
@@ -306,53 +363,107 @@ export class File {
             },
             //track class declarations (.bs and .d.bs only)
             ClassStatement: (cls) => {
-                this.classDeclarations.push({
+                const annotations = cls.annotations ?? [];
+                this.prefixableDeclarations.push({
                     name: cls.name.text,
                     nameOffset: this.positionToOffset(cls.name.range.start),
                     hasNamespace: !!cls.namespaceName,
                     //Use annotation start position if available, otherwise use class keyword
                     startOffset: this.positionToOffset(
-                        (cls.annotations?.length > 0 ? cls.annotations[0] : cls.classKeyword).range.start
+                        (annotations?.length > 0 ? annotations[0] : cls.classKeyword).range.start
                     ),
                     endOffset: this.positionToOffset(cls.end.range.end)
                 });
 
-                if (cls.parentClassName) {
-                    this.addClassRef(
-                        cls.parentClassName.getName(ParseMode.BrighterScript),
-                        cls.namespaceName?.getName(ParseMode.BrighterScript),
-                        cls.parentClassName.range
-                    );
-                }
+                this.tryAddPrefixableRef({
+                    name: cls.parentClassName?.getName(ParseMode.BrighterScript),
+                    containingNamespace: cls.namespaceName?.getName(ParseMode.BrighterScript),
+                    range: cls.parentClassName?.range
+                });
+            },
+            FieldStatement: (node) => {
+                this.tryAddPrefixableRef({
+                    name: node.type?.text,
+                    containingNamespace: node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript),
+                    range: node.type?.range
+                });
+            },
+            InterfaceFieldStatement: (node) => {
+                this.tryAddPrefixableRef({
+                    name: node.tokens.type?.text,
+                    containingNamespace: node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript),
+                    range: node.tokens.type?.range
+                });
+            },
+            //track enum declarations (.bs and .d.bs only)
+            EnumStatement: (node) => {
+                const annotations = node.annotations ?? [];
+                this.prefixableDeclarations.push({
+                    name: node.tokens.name.text,
+                    nameOffset: this.positionToOffset(node.tokens.name.range.start),
+                    hasNamespace: !!node.namespaceName,
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (annotations?.length > 0 ? annotations[0] : node.tokens.enum).range.start
+                    ),
+                    endOffset: this.positionToOffset(node.tokens.endEnum.range.end)
+                });
+            },
+            //track enum declarations (.bs and .d.bs only)
+            ConstStatement: (node) => {
+                const annotations = node.annotations ?? [];
+                this.prefixableDeclarations.push({
+                    name: node.tokens.name.text,
+                    nameOffset: this.positionToOffset(node.tokens.name.range.start),
+                    hasNamespace: !!node.findAncestor(isNamespaceStatement),
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (annotations?.length > 0 ? annotations[0] : node.tokens.const).range.start
+                    ),
+                    endOffset: this.positionToOffset(node.value.range!.end ?? node.tokens.equals.range.end)
+                });
+            },
+            //track enum declarations (.bs and .d.bs only)
+            InterfaceStatement: (node) => {
+                const annotations = node.annotations ?? [];
+                this.prefixableDeclarations.push({
+                    name: node.tokens.name.text,
+                    nameOffset: this.positionToOffset(node.tokens.name.range.start),
+                    hasNamespace: !!node.findAncestor(isNamespaceStatement),
+                    //Use annotation start position if available, otherwise use class keyword
+                    startOffset: this.positionToOffset(
+                        (annotations?.length > 0 ? annotations[0] : node.tokens.interface).range.start
+                    ),
+                    endOffset: this.positionToOffset(node.tokens.endInterface.range.end)
+                });
             },
             FunctionExpression: (func) => {
                 const namespaceName = func.namespaceName?.getName(ParseMode.BrighterScript);
                 //any parameters containing custom types
                 for (const param of func.parameters) {
-                    if (isCustomType(param.type)) {
-                        this.addClassRef(
-                            param.type.name,
-                            namespaceName,
-                            param.typeToken!.range
-                        );
-                    }
+                    this.tryAddPrefixableRef({
+                        name: param.typeToken?.text,
+                        containingNamespace: namespaceName,
+                        range: param.typeToken?.range
+                    });
                 }
                 if (isCustomType(func.returnType)) {
-                    this.addClassRef(
-                        func.returnType.name,
-                        namespaceName,
-                        func.returnTypeToken!.range
-                    );
+                    this.tryAddPrefixableRef({
+                        name: func.returnTypeToken?.text,
+                        containingNamespace: namespaceName,
+                        range: func.returnTypeToken?.range
+                    });
                 }
             },
             FunctionStatement: (func) => {
+                const annotations = func.annotations ?? [];
                 this.functionDefinitions.push({
                     name: func.name.text,
                     nameOffset: this.positionToOffset(func.name.range.start),
                     hasNamespace: !!func.namespaceName,
                     //Use annotation start position if available, otherwise use keyword
                     startOffset: this.positionToOffset(
-                        (func.annotations?.length > 0 ? func.annotations[0] : func.func.functionType)!.range.start
+                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start as Position
                     ),
                     endOffset: this.positionToOffset(func.func.end.range.end)
                 });
@@ -360,7 +471,7 @@ export class File {
             NamespaceStatement: (namespace) => {
                 this.namespaces.push({
                     name: namespace.name,
-                    offset: this.positionToOffset(namespace.nameExpression.range.start)
+                    offset: this.positionToOffset(namespace.nameExpression.range!.start)
                 });
             }
         }), {
@@ -425,7 +536,6 @@ export class File {
         }
     }
 
-
     /**
      * Find all occurances of *.observeField and *.observeFieldScoped function calls that have a string literal as the second parameter
      */
@@ -434,7 +544,7 @@ export class File {
         const regexp = /(\.observeField(?:Scoped)?[ \t]*\(.*?,[ \t]*")([a-z0-9_]+)"\)[ \t]*(?:'.*)*$/gim;
 
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             //skip multi-line observeField calls (because they are way too hard to parse with regex :D )
             if (util.hasMatchingParenCount(match[0]) === false) {
                 continue;
@@ -494,7 +604,7 @@ export class File {
     private findComponentFieldOnChangeFunctions() {
         const interfaceEntries = this.xmlAst?.rootElement?.subElements.find(x => x.name?.toLowerCase() === 'interface')?.subElements ?? [];
         for (const interfaceEntry of interfaceEntries) {
-            const nameAttribute = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'name');
+            const nameAttribute = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'id');
             if (interfaceEntry.name?.toLowerCase() === 'field' && nameAttribute) {
                 const onchange = interfaceEntry.attributes.find(x => x.key?.toLowerCase() === 'onchange');
                 if (onchange) {
@@ -517,7 +627,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -539,7 +649,7 @@ export class File {
         let match: RegExpExecArray | null;
 
         //look through each line of the file
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             const componentName = match[2];
 
             const startOffset = match.index + match[1].length;
@@ -591,7 +701,7 @@ export class File {
         //look for any string containing `pkg:/`
         const regexp = /"(pkg:\/[^"]+)"/gi;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             this.fileReferences.push({
                 //+1 to step past opening quote
                 offset: match.index + 1,
@@ -638,13 +748,14 @@ export class File {
         //look for any string containing `m.top.functionName = "<anything>"`
         const regexp = /(m\s*\.\s*top\s*\.\s*functionName\s*=\s*")(.*?)"/gi;
         let match: RegExpExecArray | null;
-        while (match = regexp.exec(this.bscFile.fileContents)) {
+        while ((match = regexp.exec(this.bscFile.fileContents))) {
             this.taskFunctionNameAssignments.push({
                 offset: match.index + match[1].length,
                 name: match[2]
             });
         }
     }
+
 }
 
 export interface Edit {
