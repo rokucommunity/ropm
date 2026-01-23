@@ -9,6 +9,7 @@ import { InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import type { RopmPackageJson } from '../util';
 import { createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
+import * as semver from 'semver';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
@@ -543,6 +544,51 @@ describe('InstallCommand', () => {
                 s`${tempDir}/outerProject/innerProject/node_modules/innerProjectDependency`
             ]);
         });
+
+        it('recognizes workspace packages and excludes root', async () => {
+            const rootProject = s`${tempDir}/root-project`;
+            const workspaceProject = s`packages/workspace-project`;
+
+            //lib
+            writeProject('root-project-dependency', {});
+            //lib
+            writeProject('workspace-dependency', {});
+
+            writeProject('root-project', {}, {
+                dependencies: {
+                    'root-project-dependency': 'file:../root-project-dependency'
+                },
+                workspaces: [workspaceProject]
+            });
+
+            writeProject('root-project/packages/workspace-project', {}, {
+                dependencies: {
+                    'workspace-dependency': 'file:../../../workspace-dependency'
+                }
+            });
+
+            const workspaceCommand = new InstallCommand({
+                cwd: s`${rootProject}/${workspaceProject}`
+            });
+            await workspaceCommand.run();
+
+            /**
+             * Newer versions of npm install workspace dependencies to the root node_modules
+             * (if they don't conflict) and resolve workspaces from there
+             * too. We've included both variations of the paths below based on the current node version
+             */
+            if (semver.gte(process.version, '16.0.0')) {
+                expect(workspaceCommand.getProdDependencies()).to.eql([
+                    s`${rootProject}/node_modules/workspace-project`,
+                    s`${rootProject}/node_modules/workspace-dependency`
+                ]);
+            } else {
+                expect(workspaceCommand.getProdDependencies()).to.eql([
+                    s`${rootProject}/packages/workspace-project`,
+                    s`${rootProject}/packages/workspace-project/node_modules/workspace-dependency`
+                ]);
+            }
+        });
     });
 });
 
@@ -555,7 +601,7 @@ export function writeProject(projectName: string, files: Record<string, string>,
         fsExtra.writeFileSync(filePath, files[relativePath]);
     }
     const packageJson = {
-        name: projectName,
+        name: projectName.split('/').slice(-1)[0],
         version: '1.0.0',
         description: '',
         keywords: [
