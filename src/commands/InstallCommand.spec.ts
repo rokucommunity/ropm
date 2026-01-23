@@ -9,6 +9,7 @@ import { InstallCommand } from './InstallCommand';
 import { expect } from 'chai';
 import type { RopmPackageJson } from '../util';
 import { createProjects, fsEqual, standardizePath as s, tempDir } from '../TestHelpers.spec';
+import * as semver from 'semver';
 
 const projectName = 'test-project';
 const projectDir = path.join(tempDir, projectName);
@@ -572,20 +573,21 @@ describe('InstallCommand', () => {
             await workspaceCommand.run();
 
             /**
-             * While this assert is for node 10, newer versions of npm
-             * install workspace dependencies to the root node_modules
+             * Newer versions of npm install workspace dependencies to the root node_modules
              * (if they don't conflict) and resolve workspaces from there
-             * too. Not sure what npm version added that improvement, but
-             * for example node 18 the assert would be:
-             * expect(innerCommand.getProdDependencies()).to.eql([
-             *   s`${rootProject}/node_modules/workspace-project`,
-             *   s`${rootProject}/node_modules/workspace-dependency`
-             * ]);
+             * too. We've included both variations of the paths below based on the current node version
              */
-            expect(workspaceCommand.getProdDependencies()).to.eql([
-                s`${rootProject}/packages/workspace-project`,
-                s`${rootProject}/packages/workspace-project/node_modules/workspace-dependency`
-            ]);
+            if (semver.gte(process.version, '16.0.0')) {
+                expect(workspaceCommand.getProdDependencies()).to.eql([
+                    s`${rootProject}/node_modules/workspace-project`,
+                    s`${rootProject}/node_modules/workspace-dependency`
+                ]);
+            } else {
+                expect(workspaceCommand.getProdDependencies()).to.eql([
+                    s`${rootProject}/packages/workspace-project`,
+                    s`${rootProject}/packages/workspace-project/node_modules/workspace-dependency`
+                ]);
+            }
         });
     });
 });
