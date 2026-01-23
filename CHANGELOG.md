@@ -11,9 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add support for workspace projects ([#67](https://github.com/rokucommunity/ropm/pull/67))
 ### Changed
  - upgrade to [roku-deploy@3.16.1](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3161---2025-12-05). Notable changes since 3.14.4:
-     - Add ecpSettingMode to device-info interface ([#225](https://github.com/rokucommunity/roku-deploy/pull/225))
-     - Add support for detecting ecpNetworkAccessMode ([#223](https://github.com/rokucommunity/roku-deploy/pull/223))
-     - Support installing and deleting component libraries ([#220](https://github.com/rokucommunity/roku-deploy/pull/220))
 
 
 
@@ -705,6 +702,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.0.1
 ### Added
  - initial placeholder release
+
 
 
 
