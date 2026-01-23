@@ -126,7 +126,8 @@ export class InstallCommand {
             this.logger.debug(`executing command: ${npmLs}`);
 
             stdout = childProcess.execSync(npmLs, {
-                cwd: this.cwd
+                cwd: this.cwd,
+                maxBuffer: 50 * 1024 * 1024 // 50MB buffer to handle large dependency trees
             }).toString();
         } catch (e: any) {
             stdout = (e as any).stdout.toString();
@@ -142,7 +143,7 @@ export class InstallCommand {
 
         const dependencyJson = JSON.parse(stdout);
         const thisPackage = this.findDependencyByName(dependencyJson, this.hostPackageJson?.name);
-        const dependencies = this.flattenPackage(thisPackage);
+        const dependencies = this.flattenPackage(thisPackage).filter(x => !!x);
         return dependencies;
     }
 
