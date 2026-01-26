@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.4](https://github.com/rokucommunity/ropm/compare/0.11.3...v0.11.4) - 2026-01-26
+### Changed
+ - Increase install buffer for json ([#125](https://github.com/rokucommunity/ropm/pull/125))
+
+
+
 ## [0.11.3](https://github.com/rokucommunity/ropm/compare/0.11.2...v0.11.3) - 2026-01-23
 ### Added
  - Add support for workspace projects ([#67](https://github.com/rokucommunity/ropm/pull/67))
