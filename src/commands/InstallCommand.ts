@@ -127,7 +127,7 @@ export class InstallCommand {
 
             stdout = childProcess.execSync(npmLs, {
                 cwd: this.cwd,
-                maxBuffer: 50 * 1024 * 1024 // 50MB buffer to handle large dependency trees
+                maxBuffer: 500 * 1024 * 1024 // 500MB buffer to handle large dependency trees (this is ridiculously large, but better than crashing...)
             }).toString();
         } catch (e: any) {
             stdout = (e as any).stdout.toString();
