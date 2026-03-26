@@ -147,6 +147,16 @@ export class RopmModule {
 
         this.npmModuleName = this.packageJson.name;
 
+        //detect if the user supplied an explicit alias at install time by comparing the local name vs the resolved package name
+        const hasUserAlias = this.npmAliasName.toLowerCase() !== this.npmModuleName.toLowerCase();
+
+        //apply preferredPrefix only when the user did not provide an explicit alias
+        if (!hasUserAlias && this.packageJson.ropm?.preferredPrefix) {
+            const defaultPrefix = this.ropmModuleName;
+            this.ropmModuleName = this.packageJson.ropm.preferredPrefix;
+            this.logger.info(`Using preferredPrefix "${this.ropmModuleName}" for "${this.npmModuleName}" (overrides default prefix "${defaultPrefix}")`);
+        }
+
         //disallow using `noprefix` within dependencies
         if (this.packageJson.ropm?.noprefix) {
             this.logger.error(`Using "ropm.noprefix" in a ropm module is forbidden: "${path.join(this.moduleDir, 'package.json')}`);
