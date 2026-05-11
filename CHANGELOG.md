@@ -6,6 +6,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.6](https://github.com/rokucommunity/ropm/compare/0.11.5...v0.11.6) - 2026-05-11
+### Changed
+ - Bump picomatch from 2.3.1 to 2.3.2 ([#134](https://github.com/rokucommunity/ropm/pull/134))
+ - upgrade to [brighterscript@0.72.1](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0721---2026-05-11). Notable changes since 0.70.4:
+     - Recover from mismatched loop terminators with quick fixes ([#1696](https://github.com/rokucommunity/brighterscript/pull/1696))
+     - Add diagnosticReporter config option ([#1701](https://github.com/rokucommunity/brighterscript/pull/1701))
+     - Diagnose reserved BrightScript builtins used as values ([#1697](https://github.com/rokucommunity/brighterscript/pull/1697))
+     - Add bs:disable / bs:enable block directives and diagnostic suppression quick fixes ([#1699](https://github.com/rokucommunity/brighterscript/pull/1699))
+     - feat: add `validate` bsconfig flag to skip validation phase ([#1687](https://github.com/rokucommunity/brighterscript/pull/1687))
+     - feat: allow line continuation in .brs files when minFirmwareVersion >= 15.3 ([#1693](https://github.com/rokucommunity/brighterscript/pull/1693))
+     - Reload projects when manifest file changes ([#1700](https://github.com/rokucommunity/brighterscript/pull/1700))
+     - Set up Copilot coding agent instructions ([#1695](https://github.com/rokucommunity/brighterscript/pull/1695))
+     - Bump diff from 4.0.2 to 4.0.4 in /benchmarks ([#1610](https://github.com/rokucommunity/brighterscript/pull/1610))
+     - Add `relativeSourceMaps` option for portable sourcemaps ([#1624](https://github.com/rokucommunity/brighterscript/pull/1624))
+     - Auto-update imports when files are renamed ([#1688](https://github.com/rokucommunity/brighterscript/pull/1688))
+     - Support minFirmwareVersion in bsconfig.json ([#1678](https://github.com/rokucommunity/brighterscript/pull/1678))
+     - added source fix all code action support ([#1659](https://github.com/rokucommunity/brighterscript/pull/1659))
+     - Limit project activation concurrency ([#1627](https://github.com/rokucommunity/brighterscript/pull/1627))
+     - Share per-file namespace data via lazy ScopeNamespaceLookup view ([#1684](https://github.com/rokucommunity/brighterscript/pull/1684))
+     - Lazy-allocate NamespaceContainer's optional fields ([#1683](https://github.com/rokucommunity/brighterscript/pull/1683))
+     - Share BscSymbol references in SymbolTable.mergeSymbolTable ([#1682](https://github.com/rokucommunity/brighterscript/pull/1682))
+     - Chain prebuild sourcemaps through BrighterScript transpile ([#1676](https://github.com/rokucommunity/brighterscript/pull/1676))
+     - added selection range provider support to lsp capabilities ([#1657](https://github.com/rokucommunity/brighterscript/pull/1657))
+     - Report const cycle diagnostic per node to match class convention ([#1681](https://github.com/rokucommunity/brighterscript/pull/1681))
+     - Support line continuation ([#1667](https://github.com/rokucommunity/brighterscript/pull/1667))
+     - Fix cross-file const inlining and flag const cycles ([#1680](https://github.com/rokucommunity/brighterscript/pull/1680))
+     - Bump postcss from 8.4.31 to 8.5.10 ([#1679](https://github.com/rokucommunity/brighterscript/pull/1679))
+     - Bump lodash from 4.17.23 to 4.18.1 ([#1673](https://github.com/rokucommunity/brighterscript/pull/1673))
+     - Bump follow-redirects from 1.15.6 to 1.16.0 ([#1672](https://github.com/rokucommunity/brighterscript/pull/1672))
+     - Bump lodash from 4.17.23 to 4.18.1 in /benchmarks ([#1670](https://github.com/rokucommunity/brighterscript/pull/1670))
+     - Bump brace-expansion in /benchmarks ([#1666](https://github.com/rokucommunity/brighterscript/pull/1666))
+     - Feature/more quick fixes ([#1662](https://github.com/rokucommunity/brighterscript/pull/1662))
+     - bugfix/small perf improvements ([#1663](https://github.com/rokucommunity/brighterscript/pull/1663))
+     - Bump picomatch from 2.3.1 to 2.3.2 ([#1661](https://github.com/rokucommunity/brighterscript/pull/1661))
+     - Bump picomatch from 2.3.1 to 2.3.2 in /benchmarks ([#1660](https://github.com/rokucommunity/brighterscript/pull/1660))
+     - Add computed property names (compile-time support only) ([#1658](https://github.com/rokucommunity/brighterscript/pull/1658))
+ - upgrade to [roku-deploy@3.17.2](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3172---2026-05-05). Notable changes since 3.16.3:
+     - Expanded the default files array to include the locale folder ([#237](https://github.com/rokucommunity/roku-deploy/pull/237))
+     - Fix crash when loading roku-deploy on node < 18 ([#256](https://github.com/rokucommunity/roku-deploy/pull/256))
+     - chore: drop undici, use native fetch ([#254](https://github.com/rokucommunity/roku-deploy/pull/254))
+     - feat: add RokuDeploy.validateDeveloperPassword ([#252](https://github.com/rokucommunity/roku-deploy/pull/252))
+     - fix: correct DeviceInfoRaw serial-number property name ([#251](https://github.com/rokucommunity/roku-deploy/pull/251))
+     - Bump lodash from 4.17.23 to 4.18.1 ([#247](https://github.com/rokucommunity/roku-deploy/pull/247))
+     - Resolve files array staging option ([#249](https://github.com/rokucommunity/roku-deploy/pull/249))
+     - Fix `zipFolder` bug that wasn't properly handling absolute stagingDir path ([#245](https://github.com/rokucommunity/roku-deploy/pull/245))
+     - Bump picomatch from 2.3.1 to 2.3.2 ([#242](https://github.com/rokucommunity/roku-deploy/pull/242))
+
+
+
 ## [0.11.5](https://github.com/rokucommunity/ropm/compare/0.11.4...v0.11.5) - 2026-03-24
 ### Changed
  - upgrade to [brighterscript@0.70.4](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0704---2026-03-24). Notable changes since 0.70.3:
