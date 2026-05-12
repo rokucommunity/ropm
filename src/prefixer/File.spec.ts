@@ -45,7 +45,7 @@ describe('prefixer/File', () => {
      * Set the contents of the file right before a test.
      * This also normalizes line endings to `\n` to make the tests consistent
      */
-    function setFile(value: string, extension: 'brs' | 'd.bs' | 'xml' = 'brs') {
+    function setFile(value: string, extension: 'brs' | 'bs' | 'd.bs' | 'xml' = 'brs') {
         fileContents = value.replace(/\r\n/, '\n');
         file.srcPath = f.srcPath.replace('.brs', '.' + extension);
         file.destPath = f.destPath.replace('.brs', '.' + extension);
@@ -256,11 +256,27 @@ describe('prefixer/File', () => {
         });
 
         it('matches multi-line function argument', () => {
-            verifyIdentifier(`
+            file = new File({ srcPath: srcPath, destPath: destPath, rootDir: rootDir });
+            f = file;
+            initProgram();
+            const text = `
                 someFunction(
                     logInfo
                 )
-            `, ['logInfo', 2, 20]);
+            `;
+            setFile(`
+                sub main()\n${text}
+                end sub`, 'bs');
+            file.discover(program);
+            expect(file.identifiers.map(x => {
+                const position = getPositionFromOffset(x.offset) as Position;
+                //subtract 2 lines from the position since we inject the text into an existing function
+                position.line -= 2;
+                return {
+                    name: x.name,
+                    ...position
+                };
+            })).to.eql([{ name: 'logInfo', line: 2, character: 20 }]);
         });
 
         it('matches multiple statements on same line', () => {
