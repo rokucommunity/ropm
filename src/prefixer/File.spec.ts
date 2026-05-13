@@ -37,7 +37,8 @@ describe('prefixer/File', () => {
 
     function initProgram() {
         program = new Program({
-            rootDir: rootDir
+            rootDir: rootDir,
+            minFirmwareVersion: '15.3.0'
         });
     }
 

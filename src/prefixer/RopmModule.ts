@@ -245,6 +245,8 @@ export class RopmModule {
             diagnosticFilters: ['**/*'],
             //hide log statements
             logLevel: LogLevel.error,
+            //enable multi-line expressions in BrightScript (.brs) files (supported in Roku firmware 15.3+)
+            minFirmwareVersion: '15.3.0',
             //include all files except node_modules and roku_modules (publishers SHOULD be excluding those, but might not)
             files: [
                 '**/*',
