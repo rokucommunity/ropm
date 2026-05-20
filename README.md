@@ -522,9 +522,5 @@ Here are the requirements for having `ropm` prefix your `observeField` string fu
 ## Sponsors
 [![image](https://user-images.githubusercontent.com/2544493/96571912-377af280-129a-11eb-8295-49eb12e54aeb.png)](https://www.applicaster.com/)
 
-## Accepted security advisories
-
-Dependencies flagged by `npm audit` that we have reviewed and chosen not to upgrade are tracked in [audit-ci.jsonc](https://github.com/rokucommunity/ropm/blob/master/audit-ci.jsonc). Each entry includes the advisory ID, the date it was added, and the reason it does not apply to this project.
-
 ## Changelog
 [Click here](CHANGELOG.md) to view the changelog.
