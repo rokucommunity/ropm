@@ -2,6 +2,7 @@
 A package manager for the Roku platform.
 
 [![build status](https://img.shields.io/github/actions/workflow/status/rokucommunity/ropm/build.yml?logo=github&branch=master)](https://github.com/rokucommunity/ropm/actions?query=branch%3Amaster+workflow%3Abuild)
+[![security](https://img.shields.io/github/actions/workflow/status/rokucommunity/ropm/security-audit.yml?branch=master&label=security&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHJlY3QgeD0iMyIgeT0iOCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjciIHJ4PSIxIiBmaWxsPSJ3aGl0ZSIvPjxwYXRoIGQ9Ik01IDhWNWEzIDMgMCAwIDEgNiAwdjMiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==)](https://github.com/rokucommunity/ropm/actions/workflows/security-audit.yml)
 [![coverage status](https://img.shields.io/coveralls/github/rokucommunity/ropm?logo=coveralls)](https://coveralls.io/github/rokucommunity/ropm?branch=master)
 [![monthly downloads](https://img.shields.io/npm/dm/ropm.svg?sanitize=true&logo=npm&logoColor=)](https://npmcharts.com/compare/ropm?minimal=true)
 [![npm version](https://img.shields.io/npm/v/ropm.svg?logo=npm)](https://www.npmjs.com/package/ropm)
@@ -520,6 +521,10 @@ Here are the requirements for having `ropm` prefix your `observeField` string fu
 
 ## Sponsors
 [![image](https://user-images.githubusercontent.com/2544493/96571912-377af280-129a-11eb-8295-49eb12e54aeb.png)](https://www.applicaster.com/)
+
+## Accepted security advisories
+
+Dependencies flagged by `npm audit` that we have reviewed and chosen not to upgrade are tracked in [audit-ci.jsonc](https://github.com/rokucommunity/ropm/blob/master/audit-ci.jsonc). Each entry includes the advisory ID, the date it was added, and the reason it does not apply to this project.
 
 ## Changelog
 [Click here](CHANGELOG.md) to view the changelog.
