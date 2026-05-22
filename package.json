@@ -8,7 +8,7 @@
     "lint": "eslint \"src/**\"",
     "test": "nyc mocha",
     "test:nocover": "mocha",
-    "audit": "npm audit",
+    "audit": "npm audit || audit-ci --config ./audit-ci.jsonc",
     "package": "npm run build && npm pack"
   },
   "engines": {
@@ -62,6 +62,7 @@
     "@types/yargs": "^16.0.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
+    "audit-ci": "^7.1.0",
     "chai": "^4.3.4",
     "eslint": "^8.16.0",
     "eslint-plugin-github": "^4.1.1",
