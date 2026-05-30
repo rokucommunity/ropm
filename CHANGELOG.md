@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.8](https://github.com/rokucommunity/ropm/compare/0.11.7...v0.11.8) - 2026-05-30
+### Added
+ - Add --rootDir flag support to copy/install/clean commands ([#143](https://github.com/rokucommunity/ropm/pull/143))
+### Changed
+ - upgrade to [brighterscript@0.72.4](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0724---2026-05-29). Notable changes since 0.72.2:
+ - upgrade to [roku-deploy@3.17.5](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3175---2026-05-30). Notable changes since 3.17.4:
+     - Preserve `!` glob-negation prefix when using normalizeFilesArray ([#277](https://github.com/rokucommunity/roku-deploy/pull/277))
+
+
+
 ## [0.11.7](https://github.com/rokucommunity/ropm/compare/0.11.6...v0.11.7) - 2026-05-20
 ### Changed
  - Replace @xml-tools/ast with in-repo shim ([#138](https://github.com/rokucommunity/ropm/pull/138))
