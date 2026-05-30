@@ -54,7 +54,8 @@ export class InstallCommand {
     private async deleteAllRokuModulesFolders() {
         const cleanCommand = new CleanCommand({
             cwd: this.cwd,
-            logLevel: this.args.logLevel
+            logLevel: this.args.logLevel,
+            rootDir: this.args.rootDir
         });
         await cleanCommand.run();
     }

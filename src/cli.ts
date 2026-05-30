@@ -31,6 +31,7 @@ new Promise((resolve, reject) => {
         ], 'Download Roku dependencies into the roku_modules folder', (builder) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('rootDir', { type: 'string', description: 'The path to the root directory for the project. Overrides the ropm.rootDir value in package.json' })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new InstallCommand(args);
@@ -40,6 +41,7 @@ new Promise((resolve, reject) => {
         .command('clean', 'Remove all roku_module files and folders from the root directory', (builder) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('rootDir', { type: 'string', description: 'The path to the root directory for the project. Overrides the ropm.rootDir value in package.json' })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new CleanCommand(args);
@@ -49,6 +51,7 @@ new Promise((resolve, reject) => {
         .command('copy', 'Runs `clean` and then installs all ropm modules. Operates solely with the modules already downloaded, and will not download new modules from the registry.', (builder) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('rootDir', { type: 'string', description: 'The path to the root directory for the project. Overrides the ropm.rootDir value in package.json' })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new CopyCommand(args);
