@@ -9,23 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.8](https://github.com/rokucommunity/ropm/compare/0.11.7...v0.11.8) - 2026-05-30
 ### Added
  - Add --rootDir flag support to copy/install/clean commands ([#143](https://github.com/rokucommunity/ropm/pull/143))
- - Add security-audit-required job to security-audit workflow ([#140](https://github.com/rokucommunity/ropm/pull/140))
 ### Changed
- - Update minimum audit threshold ([#142](https://github.com/rokucommunity/ropm/pull/142))
- - Accept GHSA-w5hq-g745-h8pq (uuid <11.1.1) advisory ([#141](https://github.com/rokucommunity/ropm/pull/141))
  - upgrade to [brighterscript@0.72.4](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0724---2026-05-29). Notable changes since 0.72.2:
-     - Add parameter name inlay hints ([#1703](https://github.com/rokucommunity/brighterscript/pull/1703))
-     - Update minimum audit threshold ([#1723](https://github.com/rokucommunity/brighterscript/pull/1723))
-     - Accept GHSA-w5hq-g745-h8pq (uuid <11.1.1) advisory ([#1722](https://github.com/rokucommunity/brighterscript/pull/1722))
-     - Add security-audit-required gate job to security-audit workflow ([#1720](https://github.com/rokucommunity/brighterscript/pull/1720))
-     - Security Audit workflow ([#1718](https://github.com/rokucommunity/brighterscript/pull/1718))
  - upgrade to [roku-deploy@3.17.5](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3175---2026-05-30). Notable changes since 3.17.4:
-     - Preserve `!` glob-negation prefix in standardizePath ([#277](https://github.com/rokucommunity/roku-deploy/pull/277))
-     - Update minimum audit threshold ([#273](https://github.com/rokucommunity/roku-deploy/pull/273))
-     - Accept GHSA-w5hq-g745-h8pq (uuid <11.1.1) advisory ([#272](https://github.com/rokucommunity/roku-deploy/pull/272))
-     - Add `security-audit-required` gate job to security audit workflow ([#269](https://github.com/rokucommunity/roku-deploy/pull/269))
-     - Use explicit label on Security Audit badge ([#266](https://github.com/rokucommunity/roku-deploy/pull/266))
-     - Security Audit workflow ([#265](https://github.com/rokucommunity/roku-deploy/pull/265))
+     - Preserve `!` glob-negation prefix when using normalizeFilesArray ([#277](https://github.com/rokucommunity/roku-deploy/pull/277))
 
 
 
