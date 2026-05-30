@@ -49,4 +49,33 @@ describe('CleanCommand', () => {
         await command.run();
         expect(fsExtra.pathExistsSync(filePath)).to.be.false;
     });
+
+    it('honors rootDir arg over package.json ropm.rootDir', async () => {
+        mergePackageJson(appDir, {
+            ropm: {
+                //specify custom rootDir that should be ignored
+                rootDir: `${appDir}/src`
+            }
+        });
+        // Create a file in the rootDir specified in package.json
+        const ignoredFilePath = `${appDir}/src/source/roku_modules/promise/file.brs`;
+        fsExtra.ensureDirSync(path.dirname(ignoredFilePath));
+        fsExtra.writeFileSync(ignoredFilePath, '');
+
+        // Create a file in the rootDir passed as argument
+        const targetFilePath = `${appDir}/other/source/roku_modules/promise/file.brs`;
+        fsExtra.ensureDirSync(path.dirname(targetFilePath));
+        fsExtra.writeFileSync(targetFilePath, '');
+
+        const command = new CleanCommand({
+            cwd: appDir,
+            rootDir: 'other'
+        });
+        await command.run();
+
+        // The file in 'other' directory should be deleted
+        expect(fsExtra.pathExistsSync(targetFilePath)).to.be.false;
+        // The file in 'src' directory should NOT be deleted
+        expect(fsExtra.pathExistsSync(ignoredFilePath)).to.be.true;
+    });
 });
