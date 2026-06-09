@@ -9,13 +9,14 @@ import { Program } from 'brighterscript';
 import * as readline from 'readline';
 import { logger } from '@rokucommunity/logger';
 import type { Logger, LogLevel } from '@rokucommunity/logger';
+import type { PackageManagerName } from './packageManagers/PackageManager';
 
 export class Util {
 
     /**
      * Determine if the current OS is running a version of windows
      */
-    private isWindowsPlatform() {
+    public isWindowsPlatform() {
         return process.platform.startsWith('win');
     }
 
@@ -33,21 +34,6 @@ export class Util {
             child.addListener('error', reject);
             child.addListener('exit', resolve);
         });
-    }
-
-    /**
-     * Spawn an npm command and return a promise.
-     * This is necessary because spawn requires the file extension (.cmd) on windows.
-     * @param args - the list of args to pass to npm. Any undefined args will be removed from the list, so feel free to use ternary outside to simplify things
-     */
-    spawnNpmAsync(args: Array<string | undefined>, options?: childProcess.SpawnOptions) {
-        //filter out undefined args
-        args = args.filter(arg => arg !== undefined);
-        return this.spawnAsync(
-            this.isWindowsPlatform() ? 'npm.cmd' : 'npm',
-            args as string[],
-            options
-        );
     }
 
     public getUserInput(question: string) {
@@ -352,6 +338,11 @@ export interface RopmOptions {
      * What level of ropm's internal logging should be performed
      */
     logLevel?: LogLevel;
+
+    /**
+     * The package manager ropm should use to install and resolve dependencies. Defaults to `npm`.
+     */
+    packageManager?: PackageManagerName;
 }
 
 export interface ModuleDependency {
@@ -371,4 +362,10 @@ export interface CommandArgs {
      * What level of ropm's internal logging should be performed
      */
     logLevel?: LogLevel;
+
+    /**
+     * The package manager ropm should use to install and resolve dependencies.
+     * Overrides `ropm.packageManager` from package.json. Defaults to `npm`.
+     */
+    packageManager?: PackageManagerName;
 }

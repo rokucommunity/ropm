@@ -1,11 +1,12 @@
 import type { CommandArgs, RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as path from 'path';
-import * as childProcess from 'child_process';
 import * as fsExtra from 'fs-extra';
 import { InitCommand } from './InitCommand';
 import { CleanCommand } from './CleanCommand';
 import { ModuleManager } from '../prefixer/ModuleManager';
+import type { PackageManager } from '../packageManagers';
+import { getPackageManager } from '../packageManagers';
 
 export class InstallCommand {
     constructor(
@@ -20,6 +21,20 @@ export class InstallCommand {
 
     private moduleManager = new ModuleManager({ logger: this.logger });
 
+    private _packageManager?: PackageManager;
+
+    /**
+     * The package manager used to install and resolve dependencies. Resolved from the
+     * `--package-manager` arg, then `ropm.packageManager` in the host package.json, defaulting to npm.
+     */
+    private get packageManager(): PackageManager {
+        if (!this._packageManager) {
+            this._packageManager = getPackageManager(
+                this.args.packageManager ?? this.hostPackageJson?.ropm?.packageManager
+            );
+        }
+        return this._packageManager;
+    }
 
     private get hostRootDir() {
         const packageJsonRootDir = this.args.rootDir ?? this.hostPackageJson?.ropm?.rootDir;
@@ -83,10 +98,7 @@ export class InstallCommand {
         if (await fsExtra.pathExists(this.cwd) === false) {
             throw new Error(`"${this.cwd}" does not exist`);
         }
-        await util.spawnNpmAsync([
-            'i',
-            ...(this.args.packages ?? [])
-        ], {
+        await this.packageManager.install(this.args.packages ?? [], {
             cwd: this.cwd
         });
     }
@@ -113,7 +125,7 @@ export class InstallCommand {
     }
 
     /**
-     * Get the list of prod dependencies from npm.
+     * Get the list of prod dependency directories from the active package manager.
      * This is run sync because it should run as fast as possible
      * and won't be run in ~parallel.
      */
@@ -121,72 +133,11 @@ export class InstallCommand {
         if (fsExtra.pathExistsSync(this.cwd) === false) {
             throw new Error(`"${this.cwd}" does not exist`);
         }
-        let stdout: string;
-        try {
-            const npmLs = `npm ls --json --long --omit=dev --omit=optional --depth=Infinity`;
-            this.logger.debug(`executing command: ${npmLs}`);
-
-            stdout = childProcess.execSync(npmLs, {
-                cwd: this.cwd,
-                maxBuffer: 500 * 1024 * 1024 // 500MB buffer to handle large dependency trees (this is ridiculously large, but better than crashing...)
-            }).toString();
-        } catch (e: any) {
-            stdout = (e as any).stdout.toString();
-
-            // do not throw error, just log a warning
-            // there are a lot of edge cases where npm ls errors don't pose any actual roadblock for ropm packages
-
-            this.logger.warn([
-                'Encountered an error while retrieving the prod dependencies from npm-ls. Attempting to proceed anyways. You can review the error below:\n',
-                (e as any).message
-            ].join('\n'));
-        }
-
-        const dependencyJson = JSON.parse(stdout);
-        const thisPackage = this.findDependencyByName(dependencyJson, this.hostPackageJson?.name);
-        const dependencies = this.flattenPackage(thisPackage).filter(x => !!x);
-        return dependencies;
-    }
-
-    /**
-     * Flatten dependencies from `npm ls --json --long` to match the parseable output
-     * @param packageJson the result from `npm ls --json --long`
-     * @returns list of dependency paths
-     */
-    private flattenPackage(packageJson: any): string[] {
-        const dependencies: string[] = [];
-        if (packageJson) {
-            dependencies.push(packageJson.path);
-            for (const dep of Object.values(packageJson.dependencies ?? {})) {
-                dependencies.push(...this.flattenPackage(dep));
-            }
-        }
-        return dependencies;
-    }
-
-    /**
-     * Finds the current package in the dependency tree
-     *
-     * Important for workspace projects, where the root project
-     * is included in the dependency tree and needs to be removed
-     * @param packageJson root depenendency json
-     * @param name cwd project name
-     * @returns package entry in dependency json
-     */
-    private findDependencyByName(packageJson: any, name: string | undefined) {
-        if (packageJson.name === name || !name) {
-            return packageJson;
-        }
-        let foundPackage = Object.values(packageJson.dependencies ?? {}).find((d: any) => d.name === name);
-        if (!foundPackage) {
-            for (const key in (packageJson.dependencies ?? {})) {
-                foundPackage = this.findDependencyByName(packageJson.dependencies[key], name);
-                if (foundPackage) {
-                    return foundPackage;
-                }
-            }
-        }
-        return foundPackage;
+        return this.packageManager.getProductionDependencies({
+            cwd: this.cwd,
+            packageName: this.hostPackageJson?.name,
+            logger: this.logger
+        });
     }
 }
 

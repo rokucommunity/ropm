@@ -14,6 +14,8 @@ jobs:
           node-version: "18.20.4"
           architecture: 'x64' # fix for macos-latest
       - run: npm ci
+      # pnpm is required by the pnpm package-manager integration tests
+      - run: npm install -g pnpm@10.28.0
       - run: npm run build
       - run: npm run lint
       - run: npm run test

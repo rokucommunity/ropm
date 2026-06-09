@@ -1,7 +1,9 @@
 import type { CommandArgs } from '../util';
 import { util } from '../util';
 import * as path from 'path';
+import * as fsExtra from 'fs-extra';
 import { InstallCommand } from './InstallCommand';
+import { getPackageManager } from '../packageManagers';
 
 export class UninstallCommand {
     constructor(
@@ -24,11 +26,25 @@ export class UninstallCommand {
         await this.npmInstall();
     }
 
+    /**
+     * Resolve the package manager from the `--package-manager` arg, then `ropm.packageManager`
+     * in the host package.json, defaulting to npm.
+     */
+    private async resolvePackageManager() {
+        let configuredName = this.args.packageManager;
+        if (!configuredName) {
+            const packageJsonPath = path.join(this.cwd, 'package.json');
+            if (await fsExtra.pathExists(packageJsonPath)) {
+                const packageJson = await util.getPackageJson(this.cwd);
+                configuredName = packageJson.ropm?.packageManager;
+            }
+        }
+        return getPackageManager(configuredName);
+    }
+
     private async npmUninstall() {
-        await util.spawnNpmAsync([
-            'uninstall',
-            ...(this.args.packages ?? [])
-        ], {
+        const packageManager = await this.resolvePackageManager();
+        await packageManager.uninstall(this.args.packages ?? [], {
             cwd: this.cwd
         });
     }
@@ -40,7 +56,8 @@ export class UninstallCommand {
         const installCommand = new InstallCommand({
             cwd: this.cwd,
             packages: [],
-            logLevel: this.args.logLevel
+            logLevel: this.args.logLevel,
+            packageManager: this.args.packageManager
         });
         await installCommand.run();
     }

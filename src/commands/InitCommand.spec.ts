@@ -26,7 +26,7 @@ describe('InitCommand', () => {
     it('prompts for rootDir on fresh install with no package.json present', async () => {
         const stub = sinon.stub(util, 'getUserInput').returns(Promise.resolve('abc'));
         //no-op npm for this test
-        sinon.stub(util, 'spawnNpmAsync').returns(Promise.resolve());
+        sinon.stub(util, 'spawnAsync').returns(Promise.resolve());
         await command.run();
         expect(stub.callCount).to.equal(1);
         expect(fsExtra.readJsonSync(`${cwd}/package.json`)).to.eql({
@@ -40,7 +40,7 @@ describe('InitCommand', () => {
         fsExtra.writeJsonSync(`${cwd}/package.json`, {});
         const stub = sinon.stub(util, 'getUserInput').returns(Promise.resolve('abc'));
         //no-op npm for this test
-        sinon.stub(util, 'spawnNpmAsync').returns(Promise.resolve());
+        sinon.stub(util, 'spawnAsync').returns(Promise.resolve());
         await command.run();
         expect(stub.callCount).to.equal(1);
         expect(fsExtra.readJsonSync(`${cwd}/package.json`)).to.eql({
@@ -58,7 +58,7 @@ describe('InitCommand', () => {
         });
         const stub = sinon.stub(util, 'getUserInput').returns(Promise.resolve('abc'));
         //no-op npm for this test
-        sinon.stub(util, 'spawnNpmAsync').returns(Promise.resolve());
+        sinon.stub(util, 'spawnAsync').returns(Promise.resolve());
         await command.run();
         expect(stub.callCount).to.equal(0);
         expect(fsExtra.readJsonSync(`${cwd}/package.json`)).to.eql({
