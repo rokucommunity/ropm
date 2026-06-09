@@ -1,10 +1,6 @@
-import type { PackageManager, PackageManagerName } from './PackageManager';
+import type { PackageManager, PackageManagerName } from './types';
 import { NpmPackageManager } from './NpmPackageManager';
 import { PnpmPackageManager } from './PnpmPackageManager';
-
-export * from './PackageManager';
-export { NpmPackageManager } from './NpmPackageManager';
-export { PnpmPackageManager } from './PnpmPackageManager';
 
 /**
  * Get the package manager implementation for the given name.

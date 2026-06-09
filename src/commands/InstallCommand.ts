@@ -5,7 +5,7 @@ import * as fsExtra from 'fs-extra';
 import { InitCommand } from './InitCommand';
 import { CleanCommand } from './CleanCommand';
 import { ModuleManager } from '../prefixer/ModuleManager';
-import type { PackageManager } from '../packageManagers';
+import type { PackageManager } from '../packageManagers/types';
 import { getPackageManager } from '../packageManagers';
 
 export class InstallCommand {

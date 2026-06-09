@@ -9,7 +9,7 @@ import { Program } from 'brighterscript';
 import * as readline from 'readline';
 import { logger } from '@rokucommunity/logger';
 import type { Logger, LogLevel } from '@rokucommunity/logger';
-import type { PackageManagerName } from './packageManagers/PackageManager';
+import type { PackageManagerName } from './packageManagers/types';
 
 export class Util {
 

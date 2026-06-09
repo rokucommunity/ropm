@@ -1,11 +1,23 @@
 import * as childProcess from 'child_process';
-import type { GetProductionDependenciesOptions, InitOptions, PackageManagerName } from './PackageManager';
-import { BasePackageManager } from './PackageManager';
+import { util } from '../util';
+import type { GetProductionDependenciesOptions, InitOptions, InstallOptions, PackageManager, PackageManagerName, UninstallOptions } from './types';
 
-export class NpmPackageManager extends BasePackageManager {
+export class NpmPackageManager implements PackageManager {
     public readonly name: PackageManagerName = 'npm';
 
-    protected readonly binaryName = 'npm';
+    /**
+     * Spawn npm and return a promise that completes when it's finished.
+     * Handles the file extension (`.cmd`) required on windows.
+     * @param args - the list of args to pass to npm. Any undefined args will be removed from the list, so feel free to use ternary outside to simplify things
+     */
+    private spawn(args: Array<string | undefined>, options?: childProcess.SpawnOptions) {
+        const filteredArgs = args.filter(arg => arg !== undefined) as string[];
+        return util.spawnAsync(
+            util.isWindowsPlatform() ? 'npm.cmd' : 'npm',
+            filteredArgs,
+            options
+        );
+    }
 
     public async init(options: InitOptions) {
         await this.spawn([
@@ -14,6 +26,24 @@ export class NpmPackageManager extends BasePackageManager {
         ], {
             cwd: options.cwd,
             stdio: 'inherit'
+        });
+    }
+
+    public async install(packages: string[], options: InstallOptions) {
+        await this.spawn([
+            'i',
+            ...packages
+        ], {
+            cwd: options.cwd
+        });
+    }
+
+    public async uninstall(packages: string[], options: UninstallOptions) {
+        await this.spawn([
+            'uninstall',
+            ...packages
+        ], {
+            cwd: options.cwd
         });
     }
 
@@ -46,7 +76,23 @@ export class NpmPackageManager extends BasePackageManager {
 
         const dependencyJson = JSON.parse(stdout);
         const thisPackage = this.findDependencyByName(dependencyJson, options.packageName);
-        const dependencies = this.flattenDependencyTree(thisPackage).filter(x => !!x);
+        const dependencies = this.flattenPackage(thisPackage).filter(x => !!x);
+        return dependencies;
+    }
+
+    /**
+     * Flatten dependencies from `npm ls --json --long` to match the parseable output
+     * @param packageJson the result from `npm ls --json --long`
+     * @returns list of dependency paths
+     */
+    private flattenPackage(packageJson: any): string[] {
+        const dependencies: string[] = [];
+        if (packageJson) {
+            dependencies.push(packageJson.path);
+            for (const dep of Object.values(packageJson.dependencies ?? {})) {
+                dependencies.push(...this.flattenPackage(dep));
+            }
+        }
         return dependencies;
     }
 

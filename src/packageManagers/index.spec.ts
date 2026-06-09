@@ -1,5 +1,7 @@
 import { expect } from 'chai';
-import { getPackageManager, NpmPackageManager, PnpmPackageManager } from './index';
+import { getPackageManager } from './index';
+import { NpmPackageManager } from './NpmPackageManager';
+import { PnpmPackageManager } from './PnpmPackageManager';
 
 describe('getPackageManager', () => {
     it('defaults to npm when no name is provided', () => {
