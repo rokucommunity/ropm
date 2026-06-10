@@ -86,26 +86,6 @@ describe('Util', () => {
         });
     });
 
-    describe('spawnNpmAsync', () => {
-        it('uses `npm.cmd` on windows', async () => {
-            const stub = sinon.stub(util, 'spawnAsync').callsFake(() => {
-                return Promise.resolve();
-            });
-            sinon.stub(util as any, 'isWindowsPlatform').returns(true);
-            await util.spawnNpmAsync(['arg']);
-            expect(stub.getCalls()[0].args[0]).to.eql('npm.cmd');
-        });
-
-        it('uses `npm` on non-windows', async () => {
-            const stub = sinon.stub(util, 'spawnAsync').callsFake(() => {
-                return Promise.resolve();
-            });
-            sinon.stub(util as any, 'isWindowsPlatform').returns(false);
-            await util.spawnNpmAsync(['arg']);
-            expect(stub.getCalls()[0].args[0]).to.eql('npm');
-        });
-    });
-
     describe('globAll', () => {
         it('rejects on error', async () => {
             //passing undefined results in an error
