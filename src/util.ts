@@ -349,6 +349,12 @@ export interface RopmOptions {
     noprefix?: string[];
 
     /**
+     * A preferred prefix for this module to suggest to consumers. When a consumer installs this module
+     * without an explicit alias, this prefix will be used instead of the auto-derived one.
+     */
+    preferredPrefix?: string;
+
+    /**
      * What level of ropm's internal logging should be performed
      */
     logLevel?: LogLevel;
