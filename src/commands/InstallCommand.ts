@@ -133,7 +133,7 @@ export class InstallCommand {
         if (fsExtra.pathExistsSync(this.cwd) === false) {
             throw new Error(`"${this.cwd}" does not exist`);
         }
-        return this.packageManager.getProductionDependencies({
+        return this.packageManager.getProdDependencies({
             cwd: this.cwd,
             packageName: this.hostPackageJson?.name,
             logger: this.logger

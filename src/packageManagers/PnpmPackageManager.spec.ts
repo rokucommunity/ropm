@@ -109,7 +109,7 @@ describe('PnpmPackageManager', () => {
             )).to.be.true;
         });
 
-        it('getProductionDependencies returns the host directory first', async () => {
+        it('getProdDependencies returns the host directory first', async () => {
             writeProject('logger', {
                 'source/logger.brs': ''
             });

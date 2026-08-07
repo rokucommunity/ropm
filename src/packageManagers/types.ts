@@ -30,7 +30,7 @@ export interface UninstallOptions {
     cwd: string;
 }
 
-export interface GetProductionDependenciesOptions {
+export interface GetProdDependenciesOptions {
     /**
      * The directory in which to run the command
      */
@@ -72,5 +72,5 @@ export interface PackageManager {
      * Get the flattened list of production dependency directories.
      * The host package is always the first entry in the list.
      */
-    getProductionDependencies(options: GetProductionDependenciesOptions): string[];
+    getProdDependencies(options: GetProdDependenciesOptions): string[];
 }

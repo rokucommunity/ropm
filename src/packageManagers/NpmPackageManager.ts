@@ -1,6 +1,6 @@
 import * as childProcess from 'child_process';
 import { util } from '../util';
-import type { GetProductionDependenciesOptions, InitOptions, InstallOptions, PackageManager, PackageManagerName, UninstallOptions } from './types';
+import type { GetProdDependenciesOptions, InitOptions, InstallOptions, PackageManager, PackageManagerName, UninstallOptions } from './types';
 
 export class NpmPackageManager implements PackageManager {
     public readonly name: PackageManagerName = 'npm';
@@ -52,7 +52,7 @@ export class NpmPackageManager implements PackageManager {
      * This is run sync because it should run as fast as possible
      * and won't be run in ~parallel.
      */
-    public getProductionDependencies(options: GetProductionDependenciesOptions): string[] {
+    public getProdDependencies(options: GetProdDependenciesOptions): string[] {
         let stdout: string;
         try {
             const npmLs = `npm ls --json --long --omit=dev --omit=optional --depth=Infinity`;

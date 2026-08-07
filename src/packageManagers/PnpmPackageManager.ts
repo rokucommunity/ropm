@@ -1,6 +1,6 @@
 import * as childProcess from 'child_process';
 import { util } from '../util';
-import type { GetProductionDependenciesOptions, InitOptions, InstallOptions, PackageManager, PackageManagerName, UninstallOptions } from './types';
+import type { GetProdDependenciesOptions, InitOptions, InstallOptions, PackageManager, PackageManagerName, UninstallOptions } from './types';
 
 export class PnpmPackageManager implements PackageManager {
     public readonly name: PackageManagerName = 'pnpm';
@@ -52,7 +52,7 @@ export class PnpmPackageManager implements PackageManager {
      * This is run sync because it should run as fast as possible
      * and won't be run in ~parallel.
      */
-    public getProductionDependencies(options: GetProductionDependenciesOptions): string[] {
+    public getProdDependencies(options: GetProdDependenciesOptions): string[] {
         let stdout: string;
         try {
             //`--prod --no-optional` mirrors npm's `--omit=dev --omit=optional`. `--depth Infinity` walks the entire tree.
