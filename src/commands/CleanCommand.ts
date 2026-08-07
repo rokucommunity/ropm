@@ -4,6 +4,7 @@ import type { CommandArgs, RopmPackageJson } from '../util';
 import { util } from '../util';
 import { InitCommand } from './InitCommand';
 import * as del from 'del';
+import * as fastGlob from 'fast-glob';
 import logger from '@rokucommunity/logger';
 
 export class CleanCommand {
@@ -63,12 +64,14 @@ export class CleanCommand {
     }
 
     private async deleteAllRokuModulesFolders() {
-        const rokuModulesFolders = await util.globAll([
+        const rokuModulesFolders = await fastGlob.async([
             '*/roku_modules',
             '!node_modules/**/*'
         ], {
             cwd: this.hostRootDir,
-            absolute: true
+            absolute: true,
+            //we're globbing for directories (`*/roku_modules`), and fast-glob excludes those by default
+            onlyDirectories: true
         });
 
         //delete the roku_modules folders

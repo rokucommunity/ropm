@@ -3,6 +3,7 @@ import type { RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
+import * as fastGlob from 'fast-glob';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import type { Dependency } from './ModuleManager';
@@ -162,7 +163,7 @@ export class RopmModule {
         const packageLogText = `${this.npmAliasName}${this.npmAliasName !== this.npmModuleName ? `(${this.npmModuleName})` : ''}`;
 
         this.logger.log(`Copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
-        
+
         // Check if packageRootDir exists before trying to scan it
         if (!(await fsExtra.pathExists(this.packageRootDir))) {
             this.logger.warn(`packageRootDir "${this.packageRootDir}" does not exist for ${packageLogText}@${this.version}. Skipping file copying.`);
@@ -179,16 +180,16 @@ export class RopmModule {
         allFiles = allFiles.map((f) => rokuDeploy.util.standardizePath(f));
 
         //get the list of all file paths within the rootDir
-        let rootDirFiles = await util.globAll([
+        let rootDirFiles = await fastGlob.async([
             '**/*',
             ...RopmModule.fileIgnorePatterns
         ], {
             cwd: this.packageRootDir,
             //follow symlinks
-            follow: true,
+            followSymbolicLinks: true,
             dot: true,
             //skip matching folders (we'll handle file copying ourselves)
-            nodir: true
+            onlyFiles: true
         });
 
         //standardize each path

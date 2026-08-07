@@ -1,10 +1,9 @@
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
-import * as globAll from 'glob-all';
 import * as latinize from 'latinize';
 import * as semver from 'semver';
-import type { IOptions } from 'glob';
+
 import { Program } from 'brighterscript';
 import * as readline from 'readline';
 import { logger } from '@rokucommunity/logger';
@@ -113,21 +112,6 @@ export class Util {
         //TODO this lists all files in the directory. Perhaps we should optimize this by using a directory reader? Might not matter...
         const files = await fsExtra.readdir(dirPath);
         return files.length === 0;
-    }
-
-    /**
-     * A promise wrapper around glob-all
-     */
-    public async globAll(patterns, options?: IOptions) {
-        return new Promise<string[]>((resolve, reject) => {
-            globAll(patterns, options, (error, matches) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(matches);
-                }
-            });
-        });
     }
 
     /**
