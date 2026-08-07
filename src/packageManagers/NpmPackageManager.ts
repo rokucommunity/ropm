@@ -63,7 +63,7 @@ export class NpmPackageManager implements PackageManager {
                 maxBuffer: 500 * 1024 * 1024 // 500MB buffer to handle large dependency trees (this is ridiculously large, but better than crashing...)
             }).toString();
         } catch (e: any) {
-            stdout = (e as any).stdout.toString();
+            stdout = (e as any).stdout?.toString() ?? '';
 
             // do not throw error, just log a warning
             // there are a lot of edge cases where npm ls errors don't pose any actual roadblock for ropm packages
@@ -74,8 +74,14 @@ export class NpmPackageManager implements PackageManager {
             ].join('\n'));
         }
 
-        const dependencyJson = JSON.parse(stdout);
-        const thisPackage = this.findDependencyByName(dependencyJson, options.packageName);
+        //stdout can be empty or malformed when the `npm ls` above failed, so don't let a parse error escape past the warning
+        let dependencyJson: any;
+        try {
+            dependencyJson = JSON.parse(stdout);
+        } catch {
+            dependencyJson = undefined;
+        }
+        const thisPackage = dependencyJson ? this.findDependencyByName(dependencyJson, options.packageName) : undefined;
         const dependencies = this.flattenPackage(thisPackage).filter(x => !!x);
         return dependencies;
     }

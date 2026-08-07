@@ -76,7 +76,13 @@ export class PnpmPackageManager implements PackageManager {
         }
 
         //pnpm outputs an array of projects (to support workspaces). Find the host project, falling back to the first entry.
-        const projects = JSON.parse(stdout) as any[];
+        //stdout can be empty or malformed when the `pnpm ls` above failed, so don't let a parse error escape past the warning
+        let projects: any[];
+        try {
+            projects = JSON.parse(stdout) as any[];
+        } catch {
+            projects = [];
+        }
         const thisProject = (options.packageName ? projects.find(project => project.name === options.packageName) : undefined) ?? projects[0];
         const dependencies = this.flattenDependencyTree(thisProject).filter(x => !!x);
         return dependencies;
