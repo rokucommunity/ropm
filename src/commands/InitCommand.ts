@@ -2,6 +2,7 @@ import * as path from 'path';
 import type { CommandArgs, RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as fsExtra from 'fs-extra';
+import { getPackageManager } from '../packageManagers';
 
 export class InitCommand {
     constructor(
@@ -15,13 +16,24 @@ export class InitCommand {
             throw new Error(`"${this.cwd}" does not exist`);
         }
         await this.getRootDirFromUser();
-        await util.spawnNpmAsync([
-            'init',
-            this.force ? '--force' : undefined
-        ], {
+        const packageManager = await this.resolvePackageManager();
+        await packageManager.init({
             cwd: this.cwd,
-            stdio: 'inherit'
+            force: this.force
         });
+    }
+
+    /**
+     * Resolve the package manager from the `--package-manager` arg, then `ropm.packageManager`
+     * in the host package.json, defaulting to npm.
+     */
+    private async resolvePackageManager() {
+        let configuredName = this.args.packageManager;
+        if (!configuredName && fsExtra.pathExistsSync(path.join(this.cwd, 'package.json'))) {
+            const packageJson = await util.getPackageJson(this.cwd);
+            configuredName = packageJson.ropm?.packageManager;
+        }
+        return getPackageManager(configuredName);
     }
 
     private get cwd() {

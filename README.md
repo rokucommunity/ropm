@@ -360,6 +360,27 @@ If you wish to install all ropm dependencies in a different location, then you s
     ...
 }
 ```
+### packageManager
+By default, `ropm` uses [npm](https://www.npmjs.com/) to install and resolve your dependencies. If your project uses [pnpm](https://pnpm.io/) instead, set the `packageManager` ropm option so that `ropm` drives the correct tool:
+
+```javascript
+{
+    "name": "your-app-name",
+    "ropm": {
+        //use pnpm instead of npm to install and resolve dependencies
+        "packageManager": "pnpm"
+    }
+    ...
+}
+```
+
+Supported values are `"npm"` (default) and `"pnpm"`.
+
+You can also override this per-command with the `--package-manager` CLI flag, which takes precedence over the `package.json` setting:
+
+```bash
+ropm install --package-manager pnpm
+```
 ## CLI commands
 ### install
 Install one or more packages locally in both `node_modules` and `roku_modules`. This also updates the local `package.json` `dependencies` section.

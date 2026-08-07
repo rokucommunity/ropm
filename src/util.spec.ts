@@ -86,26 +86,6 @@ describe('Util', () => {
         });
     });
 
-    describe('spawnNpmAsync', () => {
-        it('uses `npm.cmd` on windows', async () => {
-            const stub = sinon.stub(util, 'spawnAsync').callsFake(() => {
-                return Promise.resolve();
-            });
-            sinon.stub(util as any, 'isWindowsPlatform').returns(true);
-            await util.spawnNpmAsync(['arg']);
-            expect(stub.getCalls()[0].args[0]).to.eql('npm.cmd');
-        });
-
-        it('uses `npm` on non-windows', async () => {
-            const stub = sinon.stub(util, 'spawnAsync').callsFake(() => {
-                return Promise.resolve();
-            });
-            sinon.stub(util as any, 'isWindowsPlatform').returns(false);
-            await util.spawnNpmAsync(['arg']);
-            expect(stub.getCalls()[0].args[0]).to.eql('npm');
-        });
-    });
-
     describe('copyFiles', () => {
         it('throws if failed to copy reaches threshold', async () => {
             //create a file with the same name as the target folder (this should trigger an error)

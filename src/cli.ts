@@ -15,6 +15,7 @@ new Promise((resolve, reject) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
                 .option('force', { type: 'boolean', description: 'Skip all questions', default: false })
+                .option('package-manager', { type: 'string', description: 'The package manager to use (overrides ropm.packageManager in package.json).', choices: ['npm', 'pnpm'] })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] })
                 .alias('f', 'force')
                 .alias('yes', 'force')
@@ -32,6 +33,7 @@ new Promise((resolve, reject) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
                 .option('rootDir', { type: 'string', description: 'The path to the root directory for the project. Overrides the ropm.rootDir value in package.json' })
+                .option('package-manager', { type: 'string', description: 'The package manager to use (overrides ropm.packageManager in package.json).', choices: ['npm', 'pnpm'] })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new InstallCommand(args);
@@ -52,6 +54,7 @@ new Promise((resolve, reject) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
                 .option('rootDir', { type: 'string', description: 'The path to the root directory for the project. Overrides the ropm.rootDir value in package.json' })
+                .option('package-manager', { type: 'string', description: 'The package manager to use (overrides ropm.packageManager in package.json).', choices: ['npm', 'pnpm'] })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new CopyCommand(args);
@@ -64,6 +67,7 @@ new Promise((resolve, reject) => {
         ], 'Uninstall the specified dependencies', (builder) => {
             return builder
                 .option('cwd', { type: 'string', description: 'The current working directory that should be used to run the command' })
+                .option('package-manager', { type: 'string', description: 'The package manager to use (overrides ropm.packageManager in package.json).', choices: ['npm', 'pnpm'] })
                 .option('log-level', { type: 'string', defaultDescription: '"log"', description: 'The log level. Value can be "error", "warn", "log", "info", "debug".', choices: ['error', 'warn', 'log', 'info', 'debug'] });
         }, (args: any) => {
             const command = new UninstallCommand(args);
