@@ -3,6 +3,7 @@ import type { RopmPackageJson } from '../util';
 import { util } from '../util';
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
+import * as fastGlob from 'fast-glob';
 import * as packlist from 'npm-packlist';
 import * as rokuDeploy from 'roku-deploy';
 import type { Dependency } from './ModuleManager';
@@ -179,7 +180,7 @@ export class RopmModule {
         allFiles = allFiles.map((f) => rokuDeploy.util.standardizePath(f));
 
         //get the list of all file paths within the rootDir
-        let rootDirFiles = await util.globAll([
+        let rootDirFiles = await fastGlob.async([
             '**/*',
             ...RopmModule.fileIgnorePatterns
         ], {

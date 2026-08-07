@@ -1,8 +1,6 @@
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
-import * as fastGlob from 'fast-glob';
-export type FastGlobOptions = Parameters<typeof fastGlob.async>[1];
 import * as latinize from 'latinize';
 import * as semver from 'semver';
 
@@ -128,13 +126,6 @@ export class Util {
         //TODO this lists all files in the directory. Perhaps we should optimize this by using a directory reader? Might not matter...
         const files = await fsExtra.readdir(dirPath);
         return files.length === 0;
-    }
-
-    /**
-     * Find all files matching the given glob patterns
-     */
-    public async globAll(patterns: string[], options?: FastGlobOptions): Promise<string[]> {
-        return fastGlob.async(patterns, options);
     }
 
     /**

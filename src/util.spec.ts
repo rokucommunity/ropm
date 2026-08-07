@@ -106,13 +106,6 @@ describe('Util', () => {
         });
     });
 
-    describe('globAll', () => {
-        it('rejects on error', async () => {
-            //passing undefined results in an error
-            await expectThrowsAsync(() => util.globAll(undefined));
-        });
-    });
-
     describe('copyFiles', () => {
         it('throws if failed to copy reaches threshold', async () => {
             //create a file with the same name as the target folder (this should trigger an error)
