@@ -1,10 +1,11 @@
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fsExtra from 'fs-extra';
-import * as globAll from 'glob-all';
+import * as fastGlob from 'fast-glob';
+export type FastGlobOptions = Parameters<typeof fastGlob.async>[1];
 import * as latinize from 'latinize';
 import * as semver from 'semver';
-import type { IOptions } from 'glob';
+
 import { Program } from 'brighterscript';
 import * as readline from 'readline';
 import { logger } from '@rokucommunity/logger';
@@ -130,18 +131,10 @@ export class Util {
     }
 
     /**
-     * A promise wrapper around glob-all
+     * Find all files matching the given glob patterns
      */
-    public async globAll(patterns, options?: IOptions) {
-        return new Promise<string[]>((resolve, reject) => {
-            globAll(patterns, options, (error, matches) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(matches);
-                }
-            });
-        });
+    public async globAll(patterns: string[], options?: FastGlobOptions): Promise<string[]> {
+        return fastGlob.async(patterns, options);
     }
 
     /**

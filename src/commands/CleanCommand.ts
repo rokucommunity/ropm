@@ -68,7 +68,9 @@ export class CleanCommand {
             '!node_modules/**/*'
         ], {
             cwd: this.hostRootDir,
-            absolute: true
+            absolute: true,
+            //we're globbing for directories (`*/roku_modules`), and fast-glob excludes those by default
+            onlyDirectories: true
         });
 
         //delete the roku_modules folders

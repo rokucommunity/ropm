@@ -162,7 +162,7 @@ export class RopmModule {
         const packageLogText = `${this.npmAliasName}${this.npmAliasName !== this.npmModuleName ? `(${this.npmModuleName})` : ''}`;
 
         this.logger.log(`Copying ${packageLogText}@${this.version} as ${this.ropmModuleName}`);
-        
+
         // Check if packageRootDir exists before trying to scan it
         if (!(await fsExtra.pathExists(this.packageRootDir))) {
             this.logger.warn(`packageRootDir "${this.packageRootDir}" does not exist for ${packageLogText}@${this.version}. Skipping file copying.`);
@@ -185,10 +185,10 @@ export class RopmModule {
         ], {
             cwd: this.packageRootDir,
             //follow symlinks
-            follow: true,
+            followSymbolicLinks: true,
             dot: true,
             //skip matching folders (we'll handle file copying ourselves)
-            nodir: true
+            onlyFiles: true
         });
 
         //standardize each path
