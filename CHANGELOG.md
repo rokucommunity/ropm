@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## [0.11.10](https://github.com/rokucommunity/ropm/compare/0.11.9...v0.11.10) - 2026-09-02
+### Added
+ - Add pnpm support via pluggable package-manager classes ([#145](https://github.com/rokucommunity/ropm/pull/145))
+### Changed
+ - Security enhancements ([#147](https://github.com/rokucommunity/ropm/pull/147), [#149](https://github.com/rokucommunity/ropm/pull/149), [#152](https://github.com/rokucommunity/ropm/pull/152), [#154](https://github.com/rokucommunity/ropm/pull/154), [#156](https://github.com/rokucommunity/ropm/pull/156))
+ - Replace glob-all with fast-glob ([#153](https://github.com/rokucommunity/ropm/pull/153))
+ - upgrade to [@rokucommunity/logger@0.4.2](https://github.com/rokucommunity/logger/blob/master/CHANGELOG.md#042---2026-09-02). Notable changes since 0.3.13:
+ - upgrade to [brighterscript@0.73.1](https://github.com/rokucommunity/brighterscript/blob/master/CHANGELOG.md#0731---2026-09-02). Notable changes since 0.72.5:
+ - upgrade to [roku-deploy@3.18.4](https://github.com/rokucommunity/roku-deploy/blob/master/CHANGELOG.md#3184---2026-09-02). Notable changes since 3.17.6:
+
+
+
 ## [0.11.9](https://github.com/rokucommunity/ropm/compare/0.11.8...v0.11.9) - 2026-06-10
 ### Changed
  - upgrade to [@rokucommunity/logger@0.3.13](https://github.com/rokucommunity/logger/blob/master/CHANGELOG.md#0313---2026-06-08). Notable changes since 0.3.12:
