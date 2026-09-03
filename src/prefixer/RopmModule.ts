@@ -515,6 +515,27 @@ export class RopmModule {
                         }
                     }
                 }
+
+                //rename `roSGNode<ComponentName>` type references (the `roSGNode` prefix itself is left untouched)
+                for (const ref of file.nodeTypeReferences) {
+                    //if this component is owned by our module, rename it
+                    if (ownComponentNames.includes(ref.name.toLowerCase())) {
+                        file.addEdit(ref.offsetBegin, ref.offsetBegin, prefix);
+
+                        //rename dependency component usage
+                    } else {
+                        const possiblePrefix = ref.name.toLowerCase().split('_')[0];
+                        const idx = prefixMapKeysLower.indexOf(possiblePrefix);
+                        //if we have a prefix match, then convert the old prefix to the new prefix
+                        if (idx > -1) {
+                            const newPrefix = this.prefixMap[prefixMapKeys[idx]];
+                            //begin position + the length of the original prefix + 1 for the underscore
+                            const offsetEnd = ref.offsetBegin + possiblePrefix.length + 1;
+                            file.addEdit(ref.offsetBegin, offsetEnd, newPrefix + '_');
+                        }
+                        //otherwise leave it untouched - it's likely a genuine Roku built-in SG node type (e.g. roSGNodeLabel)
+                    }
+                }
             }
         }
     }

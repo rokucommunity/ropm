@@ -1482,6 +1482,25 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('keeps doc comments attached to their un-namespaced function when wrapping with a namespace', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        ' Doc comment for Sub1
+                        sub Sub1()
+                        end sub
+                    `,
+                    trim`
+                        namespace logger
+                        ' Doc comment for Sub1
+                        sub Sub1()
+                        end sub
+                        end namespace
+                    `
+                ]
+            });
+        });
+
         it('prefixes m.top.functionName for files NOT imported by a Task', async () => {
             await testProcess({
                 'logger:source/lib.brs': [
@@ -1584,8 +1603,7 @@ describe('ModuleManager', () => {
             `);
         });
 
-        //TODO eventually we need to fix this test
-        it.skip('handles d.bs default param namespaced values properly', async () => {
+        it('handles d.bs default param namespaced values properly', async () => {
             await createDependencies([{
                 name: 'alpha',
                 dependencies: [{
@@ -1768,6 +1786,116 @@ describe('ModuleManager', () => {
                         class Movie
                             uri as string
                         end class
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes roSGNode<ComponentName> type references to own components', async () => {
+            await testProcess({
+                'logger:components/LoggerComponent.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="LoggerComponent" extends="Group">
+                        </component>
+                    `
+                ],
+                'logger:source/lib.d.bs': [
+                    trim`
+                        function getComponent() as roSGNodeLoggerComponent
+                        end function
+                        function useComponent(node as roSGNodeLoggerComponent)
+                        end function
+                    `,
+                    trim`
+                        namespace logger
+                        function getComponent() as roSGNodelogger_LoggerComponent
+                        end function
+                        end namespace
+                        namespace logger
+                        function useComponent(node as roSGNodelogger_LoggerComponent)
+                        end function
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes types referenced in brsdoc @param/@return comments', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        ' @param {Movie} movie - the movie to play
+                        ' @param {object} context - untouched native type
+                        ' @return {Direction}
+                        function play(movie as Movie, context as object) as Direction
+                        end function
+                        class Movie
+                        end class
+                        enum Direction
+                            up
+                        end enum
+                    `,
+                    trim`
+                        namespace logger
+                        ' @param {logger.Movie} movie - the movie to play
+                        ' @param {object} context - untouched native type
+                        ' @return {logger.Direction}
+                        function play(movie as logger.Movie, context as object) as logger.Direction
+                        end function
+                        end namespace
+                        namespace logger
+                        class Movie
+                        end class
+                        end namespace
+                        namespace logger
+                        enum Direction
+                            up
+                        end enum
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('prefixes roSGNode<ComponentName> types referenced in brsdoc comments', async () => {
+            await testProcess({
+                'logger:components/LoggerComponent.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="LoggerComponent" extends="Group">
+                        </component>
+                    `
+                ],
+                'logger:source/lib.d.bs': [
+                    trim`
+                        ' @param {roSGNodeLoggerComponent} node
+                        function useComponent(node as roSGNodeLoggerComponent)
+                        end function
+                    `,
+                    trim`
+                        namespace logger
+                        ' @param {roSGNodelogger_LoggerComponent} node
+                        function useComponent(node as roSGNodelogger_LoggerComponent)
+                        end function
+                        end namespace
+                    `
+                ]
+            });
+        });
+
+        it('leaves unknown roSGNode<Name> type references untouched', async () => {
+            await testProcess({
+                'logger:source/lib.d.bs': [
+                    trim`
+                        function getLabel() as roSGNodeLabel
+                        end function
+                    `,
+                    trim`
+                        namespace logger
+                        function getLabel() as roSGNodeLabel
+                        end function
                         end namespace
                     `
                 ]
