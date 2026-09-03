@@ -4,8 +4,8 @@ import type { XMLDocument, XMLElement } from './XmlAst';
 import { buildAst } from './XmlAst';
 import { util } from '../util';
 import * as path from 'path';
-import type { BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
-import { ParseMode, createVisitor, isCallExpression, isCustomType, isDottedGetExpression, isDottedSetStatement, isIndexedGetExpression, isIndexedSetStatement, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
+import type { Body, BrsFile, Position, Program, Range, XmlFile, NamespaceStatement } from 'brighterscript';
+import { ParseMode, createVisitor, isCallExpression, isCommentStatement, isCustomType, isDottedGetExpression, isDottedSetStatement, isFunctionParameterExpression, isIndexedGetExpression, isIndexedSetStatement, isVariableExpression, WalkMode, util as bsUtil, isNamespaceStatement, DeclarableTypes } from 'brighterscript';
 import type { Logger } from '@rokucommunity/logger';
 
 /**
@@ -133,6 +133,17 @@ export class File {
     public functionReferences = [] as Array<{
         name: string;
         offset: number;
+    }>;
+
+    /**
+     * Anywhere a `roSGNode<ComponentName>` type is referenced (e.g. as a function param/return type,
+     * or a field/interface field type). `name` is just the `<ComponentName>` portion (the `roSGNode`
+     * prefix itself is never touched); the offsets bound that same portion.
+     */
+    public nodeTypeReferences = [] as Array<{
+        name: string;
+        offsetBegin: number;
+        offsetEnd: number;
     }>;
 
     /**
@@ -286,6 +297,18 @@ export class File {
             return;
         }
 
+        //`roSGNode<ComponentName>` types aren't classes/interfaces/enums/consts in scope; they're resolved
+        //against known component names instead (handled entirely in RopmModule, since that's where component
+        //name knowledge lives)
+        if (options.name.toLowerCase().startsWith('rosgnode') && options.name.length > 'rosgnode'.length) {
+            this.nodeTypeReferences.push({
+                name: options.name.substring('rosgnode'.length),
+                offsetBegin: this.positionToOffset(options.range.start) + 'rosgnode'.length,
+                offsetEnd: this.positionToOffset(options.range.end)
+            });
+            return;
+        }
+
         const lowerName = options.name.toLowerCase();
         const lowerContainingNamespace = options.containingNamespace?.toLowerCase();
 
@@ -315,6 +338,38 @@ export class File {
 
         this.prefixableReferences.push({
             fullyQualifiedName: fullyQualifiedName ?? bsUtil.getFullyQualifiedClassName(options.name, options.containingNamespace),
+            offsetBegin: this.positionToOffset(options.range.start),
+            offsetEnd: this.positionToOffset(options.range.end)
+        });
+    }
+
+    /**
+     * Resolve a dotted function-value reference (e.g. a namespace-relative function used as a
+     * parameter default value in a typedef, like `callback = internal.noop`) against the program's
+     * scopes, and queue up a rename to its fully qualified name.
+     */
+    private tryAddPrefixableFunctionValueRef(options: {
+        fullName: string;
+        range: Range | undefined;
+    }) {
+        if (!options.fullName || !options.range) {
+            return;
+        }
+
+        const lowerName = options.fullName.toLowerCase();
+        const scopes = this.bscFile.program.getScopesForFile(this.bscFile);
+        let fullyQualifiedName: string | undefined;
+
+        for (let scope of scopes) {
+            const callable = scope.getCallableByName(lowerName);
+            if (callable) {
+                fullyQualifiedName = callable.getName(ParseMode.BrighterScript);
+                break;
+            }
+        }
+
+        this.prefixableReferences.push({
+            fullyQualifiedName: fullyQualifiedName ?? options.fullName,
             offsetBegin: this.positionToOffset(options.range.start),
             offsetEnd: this.positionToOffset(options.range.end)
         });
@@ -455,17 +510,44 @@ export class File {
                     });
                 }
             },
-            FunctionStatement: (func) => {
+            FunctionStatement: (func, parent) => {
                 const annotations = func.annotations ?? [];
+                //if this function's leading doc comment is its immediately-preceding sibling statement, anchor
+                //the start there instead, so a namespace wrap (or similar) doesn't get inserted between them
+                const leadingComment = (parent as Body)?.statements?.[(parent as Body).statements.indexOf(func) - 1];
+                let startAnchor: { range: Range | undefined } | null = annotations?.length > 0 ? annotations[0] : func.func.functionType;
+                if (isCommentStatement(leadingComment)) {
+                    startAnchor = leadingComment;
+                }
                 this.functionDefinitions.push({
                     name: func.name.text,
                     nameOffset: this.positionToOffset(func.name.range.start),
                     hasNamespace: !!func.namespaceName,
-                    //Use annotation start position if available, otherwise use keyword
-                    startOffset: this.positionToOffset(
-                        (annotations?.length > 0 ? annotations[0] : func.func.functionType)!.range.start as Position
-                    ),
+                    startOffset: this.positionToOffset(startAnchor!.range!.start as Position),
                     endOffset: this.positionToOffset(func.func.end.range.end)
+                });
+            },
+            //track namespace-relative function references used as parameter default values in typedefs (e.g. `callback = internal.noop`)
+            DottedGetExpression: (expr, parent) => {
+                if (!this.isTypdefFile || !isFunctionParameterExpression(parent) || parent.defaultValue !== expr) {
+                    return;
+                }
+
+                //walk down to the leftmost identifier; only handle pure dotted chains of identifiers
+                const nameParts = [expr.name.text];
+                let current = expr.obj;
+                while (isDottedGetExpression(current)) {
+                    nameParts.unshift(current.name.text);
+                    current = current.obj;
+                }
+                if (!isVariableExpression(current)) {
+                    return;
+                }
+                nameParts.unshift(current.name.text);
+
+                this.tryAddPrefixableFunctionValueRef({
+                    fullName: nameParts.join('.'),
+                    range: expr.range
                 });
             },
             NamespaceStatement: (namespace) => {
@@ -473,6 +555,26 @@ export class File {
                     name: namespace.name,
                     offset: this.positionToOffset(namespace.nameExpression.range!.start)
                 });
+            },
+            //track types referenced in brsdoc `@param {Type}` / `@return(s) {Type}` comments
+            CommentStatement: (comment) => {
+                const containingNamespace = comment.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript);
+                for (const token of comment.comments) {
+                    const regexp = /@(?:param|returns?)\b[^{]*\{\s*([\w.]+)\s*\}/gi;
+                    let match: RegExpExecArray | null;
+                    while ((match = regexp.exec(token.text))) {
+                        const typeStart = match.index + match[0].indexOf(match[1], match[0].indexOf('{'));
+                        const line = token.range!.start.line;
+                        this.tryAddPrefixableRef({
+                            name: match[1],
+                            containingNamespace: containingNamespace,
+                            range: {
+                                start: { line: line, character: typeStart },
+                                end: { line: line, character: typeStart + match[1].length }
+                            } as Range
+                        });
+                    }
+                }
             }
         }), {
             walkMode: WalkMode.visitAllRecursive
