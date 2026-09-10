@@ -83,18 +83,6 @@
     "istanbul-lib-processinfo": "^3.0.1",
     "uuid": "^11.1.1"
   },
-  "mocha": {
-    "spec": "src/**/*.spec.ts",
-    "require": [
-      "source-map-support/register",
-      "ts-node/register"
-    ],
-    "timeout": 20000,
-    "fullTrace": true,
-    "watchExtensions": [
-      "ts"
-    ]
-  },
   "nyc": {
     "include": [
       "src/**/*.ts",
