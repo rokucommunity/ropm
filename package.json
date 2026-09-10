@@ -6,7 +6,7 @@
     "preversion": "npm run build && npm run lint && npm run test",
     "build": "tsc",
     "lint": "eslint \"src/**\"",
-    "test": "nyc mocha",
+    "test": "c8 mocha",
     "test:nocover": "mocha",
     "audit": "npm audit || audit-ci --config ./audit-ci.jsonc",
     "package": "npm run build && npm pack"
@@ -62,6 +62,7 @@
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
     "audit-ci": "^7.1.0",
+    "c8": "^10.1.3",
     "chai": "^4.3.4",
     "eslint": "^8.16.0",
     "eslint-plugin-github": "^4.1.1",
@@ -69,21 +70,13 @@
     "eslint-plugin-jsdoc": "^39.3.6",
     "eslint-plugin-no-only-tests": "^2.6.0",
     "mocha": "^11.1.0",
-    "nyc": "^15.1.0",
     "pnpm": "10.34.5",
     "sinon": "^18.0.0",
     "source-map-support": "^0.5.20",
     "ts-node": "^10.4.0",
     "typescript": "^5.4.5"
   },
-  "overrides": {
-    "serialize-javascript": "^7",
-    "js-yaml@^3": "^3.15.2",
-    "js-yaml@^4": "^4",
-    "istanbul-lib-processinfo": "^3.0.1",
-    "uuid": "^11.1.1"
-  },
-  "nyc": {
+  "c8": {
     "include": [
       "src/**/*.ts",
       "!src/**/*.spec.ts"
@@ -91,21 +84,19 @@
     "extension": [
       ".ts"
     ],
-    "require": [
-      "ts-node/register",
-      "source-map-support/register"
-    ],
     "reporter": [
       "text-summary",
       "html",
       "lcovonly"
     ],
-    "sourceMap": true,
-    "instrument": true,
     "check-coverage": false,
     "lines": 100,
     "statements": 100,
     "functions": 100,
     "branches": 100
+  },
+  "overrides": {
+    "serialize-javascript": "^7",
+    "vscode-languageserver-protocol": "3.17.5"
   }
 }
