@@ -78,9 +78,6 @@
   },
   "overrides": {
     "serialize-javascript": "^7",
-    "js-yaml@^3": "^3.15.2",
-    "js-yaml@^4": "^4",
-    "istanbul-lib-processinfo": "^3.0.1",
     "uuid": "^11.1.1"
   },
   "nyc": {
