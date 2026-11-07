@@ -68,6 +68,46 @@ describe('RopmModule', () => {
             await module.init();
             expect(module.isValid).to.be.false;
         });
+
+        it('uses preferredPrefix when no alias is given', async () => {
+            const [promises] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: '@rokucommunity/promises',
+                    ropm: {
+                        preferredPrefix: 'promises'
+                    }
+                }]
+            });
+            await promises.init();
+            expect(promises.ropmModuleName).to.equal('promises');
+        });
+
+        it('ignores preferredPrefix when a user alias is given', async () => {
+            const [promises] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: '@rokucommunity/promises',
+                    alias: 'mypkg',
+                    ropm: {
+                        preferredPrefix: 'promises'
+                    }
+                }]
+            });
+            await promises.init();
+            expect(promises.ropmModuleName).to.equal('mypkg');
+        });
+
+        it('uses default derived prefix when preferredPrefix is absent', async () => {
+            const [promises] = createProjects(hostDir, hostDir, {
+                name: 'host',
+                dependencies: [{
+                    name: '@rokucommunity/promises'
+                }]
+            });
+            await promises.init();
+            expect(promises.ropmModuleName).to.equal('rokucommunity_promises');
+        });
     });
 
     describe('createPrefixMap', () => {
