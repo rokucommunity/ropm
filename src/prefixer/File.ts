@@ -286,6 +286,11 @@ export class File {
         name: string | undefined;
         containingNamespace: string | undefined;
         range: Range | undefined;
+        /**
+         * If true, the reference is only prefixed when it resolves to a known class/interface/enum/const.
+         * Unresolved names are left untouched instead of being assumed to live in the containing namespace.
+         */
+        onlyIfResolved?: boolean;
     }) {
         //skip if we don't have a name or a range
         if (!options.name || !options.range) {
@@ -334,6 +339,10 @@ export class File {
                 );
                 break;
             }
+        }
+
+        if (!fullyQualifiedName && options.onlyIfResolved) {
+            return;
         }
 
         this.prefixableReferences.push({
@@ -450,6 +459,22 @@ export class File {
                     range: node.tokens.type?.range
                 });
             },
+            //interface method param and return types
+            InterfaceMethodStatement: (node) => {
+                const containingNamespace = node.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript);
+                for (const param of node.params) {
+                    this.tryAddPrefixableRef({
+                        name: param.typeToken?.text,
+                        containingNamespace: containingNamespace,
+                        range: param.typeToken?.range
+                    });
+                }
+                this.tryAddPrefixableRef({
+                    name: node.tokens.returnType?.text,
+                    containingNamespace: containingNamespace,
+                    range: node.tokens.returnType?.range
+                });
+            },
             //track enum declarations (.bs and .d.bs only)
             EnumStatement: (node) => {
                 const annotations = node.annotations ?? [];
@@ -560,10 +585,12 @@ export class File {
             CommentStatement: (comment) => {
                 const containingNamespace = comment.findAncestor<NamespaceStatement>(isNamespaceStatement)?.getName(ParseMode.BrighterScript);
                 for (const token of comment.comments) {
-                    const regexp = /@(?:param|returns?)\b[^{]*\{\s*([\w.]+)\s*\}/gi;
+                    //the type may have trailing array brackets (i.e. `{roSGNodePromise[]}`), which are left as-is
+                    const regexp = /@(?:param|returns?)\b[^{]*\{\s*([\w.]+)(?:\s*\[\s*\])*\s*\}/gi;
                     let match: RegExpExecArray | null;
                     while ((match = regexp.exec(token.text))) {
-                        const typeStart = match.index + match[0].indexOf(match[1], match[0].indexOf('{'));
+                        //token.text is relative to the start of the comment token, which may be indented
+                        const typeStart = token.range!.start.character + match.index + match[0].indexOf(match[1], match[0].indexOf('{'));
                         const line = token.range!.start.line;
                         this.tryAddPrefixableRef({
                             name: match[1],
@@ -571,7 +598,9 @@ export class File {
                             range: {
                                 start: { line: line, character: typeStart },
                                 end: { line: line, character: typeStart + match[1].length }
-                            } as Range
+                            } as Range,
+                            //comments can reference anything (roMessagePort, roSGNode, etc). Only prefix types we can actually resolve
+                            onlyIfResolved: true
                         });
                     }
                 }

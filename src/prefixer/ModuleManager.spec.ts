@@ -1885,6 +1885,54 @@ describe('ModuleManager', () => {
             });
         });
 
+        it('prefixes brsdoc types in indented comments inside a namespace', async () => {
+            await testProcess({
+                'logger:components/Promise.xml': [
+                    trim`
+                        <?xml version="1.0" encoding="utf-8" ?>
+                        <component name="Promise" extends="Node">
+                        </component>
+                    `
+                ],
+                'logger:source/lib.d.bs': [
+                    trim`
+                        namespace promises
+                            interface PromiseChain
+                                function then(callback as function) as PromiseChain
+                                function toPromise() as roSGNodePromise
+                            end interface
+                            ' @param {roSGNodePromise[]} promiseArray
+                            ' @param {roMessagePort} port
+                            ' @param {roSGNode} node
+                            ' @return {roSGNodePromise}
+                            function all(promiseArray as dynamic, port as dynamic, node as dynamic) as dynamic
+                            end function
+                            ' @return {PromiseChain}
+                            function chain() as object
+                            end function
+                        end namespace
+                    `,
+                    trim`
+                        namespace logger.promises
+                            interface PromiseChain
+                                function then(callback as function) as logger.promises.PromiseChain
+                                function toPromise() as roSGNodelogger_Promise
+                            end interface
+                            ' @param {roSGNodelogger_Promise[]} promiseArray
+                            ' @param {roMessagePort} port
+                            ' @param {roSGNode} node
+                            ' @return {roSGNodelogger_Promise}
+                            function all(promiseArray as dynamic, port as dynamic, node as dynamic) as dynamic
+                            end function
+                            ' @return {logger.promises.PromiseChain}
+                            function chain() as object
+                            end function
+                        end namespace
+                    `
+                ]
+            });
+        });
+
         it('leaves unknown roSGNode<Name> type references untouched', async () => {
             await testProcess({
                 'logger:source/lib.d.bs': [
